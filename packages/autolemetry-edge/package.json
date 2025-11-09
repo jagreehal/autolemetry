@@ -1,6 +1,6 @@
 {
   "name": "autolemetry-edge",
-  "version": "0.0.1",
+  "version": "0.1.0",
   "description": "Write Once, Observe Anywhere - Ultra-lightweight OpenTelemetry for edge runtimes (Cloudflare Workers, Vercel Edge, Deno Deploy)",
   "type": "module",
   "main": "./dist/index.js",
