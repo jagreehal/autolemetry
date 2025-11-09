@@ -71,6 +71,7 @@
   },
   "devDependencies": {
     "@cloudflare/workers-types": "^4.20251109.0",
+    "@opentelemetry/context-async-hooks": "^2.2.0",
     "@types/node": "^24.10.0",
     "rimraf": "^6.1.0",
     "tsup": "^8.5.0",
