@@ -4,7 +4,47 @@
 [![npm adapters](https://img.shields.io/npm/v/autolemetry-adapters.svg?label=adapters)](https://www.npmjs.com/package/autolemetry-adapters)
 [![License: MIT](https://img.shields.io/badge/license-MIT-green.svg)](LICENSE)
 
-**Write once, observe everywhere.** Instrument your Node.js code a single time, keep the DX you love, and stream traces, metrics, logs, and product analytics to **any** observability stack without vendor lock-in.
+**Write once, observe everywhere.**
+
+Instrument your Node.js code a single time, keep the DX you love, and stream traces, metrics, logs, and product analytics to **any** observability stack without vendor lock-in.
+
+**One `init()`, wrap functions with `trace()`, and get automatic traces, metrics, and analytics:**
+
+```typescript
+import { init, trace, track } from 'autolemetry';
+import { PostHogAdapter, SlackAdapter } from 'autolemetry-adapters';
+
+// Initialize once at startup
+init({
+  service: 'checkout-api',
+  endpoint: process.env.OTLP_ENDPOINT, // Grafana, Datadog, Tempo, etc.
+  adapters: [
+    new PostHogAdapter({ apiKey: process.env.POSTHOG_KEY! }),
+    new SlackAdapter({ webhookUrl: process.env.SLACK_WEBHOOK! }),
+  ],
+});
+
+// Wrap any function - automatic spans, error tracking, and context
+export const processOrder = trace(async function processOrder(orderId: string, amount: number) {
+  const user = await db.users.findById(orderId);
+  const payment = await chargeCard(user.cardId, amount);
+  
+  // Product analytics automatically enriched with trace context
+  // Sent to: OTLP + PostHog + Slack (all in one call!)
+  track('order.completed', { orderId, amount, userId: user.id });
+  
+  return payment;
+});
+```
+
+**That's it.** Every call to `processOrder()` now:
+
+- ✅ Creates a span with automatic error handling
+- ✅ Tracks metrics (duration, success rate)
+- ✅ Sends analytics events with `traceId` and `spanId` to **all** adapters
+- ✅ Works with **any** OTLP-compatible backend (Grafana, Datadog, New Relic, Tempo, etc.)
+
+**[→ See complete examples and API docs](./packages/autolemetry/README.md#quick-start)**
 
 ## Packages
 
@@ -54,24 +94,12 @@ Edge runtime support for:
 
 ```bash
 npm install autolemetry
+# Optional: Add analytics adapters (PostHog, Slack, Mixpanel, etc.)
+npm install autolemetry-adapters
 # or
 pnpm add autolemetry
+pnpm add autolemetry-adapters  # Optional
 ```
-
-```typescript
-import { init, trace } from 'autolemetry';
-
-init({
-  service: 'my-app',
-  environment: process.env.NODE_ENV,
-});
-
-export const createUser = trace(async function createUser(data: UserData) {
-  return await db.users.create(data);
-});
-```
-
-**[→ View complete usage guide](./packages/autolemetry/README.md#quick-start)**
 
 ## Development
 
@@ -84,7 +112,7 @@ export const createUser = trace(async function createUser(data: UserData) {
 
 ```bash
 # Clone and install dependencies
-git clone https://github.com/yourusername/autolemetry.git
+git clone https://github.com/jagreehal/autolemetry.git
 cd autolemetry
 pnpm install
 
@@ -210,20 +238,13 @@ Autolemetry is built on top of OpenTelemetry and provides:
 - [x] Product analytics adapters
 - [x] Edge runtime support
 - [x] LLM observability (OpenLLMetry)
-- [ ] React instrumentation
-- [ ] Browser SDK
-- [ ] Mobile SDKs
 
 ## Community & Support
 
-- [Report bugs](https://github.com/yourusername/autolemetry/issues)
-- [Request features](https://github.com/yourusername/autolemetry/discussions)
-- [Join discussions](https://github.com/yourusername/autolemetry/discussions)
+- [Report bugs](https://github.com/jagreehal/autolemetry/issues)
+- [Request features](https://github.com/jagreehal/autolemetry/discussions)
+- [Join discussions](https://github.com/jagreehal/autolemetry/discussions)
 
 ## License
 
 MIT - See [LICENSE](./LICENSE) for details.
-
----
-
-Built by the Autolemetry team
