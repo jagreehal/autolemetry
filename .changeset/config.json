@@ -7,5 +7,9 @@
   "access": "public",
   "baseBranch": "main",
   "updateInternalDependencies": "patch",
-  "ignore": []
+  "ignore": [
+    "@jagreehal/example-basic",
+    "@jagreehal/example-http",
+    "cloudflare-example"
+  ]
 }
