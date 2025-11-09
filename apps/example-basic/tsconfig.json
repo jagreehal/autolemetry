@@ -1,0 +1,16 @@
+{
+  "extends": "../../packages/autolemetry/tsconfig.json",
+  "compilerOptions": {
+    "outDir": "./dist",
+    "rootDir": "./src",
+    "moduleResolution": "bundler",
+    "skipLibCheck": true,
+    "noEmit": true,
+    "paths": {
+      // "autolemetry": ["../../packages/autolemetry/src"],
+      // "autolemetry-adapters": ["../../packages/autolemetry-adapters/src/*"]
+    }
+  },
+  "include": ["src/**/*"]
+}
+

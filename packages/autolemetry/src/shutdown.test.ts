@@ -1,0 +1,202 @@
+/**
+ * Tests for graceful shutdown
+ */
+
+import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
+import { flush, shutdown } from './shutdown';
+import { init } from './init';
+import { track, getAnalyticsQueue } from './track';
+import type { AnalyticsAdapter } from './analytics-adapter';
+
+// Mock adapter for testing
+class MockAdapter implements AnalyticsAdapter {
+  name = 'mock-adapter';
+  public events: Array<{ name: string; attributes?: Record<string, unknown> }> =
+    [];
+  public shutdownCalled = false;
+
+  async trackEvent(
+    name: string,
+    attributes?: Record<string, unknown>,
+  ): Promise<void> {
+    this.events.push({ name, attributes });
+  }
+
+  async trackFunnelStep(): Promise<void> {}
+  async trackOutcome(): Promise<void> {}
+  async trackValue(): Promise<void> {}
+
+  async shutdown(): Promise<void> {
+    this.shutdownCalled = true;
+  }
+}
+
+describe('shutdown module', () => {
+  let mockAdapter: MockAdapter;
+
+  beforeEach(() => {
+    vi.clearAllMocks();
+    mockAdapter = new MockAdapter();
+  });
+
+  afterEach(async () => {
+    // Clean up after each test
+    const queue = getAnalyticsQueue();
+    if (queue) {
+      await queue.flush();
+    }
+  });
+
+  describe('flush()', () => {
+    it('should flush analytics queue', async () => {
+      // Initialize with adapter
+      init({
+        service: 'test-service',
+        adapters: [mockAdapter],
+      });
+
+      // Track events
+      track('test.event1', { foo: 'bar' });
+      track('test.event2', { baz: 'qux' });
+
+      // Events should be in queue
+      const queue = getAnalyticsQueue();
+      expect(queue?.size()).toBeGreaterThan(0);
+
+      // Flush
+      await flush();
+
+      // Queue should be empty (all events sent)
+      expect(queue?.size()).toBe(0);
+    });
+
+    it('should be safe to call multiple times', async () => {
+      init({
+        service: 'test-service',
+        adapters: [mockAdapter],
+      });
+
+      track('test.event', { data: 'value' });
+
+      await flush();
+      await flush();
+      await flush();
+
+      // Should not throw
+      expect(getAnalyticsQueue()?.size()).toBe(0);
+    });
+
+    it('should be no-op if no analytics queue initialized', async () => {
+      init({ service: 'test-service' }); // No adapters
+
+      await expect(flush()).resolves.toBeUndefined();
+    });
+  });
+
+  describe('shutdown()', () => {
+    it('should flush and shutdown SDK', async () => {
+      init({
+        service: 'test-service',
+        adapters: [mockAdapter],
+      });
+
+      track('test.event', { foo: 'bar' });
+
+      // Shutdown should flush queue and shutdown SDK
+      await shutdown();
+
+      // After shutdown, queue should be null (cleaned up to prevent memory leaks)
+      const queue = getAnalyticsQueue();
+      expect(queue).toBeNull();
+    });
+
+    it('should be safe to call multiple times', async () => {
+      init({
+        service: 'test-service',
+        adapters: [mockAdapter],
+      });
+
+      await shutdown();
+      await shutdown(); // Should not throw
+      await shutdown();
+
+      expect(true).toBe(true); // Test passes if no errors
+    });
+
+    it('should flush before SDK shutdown', async () => {
+      init({
+        service: 'test-service',
+        adapters: [mockAdapter],
+      });
+
+      track('test.event', { foo: 'bar' });
+
+      const queue = getAnalyticsQueue();
+      const queueSizeBefore = queue?.size() || 0;
+      expect(queueSizeBefore).toBeGreaterThan(0);
+
+      await shutdown();
+
+      // Queue should be empty after shutdown
+      const queueSizeAfter = queue?.size() || 0;
+      expect(queueSizeAfter).toBe(0);
+    });
+
+    it('should handle errors during shutdown gracefully', async () => {
+      const failingAdapter: AnalyticsAdapter = {
+        name: 'failing-adapter',
+        trackEvent: vi.fn(),
+        trackFunnelStep: vi.fn(),
+        trackOutcome: vi.fn(),
+        trackValue: vi.fn(),
+        shutdown: vi.fn().mockRejectedValue(new Error('Shutdown failed')),
+      };
+
+      init({
+        service: 'test-service',
+        adapters: [failingAdapter],
+      });
+
+      // Should not throw even if adapter shutdown fails
+      await expect(shutdown()).resolves.toBeUndefined();
+    });
+  });
+
+  describe('Integration', () => {
+    it('should properly shutdown in correct order', async () => {
+      init({
+        service: 'test-service',
+        adapters: [mockAdapter],
+      });
+
+      track('user.signup', { userId: '123' });
+      track('order.completed', { orderId: '456' });
+
+      const queue = getAnalyticsQueue();
+      expect(queue?.size()).toBeGreaterThan(0);
+
+      // Shutdown should flush all pending events
+      await shutdown();
+
+      // Queue should be empty (all events flushed)
+      expect(queue?.size()).toBe(0);
+    });
+
+    it('should work with no events to flush', async () => {
+      init({
+        service: 'test-service',
+        adapters: [mockAdapter],
+      });
+
+      // No events tracked
+      const queue = getAnalyticsQueue();
+      const queueSize = queue?.size() || 0;
+      expect(queueSize).toBe(0);
+
+      await shutdown();
+
+      // Should complete without error
+      expect(mockAdapter.events).toHaveLength(0);
+    });
+  });
+});

@@ -1,0 +1,90 @@
+{
+  "name": "autolemetry-edge",
+  "version": "0.0.1",
+  "description": "Write Once, Observe Anywhere - Ultra-lightweight OpenTelemetry for edge runtimes (Cloudflare Workers, Vercel Edge, Deno Deploy)",
+  "type": "module",
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "sideEffects": false,
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js"
+    },
+    "./sampling": {
+      "types": "./dist/sampling/index.d.ts",
+      "import": "./dist/sampling/index.js"
+    },
+    "./instrumentation": {
+      "types": "./dist/instrumentation/index.d.ts",
+      "import": "./dist/instrumentation/index.js"
+    },
+    "./testing": {
+      "types": "./dist/testing/index.d.ts",
+      "import": "./dist/testing/index.js"
+    },
+    "./compose": {
+      "types": "./dist/api/compose.d.ts",
+      "import": "./dist/api/compose.js"
+    }
+  },
+  "files": [
+    "dist",
+    "src",
+    "README.md"
+  ],
+  "scripts": {
+    "build": "tsup",
+    "dev": "tsup --watch",
+    "lint": "npx eslint src/**/*.ts",
+    "lint:fix": "npx eslint src/**/*.ts --fix",
+    "type-check": "tsc --noEmit",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "clean": "rimraf dist"
+  },
+  "keywords": [
+    "opentelemetry",
+    "otel",
+    "edge",
+    "cloudflare-workers",
+    "vercel-edge",
+    "netlify-edge",
+    "deno",
+    "serverless",
+    "observability",
+    "tracing",
+    "logging",
+    "lightweight",
+    "performance"
+  ],
+  "author": "Jag Reehal <jag@jagreehal.com> (https://jagreehal.com)",
+  "license": "MIT",
+  "dependencies": {
+    "@opentelemetry/api": "^1.9.0",
+    "@opentelemetry/core": "^2.2.0",
+    "@opentelemetry/otlp-exporter-base": "^0.208.0",
+    "@opentelemetry/otlp-transformer": "^0.208.0",
+    "@opentelemetry/resources": "^2.2.0",
+    "@opentelemetry/sdk-trace-base": "^2.2.0",
+    "@opentelemetry/semantic-conventions": "^1.38.0"
+  },
+  "devDependencies": {
+    "@cloudflare/workers-types": "^4.20251109.0",
+    "@types/node": "^24.10.0",
+    "rimraf": "^6.1.0",
+    "tsup": "^8.5.0",
+    "typescript": "^5.9.3",
+    "vitest": "^4.0.8",
+    "vitest-mock-extended": "^3.1.0"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/jagreehal/autolemetry",
+    "directory": "packages/autolemetry-edge"
+  },
+  "bugs": {
+    "url": "https://github.com/jagreehal/autolemetry/issues"
+  },
+  "homepage": "https://github.com/jagreehal/autolemetry/tree/main/packages/autolemetry-edge#readme"
+}

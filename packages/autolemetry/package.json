@@ -1,0 +1,227 @@
+{
+  "name": "autolemetry",
+  "version": "0.0.1",
+  "description": "Write Once, Observe Anywhere",
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "type": "module",
+  "sideEffects": false,
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js",
+      "require": "./dist/index.cjs"
+    },
+    "./instrumentation": {
+      "types": "./dist/instrumentation.d.ts",
+      "import": "./dist/instrumentation.js"
+    },
+    "./logger": {
+      "types": "./dist/logger.d.ts",
+      "import": "./dist/logger.js"
+    },
+    "./logger-winston": {
+      "types": "./dist/logger-winston.d.ts",
+      "import": "./dist/logger-winston.js"
+    },
+    "./sampling": {
+      "types": "./dist/sampling.d.ts",
+      "import": "./dist/sampling.js"
+    },
+    "./analytics": {
+      "types": "./dist/analytics.d.ts",
+      "import": "./dist/analytics.js"
+    },
+    "./analytics-adapter": {
+      "types": "./dist/analytics-adapter.d.ts",
+      "import": "./dist/analytics-adapter.js"
+    },
+    "./analytics-testing": {
+      "types": "./dist/analytics-testing.d.ts",
+      "import": "./dist/analytics-testing.js"
+    },
+    "./metrics": {
+      "types": "./dist/metrics.d.ts",
+      "import": "./dist/metrics.js"
+    },
+    "./metrics-testing": {
+      "types": "./dist/metrics-testing.d.ts",
+      "import": "./dist/metrics-testing.js"
+    },
+    "./testing": {
+      "types": "./dist/testing.d.ts",
+      "import": "./dist/testing.js"
+    },
+    "./config": {
+      "types": "./dist/config.d.ts",
+      "import": "./dist/config.js"
+    },
+    "./tail-sampling-processor": {
+      "types": "./dist/tail-sampling-processor.d.ts",
+      "import": "./dist/tail-sampling-processor.js"
+    },
+    "./functional": {
+      "types": "./dist/functional.d.ts",
+      "import": "./dist/functional.js"
+    },
+    "./http": {
+      "types": "./dist/http.d.ts",
+      "import": "./dist/http.js"
+    },
+    "./db": {
+      "types": "./dist/db.d.ts",
+      "import": "./dist/db.js"
+    },
+    "./trace-helpers": {
+      "types": "./dist/trace-helpers.d.ts",
+      "import": "./dist/trace-helpers.js"
+    },
+    "./decorators": {
+      "types": "./dist/decorators.d.ts",
+      "import": "./dist/decorators.js"
+    }
+  },
+  "files": [
+    "dist",
+    "src",
+    "README.md"
+  ],
+  "scripts": {
+    "build": "tsup",
+    "ci": "npm run build && npm run check-format && npm run check-exports && npm run lint && npm run test",
+    "dev": "tsup --watch",
+    "lint": "npx eslint src/**/*.ts",
+    "lint:fix": "npx eslint src/**/*.ts --fix",
+    "format": "prettier --write .",
+    "format:check": "prettier --check src/**/*.ts",
+    "type-check": "tsc --noEmit",
+    "test": "vitest run --config vitest.unit.config.ts",
+    "test:watch": "vitest --config vitest.unit.config.ts",
+    "test:integration": "vitest run --config vitest.integration.config.ts",
+    "test:integration:watch": "vitest --config vitest.integration.config.ts",
+    "test:all": "pnpm test && pnpm test:integration",
+    "check-format": "prettier --check ./src",
+    "check-exports": "attw --pack . --ignore-rules false-esm no-resolution cjs-resolves-to-esm",
+    "clean": "rimraf dist",
+    "quality": "pnpm type-check && pnpm test && pnpm lint && pnpm format:check && pnpm build && pnpm check-exports"
+  },
+  "keywords": [
+    "opentelemetry",
+    "otel",
+    "typescript",
+    "observability",
+    "tracing",
+    "logging",
+    "instrumentation",
+    "apm",
+    "functional",
+    "analytics",
+    "metrics",
+    "business-metrics",
+    "product-analytics",
+    "telemetry",
+    "monitoring"
+  ],
+  "author": "Jag Reehal<jag@jagreehal.com> (https://jagreehal.com)",
+  "license": "MIT",
+  "dependencies": {
+    "@opentelemetry/api": "^1.9.0",
+    "@opentelemetry/api-logs": "^0.208.0",
+    "@opentelemetry/exporter-metrics-otlp-http": "^0.208.0",
+    "@opentelemetry/exporter-trace-otlp-http": "^0.208.0",
+    "@opentelemetry/resources": "^2.2.0",
+    "@opentelemetry/sdk-metrics": "^2.2.0",
+    "@opentelemetry/sdk-node": "^0.208.0",
+    "@opentelemetry/sdk-trace-base": "^2.2.0",
+    "@opentelemetry/semantic-conventions": "^1.38.0"
+  },
+  "peerDependencies": {
+    "@opentelemetry/auto-instrumentations-node": "^0.67.0",
+    "@opentelemetry/exporter-logs-otlp-http": "^0.208.0",
+    "@opentelemetry/resource-detector-aws": "^2.8.0",
+    "@opentelemetry/resource-detector-container": "^0.7.11",
+    "@opentelemetry/resource-detector-gcp": "^0.43.0",
+    "@opentelemetry/sdk-logs": "^0.208.0",
+    "@opentelemetry/sdk-trace-node": "^2.2.0",
+    "@traceloop/node-server-sdk": "*",
+    "pino": "^10.0.0",
+    "pino-pretty": "^13.1.2"
+  },
+  "peerDependenciesMeta": {
+    "@opentelemetry/auto-instrumentations-node": {
+      "optional": true
+    },
+    "@opentelemetry/exporter-logs-otlp-http": {
+      "optional": true
+    },
+    "@opentelemetry/sdk-logs": {
+      "optional": true
+    },
+    "@opentelemetry/sdk-trace-node": {
+      "optional": true
+    },
+    "@opentelemetry/resource-detector-aws": {
+      "optional": true
+    },
+    "@opentelemetry/resource-detector-gcp": {
+      "optional": true
+    },
+    "@opentelemetry/resource-detector-container": {
+      "optional": true
+    },
+    "@traceloop/node-server-sdk": {
+      "optional": true
+    },
+    "pino": {
+      "optional": true
+    },
+    "pino-pretty": {
+      "optional": true
+    }
+  },
+  "devDependencies": {
+    "@arethetypeswrong/cli": "^0.18.2",
+    "@edge-runtime/vm": "^5.0.0",
+    "@opentelemetry/api": "^1.9.0",
+    "@opentelemetry/auto-instrumentations-node": "^0.67.0",
+    "@opentelemetry/exporter-logs-otlp-http": "^0.208.0",
+    "@opentelemetry/exporter-metrics-otlp-http": "^0.208.0",
+    "@opentelemetry/exporter-trace-otlp-http": "^0.208.0",
+    "@opentelemetry/resource-detector-aws": "^2.8.0",
+    "@opentelemetry/resource-detector-container": "^0.7.11",
+    "@opentelemetry/resource-detector-gcp": "^0.43.0",
+    "@opentelemetry/resources": "^2.2.0",
+    "@opentelemetry/sdk-logs": "^0.208.0",
+    "@opentelemetry/sdk-metrics": "^2.2.0",
+    "@opentelemetry/sdk-node": "^0.208.0",
+    "@opentelemetry/sdk-trace-node": "^2.2.0",
+    "@opentelemetry/semantic-conventions": "^1.38.0",
+    "@total-typescript/ts-reset": "^0.6.1",
+    "@total-typescript/tsconfig": "^1.0.4",
+    "@types/eslint-config-prettier": "^6.11.3",
+    "@types/node": "^24.10.0",
+    "@typescript-eslint/eslint-plugin": "^8.46.3",
+    "@typescript-eslint/parser": "^8.46.3",
+    "eslint-config-prettier": "^10.1.8",
+    "eslint-plugin-unicorn": "^62.0.0",
+    "pino": "^10.1.0",
+    "prettier": "^3.6.2",
+    "rimraf": "^6.1.0",
+    "tsup": "^8.5.0",
+    "tsx": "^4.20.6",
+    "typescript": "^5.9.3",
+    "typescript-eslint": "^8.46.3",
+    "vite-tsconfig-paths": "^5.1.4",
+    "vitest": "^4.0.8",
+    "vitest-mock-extended": "^3.1.0",
+    "winston": "^3.18.3"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/jagreehal/autolemetry"
+  },
+  "bugs": {
+    "url": "https://github.com/jagreehal/autolemetry/issues"
+  },
+  "homepage": "https://github.com/jagreehal/autolemetry#readme"
+}
