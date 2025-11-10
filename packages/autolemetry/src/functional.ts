@@ -84,6 +84,16 @@ type ExtractFunctionSignature<T> = T extends (ctx: TraceContext) => infer F
     : never
   : never;
 
+/**
+ * Helper type to exclude functions that return functions from immediate execution overloads
+ */
+type ExcludeFactoryReturn<T> = T extends (ctx: TraceContext) => infer F
+  ? // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    F extends (...args: any[]) => any
+    ? never
+    : T
+  : T;
+
 type GenericFunction = (...args: unknown[]) => unknown;
 
 const FACTORY_NAME_HINTS = new Set([
@@ -1358,13 +1368,19 @@ export function trace<TArgs extends unknown[] = unknown[], TReturn = unknown>(
   fn: (...args: TArgs) => TReturn,
 ): (...args: TArgs) => TReturn;
 
-// Overload 2b: Name + immediate execution sync with context
+// Overload 2b: Name + factory sync function - use conditional type to extract signature
+// This overload allows TypeScript to infer types from the factory function parameter
+export function trace<
+  TFactory extends (ctx: TraceContext) => (...args: unknown[]) => unknown,
+>(name: string, fnFactory: TFactory): ExtractFunctionSignature<TFactory>;
+
+// Overload 2c: Name + immediate execution sync with context
+// This overload only matches functions that DON'T return functions (factories)
 export function trace<TReturn = unknown>(
   name: string,
-  fn: (ctx: TraceContext) => TReturn,
+  fn: ExcludeFactoryReturn<(ctx: TraceContext) => TReturn>,
 ): TReturn;
-
-// Overload 2c: Name + factory sync function
+// Overload 2d: Name + factory sync function (fallback)
 export function trace<TArgs extends unknown[] = unknown[], TReturn = unknown>(
   name: string,
   fnFactory: (ctx: TraceContext) => (...args: TArgs) => TReturn,
@@ -1417,13 +1433,21 @@ export function trace<TArgs extends unknown[] = unknown[], TReturn = unknown>(
   fn: (...args: TArgs) => Promise<TReturn>,
 ): (...args: TArgs) => Promise<TReturn>;
 
-// Overload 5b: Name + immediate execution async with context
+// Overload 5b: Name + factory async function - use conditional type to extract signature
+// This overload allows TypeScript to infer types from the factory function parameter
+export function trace<
+  TFactory extends (
+    ctx: TraceContext,
+  ) => (...args: unknown[]) => Promise<unknown>,
+>(name: string, fnFactory: TFactory): ExtractFunctionSignature<TFactory>;
+
+// Overload 5c: Name + immediate execution async with context
+// This overload only matches functions that DON'T return functions (factories)
 export function trace<TReturn = unknown>(
   name: string,
-  fn: (ctx: TraceContext) => Promise<TReturn>,
+  fn: ExcludeFactoryReturn<(ctx: TraceContext) => Promise<TReturn>>,
 ): Promise<TReturn>;
-
-// Overload 5c: Name + factory async function
+// Overload 5d: Name + factory async function (fallback)
 export function trace<TArgs extends unknown[] = unknown[], TReturn = unknown>(
   name: string,
   fnFactory: (ctx: TraceContext) => (...args: TArgs) => Promise<TReturn>,

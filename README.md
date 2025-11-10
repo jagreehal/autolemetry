@@ -61,6 +61,7 @@ Core library providing ergonomic OpenTelemetry instrumentation with:
 - Production hardening (rate limiting, circuit breakers, redaction)
 - Auto trace context enrichment
 - LLM observability via OpenLLMetry integration
+- AI workflow patterns (multi-agent, RAG, evaluation loops)
 
 **[→ View full documentation](./packages/autolemetry/README.md)**
 
