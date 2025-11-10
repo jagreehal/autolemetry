@@ -1,5 +1,12 @@
 # autolemetry-adapters
 
+## 1.0.1
+
+### Patch Changes
+
+- Updated dependencies [d0cc838]
+  - autolemetry@0.1.1
+
 ## 1.0.0
 
 ### Minor Changes
