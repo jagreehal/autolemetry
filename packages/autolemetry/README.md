@@ -231,6 +231,14 @@ OpenLLMetry will automatically:
 
 All LLM spans will appear alongside your application traces in your observability backend.
 
+**AI Workflow Patterns:** See [AI/LLM Workflow Documentation](../../docs/AI_WORKFLOWS.md) for comprehensive patterns including:
+
+- Multi-agent workflows (orchestration and handoffs)
+- RAG pipelines (embeddings, search, generation)
+- Streaming responses
+- Evaluation loops
+- Working examples in `apps/example-ai-agent`
+
 ## Core Building Blocks
 
 ### trace()

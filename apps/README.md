@@ -71,6 +71,28 @@ Then visit:
 - Error tracking
 - Nested spans
 
+### AI/LLM Workflow Examples
+
+Demonstrates instrumentation patterns for AI/LLM applications:
+
+```bash
+cd apps/example-ai-agent
+pnpm install
+pnpm start:multi-agent  # Multi-agent workflow
+pnpm start:rag          # RAG pipeline
+```
+
+**What it does:**
+- Multi-agent orchestration (Triage → Specialist → QA)
+- RAG pipeline (Embeddings → Search → Generate)
+- Correlation ID propagation across agents
+- Agent handoff tracking
+- Business event instrumentation
+
+**Note:** Uses simulated LLM calls for demonstration. See [example README](./example-ai-agent/README.md) for integration with real LLM SDKs and OpenLLMetry.
+
+**Documentation:** See [docs/AI_WORKFLOWS.md](../docs/AI_WORKFLOWS.md) for comprehensive AI workflow patterns.
+
 ## Verifying in Grafana
 
 1. **Open Grafana Cloud** (or your Grafana instance)
