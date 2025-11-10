@@ -28,7 +28,20 @@ describe('Functional API', () => {
     mockTracer = {
       startActiveSpan: vi.fn((name, optionsOrFn, maybeFn) => {
         const fn = typeof optionsOrFn === 'function' ? optionsOrFn : maybeFn;
-        return fn(mockSpan);
+        try {
+          const result = fn(mockSpan);
+          // If it's a promise, ensure errors are properly propagated
+          if (result && typeof result.then === 'function') {
+            return result.catch((err: any) => {
+              // Re-throw to maintain error behavior but ensure it's in promise chain
+              return Promise.reject(err);
+            });
+          }
+          return result;
+        } catch (err) {
+          // Convert sync errors to rejected promises to match OTel behavior
+          return Promise.reject(err);
+        }
       }),
     };
 
@@ -576,6 +589,114 @@ describe('Functional API', () => {
 
       expect(value).toBe(7);
       expect(mockSpan.setStatus).toHaveBeenCalledWith({ code: SpanStatusCode.OK });
+    });
+  });
+
+  describe('Immediate execution pattern', () => {
+    it('should execute async function immediately with context', async () => {
+      const result = await trace(async (ctx: any) => {
+        ctx.setAttribute('test.key', 'value');
+        return { data: 'test' };
+      });
+
+      expect(result).toEqual({ data: 'test' });
+      expect(mockSpan.setAttribute).toHaveBeenCalledWith('test.key', 'value');
+      expect(mockSpan.setStatus).toHaveBeenCalledWith({ code: SpanStatusCode.OK });
+      expect(mockSpan.end).toHaveBeenCalled();
+    });
+
+    it('should execute sync function immediately with context', () => {
+      const result = trace((ctx: any) => {
+        ctx.setAttribute('test.key', 'sync-value');
+        return 42;
+      });
+
+      expect(result).toBe(42);
+      expect(mockSpan.setAttribute).toHaveBeenCalledWith('test.key', 'sync-value');
+      expect(mockSpan.setStatus).toHaveBeenCalledWith({ code: SpanStatusCode.OK });
+      expect(mockSpan.end).toHaveBeenCalled();
+    });
+
+    it('should support custom name with immediate execution', async () => {
+      const result = await trace('custom.operation', async (ctx: any) => {
+        ctx.setAttribute('operation.id', '123');
+        return 'success';
+      });
+
+      expect(result).toBe('success');
+      expect(mockTracer.startActiveSpan).toHaveBeenCalledWith(
+        'custom.operation',
+        expect.any(Function),
+      );
+      expect(mockSpan.setAttribute).toHaveBeenCalledWith('operation.id', '123');
+    });
+
+    it('should support options with immediate execution', async () => {
+      const result = await trace(
+        { name: 'options.test', attributes: { test: 'enabled' } },
+        async (ctx: any) => {
+          ctx.setAttribute('test.option', 'enabled');
+          return 100;
+        },
+      );
+
+      expect(result).toBe(100);
+      expect(mockTracer.startActiveSpan).toHaveBeenCalledWith(
+        'options.test',
+        expect.any(Function),
+      );
+      expect(mockSpan.setAttribute).toHaveBeenCalledWith('test.option', 'enabled');
+    });
+
+    it('should distinguish between factory and immediate execution', async () => {
+      // Factory pattern - returns a function
+      const factory = trace((ctx: any) => async (name: string) => {
+        ctx.setAttribute('user.name', name);
+        return { name };
+      });
+
+      // Immediate execution - returns result directly
+      const immediate = await trace(async (ctx: any) => {
+        ctx.setAttribute('immediate', true);
+        return 'done';
+      });
+
+      expect(typeof factory).toBe('function');
+      expect(immediate).toBe('done');
+
+      // Now call the factory
+      const factoryResult = await factory('Alice');
+      expect(factoryResult).toEqual({ name: 'Alice' });
+    });
+
+    it('should work with wrapper function pattern from feedback', async () => {
+      // The exact use case from the feedback
+      function timed<T>(
+        requestId: string,
+        operation: string,
+        fn: () => Promise<T>,
+      ): Promise<T> {
+        return trace(operation, async (ctx: any) => {
+          ctx.setAttribute('request.id', requestId);
+          ctx.setAttribute('operation.name', operation);
+          return await fn();
+        });
+      }
+
+      // Test it
+      const mockFn = async () => {
+        return { userId: '123', status: 'active' };
+      };
+
+      const result = await timed('req-456', 'fetchUser', mockFn);
+
+      expect(result).toEqual({ userId: '123', status: 'active' });
+      expect(mockTracer.startActiveSpan).toHaveBeenCalledWith(
+        'fetchUser',
+        expect.any(Function),
+      );
+      expect(mockSpan.setAttribute).toHaveBeenCalledWith('request.id', 'req-456');
+      expect(mockSpan.setAttribute).toHaveBeenCalledWith('operation.name', 'fetchUser');
     });
   });
 });

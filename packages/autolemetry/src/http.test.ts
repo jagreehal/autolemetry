@@ -20,7 +20,6 @@ describe('HttpInstrumented', () => {
     };
 
     configure({
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       tracer: mockTracer as any,
     });
 
@@ -63,7 +62,6 @@ describe('HttpInstrumented', () => {
     };
 
     configure({
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       tracer: mockTracer as any,
     });
 
@@ -123,7 +121,6 @@ describe('HttpInstrumented', () => {
     };
 
     configure({
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       tracer: mockTracer as any,
     });
 
@@ -163,7 +160,6 @@ describe('HttpInstrumented', () => {
     };
 
     configure({
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       tracer: mockTracer as any,
     });
 
@@ -201,7 +197,6 @@ describe('HttpInstrumented', () => {
     };
 
     configure({
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       tracer: mockTracer as any,
     });
 
@@ -234,7 +229,6 @@ describe('HttpInstrumented', () => {
     };
 
     configure({
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       tracer: mockTracer as any,
     });
 
@@ -274,7 +268,6 @@ describe('traceHttpRequest', () => {
     };
 
     configure({
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       tracer: mockTracer as any,
     });
 
@@ -314,9 +307,9 @@ describe('injectTraceContext', () => {
 
     // Mock the trace.getSpan to return our mock span
     const { context, trace } = await import('@opentelemetry/api');
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+
     vi.spyOn(trace, 'getSpan').mockReturnValue(mockSpan as any);
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+
     vi.spyOn(context, 'active').mockReturnValue({} as any);
 
     const headers = injectTraceContext({
@@ -333,7 +326,7 @@ describe('injectTraceContext', () => {
     const { context, trace } = await import('@opentelemetry/api');
     // eslint-disable-next-line unicorn/no-useless-undefined
     vi.spyOn(trace, 'getSpan').mockReturnValue(undefined);
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+
     vi.spyOn(context, 'active').mockReturnValue({} as any);
 
     const headers = injectTraceContext({

@@ -377,6 +377,7 @@ Access trace context via the `ctx` parameter:
 ```typescript
 import { trace } from 'autolemetry-edge'
 
+// Factory pattern - returns a wrapped function
 export const createUser = trace(ctx => async function createUser(email: string) {
   ctx.setAttribute('user.email', email)
   ctx.setAttribute('operation.type', 'create')
@@ -384,7 +385,21 @@ export const createUser = trace(ctx => async function createUser(email: string) 
   console.log('Function name:', ctx['code.function'])
   return { id: '123', email }
 })
+
+// Immediate execution - wraps and executes instantly (for middleware/wrappers)
+function timed<T>(operation: string, fn: () => Promise<T>): Promise<T> {
+  return trace(operation, async (ctx) => {
+    ctx.setAttribute('operation', operation);
+    return await fn();
+  });
+}
+// Executes immediately, returns Promise<T> directly
 ```
+
+**Two patterns supported:**
+
+1. **Factory pattern** `trace(ctx => (...args) => result)` – Returns a wrapped function for reuse
+2. **Immediate execution** `trace(ctx => result)` – Executes once immediately, returns the result directly
 
 ### Trace Specific Code Blocks
 

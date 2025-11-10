@@ -103,7 +103,7 @@ describe('init() customization', () => {
 
   it('passes custom instrumentations to the NodeSDK', async () => {
     const { init, sdkInstances } = await loadInitWithMocks();
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+
     const instrumentation = { name: 'http' } as any;
 
     init({ service: 'instrumented-app', instrumentations: [instrumentation] });

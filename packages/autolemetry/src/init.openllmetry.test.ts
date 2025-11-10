@@ -27,7 +27,7 @@ async function loadInitWithMocks() {
       instance.start.mockImplementation(() => {});
       instance.shutdown.mockResolvedValue();
       // Add getTracerProvider method (not in public interface but used internally)
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+
       (instance as any).getTracerProvider = vi.fn().mockReturnValue(mock());
       sdkInstances.push({ options, instance });
       return instance;
@@ -194,7 +194,7 @@ describe('init() OpenLLMetry integration', () => {
     // Should pass tracer provider to OpenLLMetry
     expect(callOptions).toBeDefined();
     // Verify getTracerProvider was called to get the provider
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+
     expect((sdkInstance as any).getTracerProvider).toHaveBeenCalled();
   });
 
