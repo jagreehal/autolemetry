@@ -29,11 +29,10 @@ describe('validateEventName()', () => {
   });
 
   it('should reject non-string event names', () => {
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     expect(() => validateEventName(123 as any)).toThrow(ValidationError);
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+
     expect(() => validateEventName(null as any)).toThrow(ValidationError);
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+
     expect(() => validateEventName(undefined as any)).toThrow(ValidationError);
   });
 
@@ -70,11 +69,10 @@ describe('validateAttributes()', () => {
   });
 
   it('should reject non-object attributes', () => {
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     expect(() => validateAttributes('string' as any)).toThrow(ValidationError);
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+
     expect(() => validateAttributes(123 as any)).toThrow(ValidationError);
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+
     expect(() => validateAttributes([] as any)).toThrow(ValidationError);
   });
 
@@ -148,7 +146,6 @@ describe('validateAttributes()', () => {
       },
     };
 
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const result = validateAttributes(attrs as any) as any;
     expect(result.level1.level2.level3.level4).toBe('[MAX_DEPTH_EXCEEDED]');
   });
@@ -159,19 +156,16 @@ describe('validateAttributes()', () => {
       scores: [1, 2, 3],
     };
 
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const result = validateAttributes(attrs as any);
     expect(result).toEqual(attrs);
   });
 
   it('should handle circular references', () => {
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const circular: any = { name: 'test' };
     circular.self = circular;
 
     const attrs = { data: circular };
 
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const result = validateAttributes(attrs) as any;
     expect(result.data).toBe('[CIRCULAR]');
   });
@@ -183,7 +177,6 @@ describe('validateAttributes()', () => {
       normalField: 'value',
     };
 
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const result = validateAttributes(attrs as any);
     expect(result?.nullable).toBeNull();
     expect(result?.undefinedField).toBeUndefined();
@@ -197,7 +190,6 @@ describe('validateAttributes()', () => {
       normalField: 'value',
     };
 
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const result = validateAttributes(attrs as any);
     expect(result?.func).toBe('[function]');
     expect(result?.symbol).toBe('[symbol]');
@@ -240,10 +232,9 @@ describe('validateEvent()', () => {
   });
 
   it('should throw on invalid attributes', () => {
-    expect(() =>
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      validateEvent('user.signup', 'invalid' as any),
-    ).toThrow(ValidationError);
+    expect(() => validateEvent('user.signup', 'invalid' as any)).toThrow(
+      ValidationError,
+    );
   });
 });
 

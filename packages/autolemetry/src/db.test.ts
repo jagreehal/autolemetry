@@ -25,7 +25,6 @@ describe('instrumentDatabase', () => {
     };
 
     configure({
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       tracer: mockTracer as any,
     });
 
@@ -71,7 +70,6 @@ describe('instrumentDatabase', () => {
     };
 
     configure({
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       tracer: mockTracer as any,
     });
 
@@ -121,7 +119,6 @@ describe('instrumentDatabase', () => {
     };
 
     configure({
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       tracer: mockTracer as any,
     });
 
@@ -158,7 +155,6 @@ describe('instrumentDatabase', () => {
     };
 
     configure({
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       tracer: mockTracer as any,
     });
 
@@ -188,7 +184,6 @@ describe('instrumentDatabase', () => {
     };
 
     configure({
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       tracer: mockTracer as any,
     });
 
@@ -228,7 +223,6 @@ describe('tracebQuery', () => {
     };
 
     configure({
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       tracer: mockTracer as any,
     });
 

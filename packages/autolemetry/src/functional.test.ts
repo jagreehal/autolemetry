@@ -762,4 +762,142 @@ describe('Functional API', () => {
       expect(spans[0]!.status.code).toBe(2); // ERROR
     });
   });
+
+  describe('Immediate execution pattern', () => {
+    it('should execute async function immediately with context', async () => {
+      const collector = createTraceCollector();
+
+      const result = await trace(async (ctx: TraceContext) => {
+        ctx.setAttribute('test.key', 'value');
+        return { data: 'test' };
+      });
+
+      expect(result).toEqual({ data: 'test' });
+
+      const spans = collector.getSpans();
+      expect(spans).toHaveLength(1);
+      expect(spans[0]!.attributes['test.key']).toBe('value');
+    });
+
+    it('should execute sync function immediately with context', () => {
+      const collector = createTraceCollector();
+
+      const result = trace((ctx: TraceContext) => {
+        ctx.setAttribute('test.key', 'sync-value');
+        return 42;
+      });
+
+      expect(result).toBe(42);
+
+      const spans = collector.getSpans();
+      expect(spans).toHaveLength(1);
+      expect(spans[0]!.attributes['test.key']).toBe('sync-value');
+    });
+
+    it('should support custom name with immediate execution', async () => {
+      const collector = createTraceCollector();
+
+      const result = await trace(
+        'custom.operation',
+        async (ctx: TraceContext) => {
+          ctx.setAttribute('operation.id', '123');
+          return 'success';
+        },
+      );
+
+      expect(result).toBe('success');
+
+      const spans = collector.getSpans();
+      expect(spans).toHaveLength(1);
+      expect(spans[0]!.name).toBe('custom.operation');
+      expect(spans[0]!.attributes['operation.id']).toBe('123');
+    });
+
+    it('should support options with immediate execution', async () => {
+      const collector = createTraceCollector();
+
+      const result = await trace(
+        { name: 'options.test', withMetrics: true },
+        async (ctx: TraceContext) => {
+          ctx.setAttribute('test.option', 'enabled');
+          return 100;
+        },
+      );
+
+      expect(result).toBe(100);
+
+      const spans = collector.getSpans();
+      expect(spans).toHaveLength(1);
+      expect(spans[0]!.name).toBe('options.test');
+      expect(spans[0]!.attributes['test.option']).toBe('enabled');
+    });
+
+    it('should distinguish between factory and immediate execution', async () => {
+      const collector = createTraceCollector();
+
+      // Factory pattern - returns a function
+      const factory = trace((ctx: TraceContext) => async (name: string) => {
+        ctx.setAttribute('user.name', name);
+        return { name };
+      });
+
+      // Immediate execution - returns result directly
+      const immediate = await trace(async (ctx: TraceContext) => {
+        ctx.setAttribute('immediate', true);
+        return 'done';
+      });
+
+      expect(typeof factory).toBe('function');
+      expect(immediate).toBe('done');
+
+      // Now call the factory
+      const factoryResult = await factory('Alice');
+      expect(factoryResult).toEqual({ name: 'Alice' });
+
+      const spans = collector.getSpans();
+      expect(spans).toHaveLength(2);
+
+      // First span is from immediate execution
+      expect(spans[0]!.attributes['immediate']).toBe(true);
+
+      // Second span is from factory call
+      expect(spans[1]!.attributes['user.name']).toBe('Alice');
+    });
+
+    it('should work with wrapper function pattern from feedback', async () => {
+      const collector = createTraceCollector();
+
+      // The exact use case from the feedback
+      function timed<T>(
+        requestId: string,
+        operation: string,
+        fn: () => Promise<T>,
+      ): Promise<T> {
+        return trace(operation, async (ctx: TraceContext) => {
+          ctx.setAttributes({
+            'request.id': requestId,
+            'operation.name': operation,
+          });
+
+          const result = await fn();
+          return result;
+        });
+      }
+
+      // Test it
+      const mockFn = async () => {
+        return { userId: '123', status: 'active' };
+      };
+
+      const result = await timed('req-456', 'fetchUser', mockFn);
+
+      expect(result).toEqual({ userId: '123', status: 'active' });
+
+      const spans = collector.getSpans();
+      expect(spans).toHaveLength(1);
+      expect(spans[0]!.name).toBe('fetchUser');
+      expect(spans[0]!.attributes['request.id']).toBe('req-456');
+      expect(spans[0]!.attributes['operation.name']).toBe('fetchUser');
+    });
+  });
 });

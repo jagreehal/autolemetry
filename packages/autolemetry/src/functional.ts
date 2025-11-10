@@ -172,6 +172,23 @@ function looksLikeTraceFactory(fn: GenericFunction): boolean {
   return false;
 }
 
+/**
+ * Check if a function that takes ctx returns another function (factory pattern)
+ * vs returning a value directly (immediate execution pattern)
+ */
+function isFactoryReturningFunction(
+  fnWithCtx: (ctx: TraceContext) => unknown,
+): boolean {
+  try {
+    const result = fnWithCtx(createDummyCtx());
+    return typeof result === 'function';
+  } catch {
+    // If the function throws when called with dummy ctx, assume it's immediate execution
+    // since factory functions typically just return a function and don't execute logic
+    return false;
+  }
+}
+
 function isTraceFactoryFunction<TArgs extends unknown[], TReturn>(
   fn:
     | ((...args: TArgs) => TReturn)
@@ -1020,10 +1037,216 @@ function wrapWithTracingSync<TArgs extends unknown[], TReturn>(
 }
 
 /**
+ * Execute a function immediately within a trace span
+ * Used for the immediate execution pattern: trace((ctx) => result)
+ */
+function executeImmediately<TReturn = unknown>(
+  fn: (ctx: TraceContext) => TReturn | Promise<TReturn>,
+  options: TracingOptions<unknown[], unknown>,
+): TReturn | Promise<TReturn> {
+  const config = getConfig();
+  const tracer = config.tracer;
+  const meter = config.meter;
+  const sampler = options.sampler || new AlwaysSampler();
+
+  // Get span name from options or use 'anonymous'
+  const spanName = options.name || 'anonymous';
+
+  const samplingContext: SamplingContext = {
+    operationName: spanName,
+    args: [],
+    metadata: {},
+  };
+
+  const shouldSample = sampler.shouldSample(samplingContext);
+  const needsTailSampling =
+    'needsTailSampling' in sampler &&
+    typeof sampler.needsTailSampling === 'function'
+      ? sampler.needsTailSampling()
+      : false;
+
+  if (!shouldSample && !needsTailSampling) {
+    return fn(createDummyCtx());
+  }
+
+  const startTime = performance.now();
+  const isRootSpan =
+    options.startNewRoot || otelTrace.getActiveSpan() === undefined;
+  const shouldAutoFlush =
+    options.autoFlush ?? getInitConfig()?.autoFlush ?? true;
+
+  const callCounter = options.withMetrics
+    ? meter.createCounter(`${spanName}.calls`, {
+        description: `Call count for ${spanName}`,
+        unit: '1',
+      })
+    : undefined;
+
+  const durationHistogram = options.withMetrics
+    ? meter.createHistogram(`${spanName}.duration`, {
+        description: `Duration for ${spanName}`,
+        unit: 'ms',
+      })
+    : undefined;
+
+  const flushIfNeeded = () => {
+    if (!shouldAutoFlush || !isRootSpan) return;
+    const queue = getAnalyticsQueue();
+    if (queue && queue.size() > 0) {
+      void queue.flush().catch((error) => {
+        const initConfig = getInitConfig();
+        const logger = initConfig?.logger;
+        if (logger?.error) {
+          if (error instanceof Error) {
+            logger.error('[autolemetry] Auto-flush failed', error);
+          } else {
+            logger.error(`[autolemetry] Auto-flush failed: ${String(error)}`);
+          }
+        }
+      });
+    }
+  };
+
+  return tracer.startActiveSpan(
+    spanName,
+    options.startNewRoot ? { root: true } : {},
+    (span) => {
+      return runInOperationContext(spanName, () => {
+        let shouldKeepSpan = true;
+
+        setSpanName(span, spanName);
+        const ctxValue = createTraceContext(span);
+
+        const handleTailSampling = (
+          success: boolean,
+          duration: number,
+          error?: unknown,
+        ) => {
+          if (
+            needsTailSampling &&
+            'shouldKeepTrace' in sampler &&
+            typeof sampler.shouldKeepTrace === 'function'
+          ) {
+            shouldKeepSpan = sampler.shouldKeepTrace(samplingContext, {
+              success,
+              duration,
+              error,
+            });
+            span.setAttribute('sampling.tail.keep', shouldKeepSpan);
+            span.setAttribute('sampling.tail.evaluated', true);
+          }
+        };
+
+        const onSuccess = (result: TReturn) => {
+          const duration = performance.now() - startTime;
+
+          callCounter?.add(1, {
+            operation: spanName,
+            status: 'success',
+          });
+
+          durationHistogram?.record(duration, {
+            operation: spanName,
+            status: 'success',
+          });
+
+          span.setStatus({ code: SpanStatusCode.OK });
+          span.setAttributes({
+            'operation.name': spanName,
+            'code.function': spanName,
+            'operation.duration': duration,
+            'operation.success': true,
+          });
+
+          handleTailSampling(true, duration);
+
+          span.end();
+          flushIfNeeded();
+          return result;
+        };
+
+        const onError = (error: unknown): never => {
+          const duration = performance.now() - startTime;
+
+          callCounter?.add(1, {
+            operation: spanName,
+            status: 'error',
+          });
+
+          durationHistogram?.record(duration, {
+            operation: spanName,
+            status: 'error',
+          });
+
+          const errorMessage =
+            error instanceof Error ? error.message : 'Unknown error';
+          const truncatedMessage = truncateErrorMessage(errorMessage);
+
+          span.setStatus({
+            code: SpanStatusCode.ERROR,
+            message: truncatedMessage,
+          });
+
+          span.setAttributes({
+            'operation.name': spanName,
+            'code.function': spanName,
+            'operation.duration': duration,
+            'operation.success': false,
+            error: true,
+            'exception.type':
+              error instanceof Error ? error.constructor.name : 'Error',
+            'exception.message': truncatedMessage,
+          });
+
+          if (error instanceof Error && error.stack) {
+            span.setAttribute(
+              'exception.stack',
+              error.stack.slice(0, MAX_ERROR_MESSAGE_LENGTH),
+            );
+          }
+
+          span.recordException(
+            error instanceof Error ? error : new Error(String(error)),
+          );
+
+          handleTailSampling(false, duration, error);
+
+          span.end();
+          flushIfNeeded();
+          throw error;
+        };
+
+        try {
+          callCounter?.add(1, {
+            operation: spanName,
+            status: 'started',
+          });
+
+          const result = fn(ctxValue);
+
+          // Check if result is a Promise
+          if (result instanceof Promise) {
+            return result.then(onSuccess, onError);
+          }
+
+          return onSuccess(result);
+        } catch (error) {
+          return onError(error);
+        }
+      });
+    },
+  );
+}
+
+/**
  * Approach 1: trace() - Zero-ceremony HOF
  *
  * Wrap a single function with automatic tracing.
  * The function receives a context object as the first parameter.
+ *
+ * Supports two patterns:
+ * 1. **Factory pattern** - Returns a traced function: `trace(ctx => (...args) => result)`
+ * 2. **Immediate execution** - Executes immediately with tracing: `trace(ctx => result)`
  *
  * @example Auto-inferred name - Plain function
  * ```typescript
@@ -1033,13 +1256,25 @@ function wrapWithTracingSync<TArgs extends unknown[], TReturn>(
  * // → Traced as "createUser"
  * ```
  *
- * @example Auto-inferred name - Factory function (with ctx access)
+ * @example Auto-inferred name - Factory pattern (with ctx access)
  * ```typescript
  * export const createUser = trace(ctx => async (data) => {
  *   ctx.setAttribute('user.id', data.id)
  *   return await db.users.create(data)
  * })
- * // → Traced as "createUser"
+ * // → Traced as "createUser", returns wrapped function
+ * ```
+ *
+ * @example Immediate execution - Execute once with tracing
+ * ```typescript
+ * // Wraps an existing function and executes immediately
+ * function timed<T>(fn: () => Promise<T>): Promise<T> {
+ *   return trace(async (ctx) => {
+ *     ctx.setAttribute('operation', 'timed')
+ *     return await fn()
+ *   })
+ * }
+ * // → Executes immediately, returns result directly
  * ```
  *
  * @example Custom name - Plain function
@@ -1050,13 +1285,22 @@ function wrapWithTracingSync<TArgs extends unknown[], TReturn>(
  * // → Traced as "user.create"
  * ```
  *
- * @example Custom name - Factory function
+ * @example Custom name - Factory pattern
  * ```typescript
  * export const createUser = trace('user.create', ctx => async (data) => {
  *   ctx.setAttribute('user.id', data.id)
  *   return await db.users.create(data)
  * })
  * // → Traced as "user.create"
+ * ```
+ *
+ * @example Custom name - Immediate execution
+ * ```typescript
+ * const result = trace('fetch.user', async (ctx) => {
+ *   ctx.setAttribute('userId', '123')
+ *   return await fetchUser('123')
+ * })
+ * // → Executes immediately with span name "fetch.user"
  * ```
  *
  * @example Full options - Plain function
@@ -1070,7 +1314,7 @@ function wrapWithTracingSync<TArgs extends unknown[], TReturn>(
  * })
  * ```
  *
- * @example Full options - Factory function
+ * @example Full options - Factory pattern
  * ```typescript
  * export const createUser = trace({
  *   name: 'user.create',
@@ -1094,12 +1338,16 @@ export function trace<TArgs extends unknown[], TReturn = unknown>(
 export function trace<TReturn = unknown>(
   fnFactory: (ctx: TraceContext) => () => TReturn,
 ): () => TReturn;
-// Overload 1d: Factory sync function - use conditional type to extract signature (MUST come before generic)
+// Overload 1d: Immediate execution - sync function with context (NEW PATTERN)
+export function trace<TReturn = unknown>(
+  fn: (ctx: TraceContext) => TReturn,
+): TReturn;
+// Overload 1e: Factory sync function - use conditional type to extract signature (MUST come before generic)
 // This overload is more specific and helps TypeScript infer types from factory functions
 export function trace<
   TFactory extends (ctx: TraceContext) => (...args: unknown[]) => unknown,
 >(fnFactory: TFactory): ExtractFunctionSignature<TFactory>;
-// Overload 1e: Generic factory sync function (fallback)
+// Overload 1f: Generic factory sync function (fallback)
 export function trace<TArgs extends unknown[], TReturn = unknown>(
   fnFactory: (ctx: TraceContext) => (...args: TArgs) => TReturn,
 ): (...args: TArgs) => TReturn;
@@ -1110,7 +1358,13 @@ export function trace<TArgs extends unknown[] = unknown[], TReturn = unknown>(
   fn: (...args: TArgs) => TReturn,
 ): (...args: TArgs) => TReturn;
 
-// Overload 2b: Name + factory sync function
+// Overload 2b: Name + immediate execution sync with context
+export function trace<TReturn = unknown>(
+  name: string,
+  fn: (ctx: TraceContext) => TReturn,
+): TReturn;
+
+// Overload 2c: Name + factory sync function
 export function trace<TArgs extends unknown[] = unknown[], TReturn = unknown>(
   name: string,
   fnFactory: (ctx: TraceContext) => (...args: TArgs) => TReturn,
@@ -1122,7 +1376,13 @@ export function trace<TArgs extends unknown[] = unknown[], TReturn = unknown>(
   fn: (...args: TArgs) => TReturn,
 ): (...args: TArgs) => TReturn;
 
-// Overload 3b: Options + factory sync function
+// Overload 3b: Options + immediate execution sync with context
+export function trace<TReturn = unknown>(
+  options: TracingOptions<[], TReturn>,
+  fn: (ctx: TraceContext) => TReturn,
+): TReturn;
+
+// Overload 3c: Options + factory sync function
 export function trace<TArgs extends unknown[] = unknown[], TReturn = unknown>(
   options: TracingOptions<TArgs, TReturn>,
   fnFactory: (ctx: TraceContext) => (...args: TArgs) => TReturn,
@@ -1138,11 +1398,15 @@ export function trace<TArgs extends unknown[] = unknown[], TReturn = unknown>(
   fn: (...args: TArgs) => Promise<TReturn>,
 ): (...args: TArgs) => Promise<TReturn>;
 
-// Overload 4c: Factory async function with no args (auto-inferred name)
+// Overload 4c: Immediate execution - async function with context (NEW PATTERN)
+export function trace<TReturn = unknown>(
+  fn: (ctx: TraceContext) => Promise<TReturn>,
+): Promise<TReturn>;
+// Overload 4d: Factory async function with no args (auto-inferred name)
 export function trace<TReturn = unknown>(
   fnFactory: (ctx: TraceContext) => () => Promise<TReturn>,
 ): () => Promise<TReturn>;
-// Overload 4d: Factory async function (auto-inferred name)
+// Overload 4e: Factory async function (auto-inferred name)
 export function trace<TArgs extends unknown[] = unknown[], TReturn = unknown>(
   fnFactory: (ctx: TraceContext) => (...args: TArgs) => Promise<TReturn>,
 ): (...args: TArgs) => Promise<TReturn>;
@@ -1153,7 +1417,13 @@ export function trace<TArgs extends unknown[] = unknown[], TReturn = unknown>(
   fn: (...args: TArgs) => Promise<TReturn>,
 ): (...args: TArgs) => Promise<TReturn>;
 
-// Overload 5b: Name + factory async function
+// Overload 5b: Name + immediate execution async with context
+export function trace<TReturn = unknown>(
+  name: string,
+  fn: (ctx: TraceContext) => Promise<TReturn>,
+): Promise<TReturn>;
+
+// Overload 5c: Name + factory async function
 export function trace<TArgs extends unknown[] = unknown[], TReturn = unknown>(
   name: string,
   fnFactory: (ctx: TraceContext) => (...args: TArgs) => Promise<TReturn>,
@@ -1165,7 +1435,13 @@ export function trace<TArgs extends unknown[] = unknown[], TReturn = unknown>(
   fn: (...args: TArgs) => Promise<TReturn>,
 ): (...args: TArgs) => Promise<TReturn>;
 
-// Overload 6b: Options + factory async function
+// Overload 6b: Options + immediate execution async with context
+export function trace<TReturn = unknown>(
+  options: TracingOptions<[], TReturn>,
+  fn: (ctx: TraceContext) => Promise<TReturn>,
+): Promise<TReturn>;
+
+// Overload 6c: Options + factory async function
 export function trace<TArgs extends unknown[] = unknown[], TReturn = unknown>(
   options: TracingOptions<TArgs, TReturn>,
   fnFactory: (ctx: TraceContext) => (...args: TArgs) => Promise<TReturn>,
@@ -1178,24 +1454,55 @@ export function trace<TArgs extends unknown[] = unknown[], TReturn = unknown>(
     | ((...args: TArgs) => Promise<TReturn>)
     | ((ctx: TraceContext) => (...args: TArgs) => TReturn)
     | ((ctx: TraceContext) => (...args: TArgs) => Promise<TReturn>)
+    | ((ctx: TraceContext) => TReturn)
+    | ((ctx: TraceContext) => Promise<TReturn>)
     | string
     | TracingOptions<TArgs, TReturn>,
   maybeFn?:
     | ((...args: TArgs) => TReturn)
     | ((...args: TArgs) => Promise<TReturn>)
     | ((ctx: TraceContext) => (...args: TArgs) => TReturn)
-    | ((ctx: TraceContext) => (...args: TArgs) => Promise<TReturn>),
-): WrappedFunction<TArgs, TReturn> {
+    | ((ctx: TraceContext) => (...args: TArgs) => Promise<TReturn>)
+    | ((ctx: TraceContext) => TReturn)
+    | ((ctx: TraceContext) => Promise<TReturn>),
+): WrappedFunction<TArgs, TReturn> | TReturn | Promise<TReturn> {
+  // Handle: trace(fn) - single argument
   if (typeof fnOrNameOrOptions === 'function') {
+    // Check if it's immediate execution pattern: (ctx) => result
+    if (
+      looksLikeTraceFactory(fnOrNameOrOptions as GenericFunction) &&
+      !isFactoryReturningFunction(
+        fnOrNameOrOptions as (ctx: TraceContext) => unknown,
+      )
+    ) {
+      // Immediate execution pattern
+      return executeImmediately(
+        fnOrNameOrOptions as (ctx: TraceContext) => TReturn | Promise<TReturn>,
+        {},
+      ) as WrappedFunction<TArgs, TReturn> | TReturn | Promise<TReturn>;
+    }
+    // Factory pattern or plain function
     return wrapFactoryWithTracing(
       fnOrNameOrOptions as (...args: TArgs) => TReturn,
       {} as TracingOptions<TArgs, TReturn>,
     );
   }
 
+  // Handle: trace(name, fn) or trace(options, fn) - two arguments
   if (typeof fnOrNameOrOptions === 'string') {
     if (!maybeFn) {
       throw new Error('trace(name, fn): fn is required');
+    }
+    // Check if it's immediate execution pattern
+    if (
+      looksLikeTraceFactory(maybeFn as GenericFunction) &&
+      !isFactoryReturningFunction(maybeFn as (ctx: TraceContext) => unknown)
+    ) {
+      // Immediate execution pattern with name
+      return executeImmediately(
+        maybeFn as (ctx: TraceContext) => TReturn | Promise<TReturn>,
+        { name: fnOrNameOrOptions },
+      ) as WrappedFunction<TArgs, TReturn> | TReturn | Promise<TReturn>;
     }
     return wrapFactoryWithTracing(
       maybeFn as (...args: TArgs) => TReturn,
@@ -1203,8 +1510,21 @@ export function trace<TArgs extends unknown[] = unknown[], TReturn = unknown>(
     );
   }
 
+  // Handle: trace(options, fn)
   if (!maybeFn) {
     throw new Error('trace(options, fn): fn is required');
+  }
+
+  // Check if it's immediate execution pattern
+  if (
+    looksLikeTraceFactory(maybeFn as GenericFunction) &&
+    !isFactoryReturningFunction(maybeFn as (ctx: TraceContext) => unknown)
+  ) {
+    // Immediate execution pattern with options
+    return executeImmediately(
+      maybeFn as (ctx: TraceContext) => TReturn | Promise<TReturn>,
+      fnOrNameOrOptions as TracingOptions<unknown[], unknown>,
+    ) as WrappedFunction<TArgs, TReturn> | TReturn | Promise<TReturn>;
   }
 
   return wrapFactoryWithTracing(

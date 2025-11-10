@@ -257,7 +257,21 @@ export const createOrder = trace((ctx) => async (order: Order) => {
   ctx.setAttribute('order.id', order.id);
   return submit(order);
 });
+
+// Immediate execution - wraps and executes instantly (for middleware/wrappers)
+function timed<T>(operation: string, fn: () => Promise<T>): Promise<T> {
+  return trace(operation, async (ctx) => {
+    ctx.setAttribute('operation', operation);
+    return await fn();
+  });
+}
+// Executes immediately, returns Promise<T> directly
 ```
+
+**Two patterns supported:**
+
+1. **Factory pattern** `trace(ctx => (...args) => result)` – Returns a wrapped function for reuse
+2. **Immediate execution** `trace(ctx => result)` – Executes once immediately, returns the result directly
 
 - Automatic span lifecycle (`start`, `end`, status, and error recording).
 - Function names feed `operation.name`, `code.function`, and analytics enrichment.

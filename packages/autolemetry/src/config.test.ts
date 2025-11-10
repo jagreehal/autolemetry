@@ -31,7 +31,6 @@ describe('configure()', () => {
     };
 
     configure({
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       tracer: mockTracer as any,
     });
 
@@ -50,7 +49,6 @@ describe('configure()', () => {
     };
 
     configure({
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       meter: mockMeter as any,
     });
 
