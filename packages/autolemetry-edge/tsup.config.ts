@@ -1,4 +1,9 @@
 import { defineConfig } from 'tsup';
+import { readFileSync } from 'fs';
+import { join } from 'path';
+
+// Read version from package.json for build-time injection
+const pkg = JSON.parse(readFileSync(join(__dirname, 'package.json'), 'utf8'));
 
 export default defineConfig({
   entry: {
@@ -23,4 +28,7 @@ export default defineConfig({
     'node:buffer',
     'cloudflare:workers',
   ],
+  define: {
+    'process.env.AUTOLEMETRY_EDGE_VERSION': JSON.stringify(pkg.version),
+  },
 });

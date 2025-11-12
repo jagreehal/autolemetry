@@ -40,9 +40,7 @@
         "!dist/**",
         "!coverage/**"
       ],
-      "outputs": [
-        "coverage/**"
-      ]
+      "outputs": []
     },
     "test:integration": {
       "dependsOn": ["^build"],
@@ -51,9 +49,7 @@
         "!dist/**",
         "!coverage/**"
       ],
-      "outputs": [
-        "coverage/**"
-      ]
+      "outputs": []
     },
     "clean": {
       "cache": false

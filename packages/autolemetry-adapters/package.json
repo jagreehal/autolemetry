@@ -96,10 +96,10 @@
   "devDependencies": {
     "@amplitude/analytics-node": "^1.5.22",
     "@arethetypeswrong/cli": "^0.18.2",
-    "@cloudflare/workers-types": "^4.20251109.0",
+    "@cloudflare/workers-types": "^4.20251111.0",
     "@prisma/client": "^6.19.0",
     "@segment/analytics-node": "^2.3.0",
-    "@types/node": "^24.10.0",
+    "@types/node": "^24.10.1",
     "@typescript-eslint/eslint-plugin": "^8.46.4",
     "@typescript-eslint/parser": "^8.46.4",
     "autolemetry": "workspace:*",

@@ -70,9 +70,9 @@
     "@opentelemetry/semantic-conventions": "^1.38.0"
   },
   "devDependencies": {
-    "@cloudflare/workers-types": "^4.20251109.0",
+    "@cloudflare/workers-types": "^4.20251111.0",
     "@opentelemetry/context-async-hooks": "^2.2.0",
-    "@types/node": "^24.10.0",
+    "@types/node": "^24.10.1",
     "rimraf": "^6.1.0",
     "tsup": "^8.5.0",
     "typescript": "^5.9.3",

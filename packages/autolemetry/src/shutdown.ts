@@ -10,26 +10,95 @@ import { resetMetrics } from './metrics';
 /**
  * Flush all pending telemetry
  *
- * - Flushes analytics queue (batched events)
- * - Force-flushes OpenTelemetry spans
+ * Flushes both analytics events and OpenTelemetry spans to their destinations.
+ * Includes timeout protection to prevent hanging in serverless environments.
  *
  * Safe to call multiple times.
  *
- * @example Manual flush
+ * @param options - Optional configuration
+ * @param options.timeout - Timeout in milliseconds (default: 2000ms)
+ *
+ * @example Manual flush in serverless
  * ```typescript
- * await flush()
+ * import { flush } from 'autolemetry';
+ *
+ * export const handler = async (event) => {
+ *   // ... process event
+ *   await flush(); // Flush before function returns
+ *   return result;
+ * };
+ * ```
+ *
+ * @example With custom timeout
+ * ```typescript
+ * await flush({ timeout: 5000 }); // 5 second timeout
  * ```
  */
-export async function flush(): Promise<void> {
-  // Flush analytics queue
-  const analyticsQueue = getAnalyticsQueue();
-  if (analyticsQueue) {
-    await analyticsQueue.flush();
-  }
+export async function flush(options?: { timeout?: number }): Promise<void> {
+  const timeout = options?.timeout ?? 2000;
 
-  // Note: OpenTelemetry spans are exported automatically by the span processor
-  // SimpleSpanProcessor exports immediately, BatchSpanProcessor exports on flush
-  // For tests, SimpleSpanProcessor should be sufficient
+  const doFlush = async () => {
+    // Flush analytics queue
+    const analyticsQueue = getAnalyticsQueue();
+    if (analyticsQueue) {
+      await analyticsQueue.flush();
+    }
+
+    // Flush OpenTelemetry spans
+    // This ensures spans are exported immediately, critical for serverless
+    const sdk = getSdk();
+    if (sdk) {
+      try {
+        // Type assertion needed as getTracerProvider is not in the public NodeSDK interface
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        const sdkAny = sdk as any;
+        if (typeof sdkAny.getTracerProvider === 'function') {
+          const tracerProvider = sdkAny.getTracerProvider();
+          if (
+            tracerProvider &&
+            typeof tracerProvider.forceFlush === 'function'
+          ) {
+            await tracerProvider.forceFlush();
+          }
+        }
+      } catch {
+        // Ignore errors when accessing tracer provider (may not be available in test mocks)
+      }
+    }
+  };
+
+  // Add timeout protection to prevent hanging
+  let timeoutHandle: NodeJS.Timeout | undefined;
+  try {
+    await Promise.race([
+      doFlush().finally(() => {
+        // Clear timeout as soon as flush completes
+        if (timeoutHandle) {
+          clearTimeout(timeoutHandle);
+        }
+      }),
+      new Promise<void>((_, reject) => {
+        timeoutHandle = setTimeout(
+          () => reject(new Error('Flush timeout')),
+          timeout,
+        );
+        // Use unref() to allow Node to exit if flush completes first
+        // This prevents the 2s delay in serverless when flush succeeds immediately
+        timeoutHandle.unref();
+      }),
+    ]);
+  } catch (error) {
+    // Clear timeout on error too
+    if (timeoutHandle) {
+      clearTimeout(timeoutHandle);
+    }
+    const logger = getLogger();
+    logger.error(
+      '[autolemetry] Flush error:',
+      error instanceof Error ? error : new Error(String(error)),
+    );
+    throw error;
+  }
 }
 
 /**
@@ -40,6 +109,9 @@ export async function flush(): Promise<void> {
  * - Cleans up resources
  *
  * Call this before process exit.
+ *
+ * Always performs cleanup even if flush fails, preventing resource leaks
+ * in serverless handlers or tests.
  *
  * @example Express server
  * ```typescript
@@ -53,19 +125,48 @@ export async function flush(): Promise<void> {
  * ```
  */
 export async function shutdown(): Promise<void> {
-  // Flush everything first
-  await flush();
+  const logger = getLogger();
+  let shutdownError: Error | null = null;
 
-  // Shutdown OpenTelemetry SDK
-  const sdk = getSdk();
-  if (sdk) {
-    await sdk.shutdown();
+  // Attempt to flush, but continue with cleanup even if it fails
+  try {
+    await flush();
+  } catch (error) {
+    const err = error instanceof Error ? error : new Error(String(error));
+    shutdownError = err;
+    logger.error(
+      '[autolemetry] Flush failed during shutdown, continuing cleanup',
+      err,
+    );
   }
 
-  // Clean up singleton Maps and queues to prevent memory leaks
-  resetAnalytics();
-  resetMetrics();
-  resetAnalyticsQueue();
+  // Always shutdown SDK and clean up resources
+  try {
+    // Shutdown OpenTelemetry SDK
+    const sdk = getSdk();
+    if (sdk) {
+      await sdk.shutdown();
+    }
+  } catch (error) {
+    const err = error instanceof Error ? error : new Error(String(error));
+    // Only store first error - flush error takes precedence
+    if (!shutdownError) {
+      shutdownError = err;
+    }
+    logger.error('[autolemetry] SDK shutdown failed', err);
+  } finally {
+    // Clean up singleton Maps and queues to prevent memory leaks
+    // This runs even if SDK shutdown fails
+    resetAnalytics();
+    resetMetrics();
+    resetAnalyticsQueue();
+  }
+
+  // Rethrow first error after cleanup completes
+  // This allows tests and CI to detect failures while still ensuring cleanup
+  if (shutdownError) {
+    throw shutdownError;
+  }
 }
 
 /**

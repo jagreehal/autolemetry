@@ -1,6 +1,5 @@
 /**
  * Configuration system for autolemetry-edge
- * Adapted from otel-cf-workers
  */
 
 import { W3CTraceContextPropagator } from '@opentelemetry/core';
@@ -34,7 +33,11 @@ const CONFIG_KEY = createContextKey('autolemetry-edge-config');
  * has its own isolated config even when multiple requests are in-flight.
  */
 export function getActiveConfig(): ResolvedEdgeConfig | null {
-  return api_context.active().getValue(CONFIG_KEY) as ResolvedEdgeConfig | null;
+  const value = api_context.active().getValue(CONFIG_KEY) as
+    | ResolvedEdgeConfig
+    | null
+    | undefined;
+  return value ?? null;
 }
 
 /**
@@ -118,7 +121,9 @@ export function parseConfig(config: EdgeConfig): ResolvedEdgeConfig {
     instrumentation: {
       instrumentGlobalFetch: config.instrumentation?.instrumentGlobalFetch ?? true,
       instrumentGlobalCache: config.instrumentation?.instrumentGlobalCache ?? false,
+      disabled: config.instrumentation?.disabled ?? false,
     },
+    adapters: config.adapters ?? [],
   };
 
   return resolved;

@@ -32,8 +32,8 @@
  * ```
  */
 
-import { trace } from '@opentelemetry/api';
-import type { Span } from '@opentelemetry/api';
+import { trace, context, SpanStatusCode } from '@opentelemetry/api';
+import type { Span, Tracer, Context } from '@opentelemetry/api';
 
 /**
  * WeakMap to store span names for active spans
@@ -149,4 +149,234 @@ export function enrichWithTraceContext<T extends Record<string, unknown>>(
  */
 export function isTracing(): boolean {
   return trace.getActiveSpan() !== undefined;
+}
+
+/**
+ * Get a tracer instance for creating custom spans
+ *
+ * Use this when you need low-level control over span lifecycle.
+ * For most use cases, prefer trace(), span(), or instrument() instead.
+ *
+ * @param name - Tracer name (usually your service or module name)
+ * @param version - Optional version string
+ * @returns OpenTelemetry Tracer instance
+ *
+ * @example Basic usage
+ * ```typescript
+ * import { getTracer } from 'autolemetry';
+ *
+ * const tracer = getTracer('my-service');
+ * const span = tracer.startSpan('custom.operation');
+ * try {
+ *   // Your logic
+ *   span.setAttribute('key', 'value');
+ * } finally {
+ *   span.end();
+ * }
+ * ```
+ *
+ * @example With AI SDK
+ * ```typescript
+ * import { getTracer } from 'autolemetry';
+ * import { generateText } from 'ai';
+ *
+ * const tracer = getTracer('ai-agent');
+ * const result = await generateText({
+ *   model: myModel,
+ *   prompt: 'Hello',
+ *   experimental_telemetry: {
+ *     isEnabled: true,
+ *     tracer,
+ *   },
+ * });
+ * ```
+ */
+export function getTracer(name: string, version?: string): Tracer {
+  return trace.getTracer(name, version);
+}
+
+/**
+ * Get the currently active span
+ *
+ * Returns undefined if no span is currently active.
+ * Useful for adding attributes or events to the current span.
+ *
+ * @returns Active span or undefined
+ *
+ * @example Adding attributes to active span
+ * ```typescript
+ * import { getActiveSpan } from 'autolemetry';
+ *
+ * const span = getActiveSpan();
+ * if (span) {
+ *   span.setAttribute('user.id', userId);
+ *   span.addEvent('User action', { action: 'click' });
+ * }
+ * ```
+ *
+ * @example Checking span status
+ * ```typescript
+ * import { getActiveSpan, SpanStatusCode } from 'autolemetry';
+ *
+ * const span = getActiveSpan();
+ * if (span?.isRecording()) {
+ *   span.setStatus({ code: SpanStatusCode.OK });
+ * }
+ * ```
+ */
+export function getActiveSpan(): Span | undefined {
+  return trace.getActiveSpan();
+}
+
+/**
+ * Get the currently active OpenTelemetry context
+ *
+ * The context contains the active span and any baggage.
+ * Useful for context propagation and custom instrumentation.
+ *
+ * @returns Current active context
+ *
+ * @example Propagating context
+ * ```typescript
+ * import { getActiveContext } from 'autolemetry';
+ *
+ * const currentContext = getActiveContext();
+ * // Pass context to another function or service
+ * ```
+ *
+ * @example With context injection
+ * ```typescript
+ * import { getActiveContext, injectTraceContext } from 'autolemetry';
+ *
+ * const headers = {};
+ * injectTraceContext(headers);
+ * // Headers now contain trace propagation data
+ * ```
+ */
+export function getActiveContext(): Context {
+  return context.active();
+}
+
+/**
+ * Run a function with a specific span set as active
+ *
+ * This is a convenience wrapper around the two-step process of
+ * setting a span in context and running code within that context.
+ *
+ * @param span - The span to set as active
+ * @param fn - Function to execute with the span active
+ * @returns The return value of the function
+ *
+ * @example Running code with a custom span
+ * ```typescript
+ * import { getTracer, runWithSpan } from 'autolemetry';
+ *
+ * const tracer = getTracer('my-service');
+ * const span = tracer.startSpan('background.job');
+ *
+ * try {
+ *   const result = await runWithSpan(span, async () => {
+ *     // Any spans created here will be children of 'background.job'
+ *     await processData();
+ *     return { success: true };
+ *   });
+ *   console.log(result);
+ * } finally {
+ *   span.end();
+ * }
+ * ```
+ *
+ * @example Testing with mock spans
+ * ```typescript
+ * import { runWithSpan } from 'autolemetry';
+ * import { InMemorySpanExporter } from 'autolemetry/testing';
+ *
+ * const mockSpan = createMockSpan();
+ * const result = runWithSpan(mockSpan, () => {
+ *   // Code under test
+ *   return myFunction();
+ * });
+ * ```
+ */
+export function runWithSpan<T>(span: Span, fn: () => T): T {
+  const ctx = trace.setSpan(context.active(), span);
+  return context.with(ctx, fn);
+}
+
+/**
+ * Finalize a span with appropriate status and optional error recording
+ *
+ * This is a convenience function that:
+ * - Records exceptions if an error is provided
+ * - Sets span status to ERROR if error exists, OK otherwise
+ * - Ends the span
+ *
+ * @param span - The span to finalize
+ * @param error - Optional error to record
+ *
+ * @example Without error (success case)
+ * ```typescript
+ * import { getTracer, finalizeSpan } from 'autolemetry';
+ *
+ * const tracer = getTracer('my-service');
+ * const span = tracer.startSpan('operation');
+ *
+ * try {
+ *   await doWork();
+ *   finalizeSpan(span);
+ * } catch (error) {
+ *   finalizeSpan(span, error);
+ *   throw error;
+ * }
+ * ```
+ *
+ * @example With error
+ * ```typescript
+ * import { getTracer, finalizeSpan } from 'autolemetry';
+ *
+ * const tracer = getTracer('my-service');
+ * const span = tracer.startSpan('operation');
+ *
+ * try {
+ *   await riskyOperation();
+ *   finalizeSpan(span);
+ * } catch (error) {
+ *   finalizeSpan(span, error); // Records exception and sets ERROR status
+ *   throw error;
+ * }
+ * ```
+ *
+ * @example In instrumentation
+ * ```typescript
+ * import { getTracer, runWithSpan, finalizeSpan } from 'autolemetry';
+ *
+ * function instrumentedQuery(query: string) {
+ *   const tracer = getTracer('db');
+ *   const span = tracer.startSpan('db.query');
+ *
+ *   return runWithSpan(span, () => {
+ *     try {
+ *       const result = executeQuery(query);
+ *       finalizeSpan(span);
+ *       return result;
+ *     } catch (error) {
+ *       finalizeSpan(span, error);
+ *       throw error;
+ *     }
+ *   });
+ * }
+ * ```
+ */
+export function finalizeSpan(span: Span, error?: unknown): void {
+  if (error) {
+    if (error instanceof Error) {
+      span.recordException(error);
+    } else {
+      span.recordException(new Error(String(error)));
+    }
+    span.setStatus({ code: SpanStatusCode.ERROR });
+  } else {
+    span.setStatus({ code: SpanStatusCode.OK });
+  }
+  span.end();
 }

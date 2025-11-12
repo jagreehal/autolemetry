@@ -47,6 +47,10 @@
     - [Creating Custom Analytics Adapters](#creating-custom-analytics-adapters)
     - [Low-Level Span Manipulation](#low-level-span-manipulation)
     - [Custom Metrics](#custom-metrics)
+  - [Serverless \& Short-lived Processes](#serverless--short-lived-processes)
+    - [Manual Flush (Recommended for Serverless)](#manual-flush-recommended-for-serverless)
+    - [Auto-Flush Spans (Opt-in)](#auto-flush-spans-opt-in)
+    - [Edge Runtimes (Cloudflare Workers, Vercel Edge)](#edge-runtimes-cloudflare-workers-vercel-edge)
   - [API Reference](#api-reference)
   - [FAQ \& Next Steps](#faq--next-steps)
 
@@ -529,7 +533,7 @@ init({
 - **Rate limiting & circuit breakers** – Prevent telemetry storms when backends misbehave.
 - **Validation** – Configurable attribute/event name lengths, maximum counts, and nesting depth.
 - **Sensitive data redaction** – Passwords, tokens, API keys, and any custom regex you provide are automatically masked before export.
-- **Auto-flush** – Analytics buffers drain when root spans end (disable with `autoFlush: false`).
+- **Auto-flush** – Analytics buffers drain when root spans end (disable with `autoFlushAnalytics: false`).
 - **Runtime flags** – Toggle metrics or swap endpoints via env vars without code edits.
 
 ```bash
@@ -551,7 +555,8 @@ init({
   sampler?: Sampler;
   version?: string;
   environment?: string;
-  autoFlush?: boolean;
+  autoFlushAnalytics?: boolean;  // Auto-flush analytics (default: true)
+  autoFlush?: boolean;           // Auto-flush spans (default: false)
   integrations?: string[] | boolean | Record<string, { enabled?: boolean }>;
   instrumentations?: NodeSDKConfiguration['instrumentations'];
   spanProcessor?: SpanProcessor;
@@ -702,18 +707,18 @@ init({
 
 ### Low-Level Span Manipulation
 
-For maximum control, use the `ctx` proxy or direct OpenTelemetry APIs:
+For maximum control, use the `ctx` proxy or the ergonomic tracer helpers:
 
 ```typescript
-import { ctx, otelTrace, context } from 'autolemetry';
+import { ctx, getTracer, getActiveSpan, runWithSpan } from 'autolemetry';
 
 export async function customWorkflow() {
   // Access current trace context anywhere (via AsyncLocalStorage)
   console.log('Current trace:', ctx.traceId);
   ctx.setAttribute('workflow.step', 'start');
 
-  // Or use OpenTelemetry APIs directly
-  const tracer = otelTrace.getTracer('my-custom-tracer');
+  // Or create custom spans with the tracer helpers
+  const tracer = getTracer('my-custom-tracer');
   const span = tracer.startSpan('custom.operation');
 
   try {
@@ -724,7 +729,44 @@ export async function customWorkflow() {
     span.end();
   }
 }
+
+// Add attributes to the currently active span
+export function enrichCurrentSpan(userId: string) {
+  const span = getActiveSpan();
+  if (span) {
+    span.setAttribute('user.id', userId);
+    span.addEvent('User identified');
+  }
+}
+
+// Run code with a specific span as active
+export async function backgroundJob() {
+  const tracer = getTracer('background-processor');
+  const span = tracer.startSpan('process.batch');
+
+  try {
+    await runWithSpan(span, async () => {
+      // Any spans created here will be children of 'process.batch'
+      await processRecords();
+    });
+    span.setStatus({ code: SpanStatusCode.OK });
+  } catch (error) {
+    span.recordException(error);
+    span.setStatus({ code: SpanStatusCode.ERROR });
+  } finally {
+    span.end();
+  }
+}
 ```
+
+**Available tracer helpers:**
+
+- `getTracer(name, version?)` - Get a tracer for creating custom spans
+- `getActiveSpan()` - Get the currently active span
+- `getActiveContext()` - Get the current OpenTelemetry context
+- `runWithSpan(span, fn)` - Execute a function with a span set as active
+
+> **Note:** For most use cases, prefer `trace()`, `span()`, or `instrument()` which handle span lifecycle automatically.
 
 ### Custom Metrics
 
@@ -761,6 +803,88 @@ export async function handleRequest(req: Request) {
 
 **Key Principle:** All these primitives work together - spans automatically capture context, metrics and analytics events inherit trace IDs, and everything flows through the same configured exporters and adapters. Build what you need, when you need it.
 
+## Serverless & Short-lived Processes
+
+For serverless environments (AWS Lambda, Vercel, Cloud Functions) and other short-lived processes, telemetry may not export before the process ends. Autolemetry provides two approaches:
+
+### Manual Flush (Recommended for Serverless)
+
+Use the `flush()` function to force-export all telemetry before the function returns:
+
+```typescript
+import { init, flush } from 'autolemetry';
+
+init({
+  service: 'my-lambda',
+  endpoint: process.env.OTEL_EXPORTER_OTLP_ENDPOINT,
+});
+
+export const handler = async (event) => {
+  // Your business logic here
+  const result = await processEvent(event);
+
+  // Force-flush telemetry before returning
+  await flush();
+
+  return result;
+};
+```
+
+The `flush()` function:
+
+- Flushes analytics events from the queue
+- Force-flushes OpenTelemetry spans to exporters
+- Includes timeout protection (default: 2000ms)
+- Safe to call multiple times
+
+**Custom timeout:**
+
+```typescript
+await flush({ timeout: 5000 }); // 5 second timeout
+```
+
+### Auto-Flush Spans (Opt-in)
+
+Enable automatic span flushing on root span completion:
+
+```typescript
+init({
+  service: 'my-lambda',
+  autoFlushAnalytics: true, // enabled by default (analytics only)
+  autoFlush: true, // flush spans on root completion
+});
+
+export const handler = trace(async (event) => {
+  // Auto-flushes when trace completes
+  return await processEvent(event);
+});
+```
+
+**Trade-offs:**
+
+- ✅ Zero boilerplate - no manual `flush()` needed
+- ✅ Guaranteed export before process ends (async functions only)
+- ⚠️ Adds ~50-200ms latency per request (network I/O)
+- ⚠️ Only needed for short-lived processes
+- ⚠️ Only applies to async traced functions (synchronous functions cannot await flush)
+
+**When to use:**
+
+- Use `autoFlush: true` for serverless functions where latency is acceptable
+- Use manual `flush()` for more control over when flushing occurs
+- Use neither for long-running services (batch export is more efficient)
+
+### Edge Runtimes (Cloudflare Workers, Vercel Edge)
+
+For edge runtimes with different constraints, use the `autolemetry-edge` package instead:
+
+```typescript
+import { init } from 'autolemetry-edge';
+// Auto-flush built-in for edge environments
+```
+
+The `autolemetry-edge` package is optimized for edge runtimes with automatic flush behavior.
+
 ## API Reference
 
 - `init(config)` – Bootstraps the SDK (call once).
@@ -791,5 +915,435 @@ Each API is type-safe, works in both ESM and CJS, and is designed to minimize bo
 2. Wrap your critical paths with `trace()` (or `Trace` decorators if you prefer classes).
 3. Point the OTLP endpoint at your favorite observability backend and optionally add analytics adapters.
 4. Expand coverage with `instrumentDatabase()`, `withTracing()`, metrics, logging, and auto-instrumentations.
+
+## Creating Custom Instrumentation
+
+Autolemetry provides utilities that make it easy to instrument any library with OpenTelemetry tracing. Whether you need to instrument an internal tool, a database driver without official support, or any other library, autolemetry's helper functions handle the complexity for you.
+
+### Quick Start Template
+
+Here's the minimal code to instrument any library:
+
+```typescript
+import { trace, SpanKind } from '@opentelemetry/api';
+import { runWithSpan, finalizeSpan } from 'autolemetry/trace-helpers';
+
+const INSTRUMENTED_FLAG = Symbol('instrumented');
+
+export function instrumentMyLibrary(client) {
+  if (client[INSTRUMENTED_FLAG]) return client;
+
+  const tracer = trace.getTracer('my-library');
+  const originalMethod = client.someMethod.bind(client);
+
+  client.someMethod = async function (...args) {
+    const span = tracer.startSpan('operation.name', {
+      kind: SpanKind.CLIENT,
+    });
+
+    span.setAttribute('operation.param', args[0]);
+
+    try {
+      const result = await runWithSpan(span, () => originalMethod(...args));
+      finalizeSpan(span);
+      return result;
+    } catch (error) {
+      finalizeSpan(span, error);
+      throw error;
+    }
+  };
+
+  client[INSTRUMENTED_FLAG] = true;
+  return client;
+}
+```
+
+### Step-by-Step Tutorial: Instrumenting Axios
+
+Let's walk through instrumenting the popular axios HTTP client:
+
+```typescript
+import { trace, SpanKind } from '@opentelemetry/api';
+import { runWithSpan, finalizeSpan } from 'autolemetry/trace-helpers';
+import type { AxiosInstance, AxiosRequestConfig, AxiosResponse } from 'axios';
+
+// Step 1: Create instrumentation flag to prevent double-instrumentation
+const INSTRUMENTED_FLAG = Symbol('axiosInstrumented');
+
+interface InstrumentedAxios {
+  [INSTRUMENTED_FLAG]?: boolean;
+}
+
+// Step 2: Define configuration for your instrumentation
+export interface InstrumentAxiosConfig {
+  tracerName?: string;
+  captureHeaders?: boolean;
+  captureRequestBody?: boolean;
+  captureResponseBody?: boolean;
+}
+
+// Step 3: Create the instrumentation function
+export function instrumentAxios(
+  axios: AxiosInstance,
+  config?: InstrumentAxiosConfig,
+): AxiosInstance {
+  const instrumented = axios as AxiosInstance & InstrumentedAxios;
+
+  // Idempotent check
+  if (instrumented[INSTRUMENTED_FLAG]) {
+    return axios;
+  }
+
+  const {
+    tracerName = 'axios-http-client',
+    captureHeaders = false,
+    captureRequestBody = false,
+    captureResponseBody = false,
+  } = config ?? {};
+
+  // Step 4: Get tracer instance
+  const tracer = trace.getTracer(tracerName);
+
+  // Step 5: Add request interceptor to start spans
+  axios.interceptors.request.use((requestConfig: AxiosRequestConfig) => {
+    const url = requestConfig.url || '';
+    const method = requestConfig.method?.toUpperCase() || 'GET';
+
+    // Step 6: Start span with appropriate attributes
+    const span = tracer.startSpan(`HTTP ${method}`, {
+      kind: SpanKind.CLIENT,
+    });
+
+    // Follow OpenTelemetry semantic conventions
+    span.setAttribute('http.method', method);
+    span.setAttribute('http.url', url);
+
+    if (captureHeaders && requestConfig.headers) {
+      span.setAttribute(
+        'http.request.headers',
+        JSON.stringify(requestConfig.headers),
+      );
+    }
+
+    if (captureRequestBody && requestConfig.data) {
+      span.setAttribute(
+        'http.request.body',
+        JSON.stringify(requestConfig.data),
+      );
+    }
+
+    // Store span in request config for response interceptor
+    (requestConfig as any).__span = span;
+
+    return requestConfig;
+  });
+
+  // Step 7: Add response interceptor to finalize spans
+  axios.interceptors.response.use(
+    (response: AxiosResponse) => {
+      const span = (response.config as any).__span;
+      if (span) {
+        span.setAttribute('http.status_code', response.status);
+
+        if (captureResponseBody && response.data) {
+          span.setAttribute(
+            'http.response.body',
+            JSON.stringify(response.data),
+          );
+        }
+
+        // Step 8: Finalize span on success
+        finalizeSpan(span);
+      }
+      return response;
+    },
+    (error) => {
+      const span = error.config?.__span;
+      if (span) {
+        if (error.response) {
+          span.setAttribute('http.status_code', error.response.status);
+        }
+        // Step 9: Finalize span on error (records exception)
+        finalizeSpan(span, error);
+      }
+      return Promise.reject(error);
+    },
+  );
+
+  // Step 10: Mark as instrumented
+  instrumented[INSTRUMENTED_FLAG] = true;
+  return axios;
+}
+
+// Usage:
+import axios from 'axios';
+import { init } from 'autolemetry';
+
+init({ service: 'my-api' });
+
+const client = axios.create({ baseURL: 'https://api.example.com' });
+instrumentAxios(client, { captureHeaders: true });
+
+// All requests are now traced
+await client.get('/users');
+```
+
+### Best Practices
+
+#### 1. Idempotent Instrumentation
+
+Always use symbols or flags to prevent double-instrumentation:
+
+```typescript
+const INSTRUMENTED_FLAG = Symbol('instrumented');
+
+export function instrument(client) {
+  if (client[INSTRUMENTED_FLAG]) {
+    return client; // Already instrumented
+  }
+
+  // ... instrumentation code ...
+
+  client[INSTRUMENTED_FLAG] = true;
+  return client;
+}
+```
+
+#### 2. Error Handling
+
+Always use try/catch with `finalizeSpan` to ensure spans are properly closed:
+
+```typescript
+try {
+  const result = await runWithSpan(span, () => operation());
+  finalizeSpan(span); // Sets OK status and ends span
+  return result;
+} catch (error) {
+  finalizeSpan(span, error); // Records exception, sets ERROR status, ends span
+  throw error;
+}
+```
+
+#### 3. Security - Don't Capture Sensitive Data
+
+Be extremely careful about what you capture in spans:
+
+```typescript
+export interface Config {
+  captureQueryText?: boolean; // Default: false for security
+  captureFilters?: boolean; // Default: false for security
+  captureHeaders?: boolean; // Default: false for security
+}
+
+function instrument(client, config) {
+  // Only capture if explicitly enabled
+  if (config.captureQueryText) {
+    span.setAttribute('db.statement', sanitize(query));
+  }
+}
+```
+
+#### 4. Follow OpenTelemetry Semantic Conventions
+
+Use standard attribute names from [OpenTelemetry Semantic Conventions](https://opentelemetry.io/docs/specs/semconv/):
+
+```typescript
+// ✅ Good - Standard conventions
+span.setAttribute('http.method', 'GET');
+span.setAttribute('http.status_code', 200);
+span.setAttribute('db.system', 'postgresql');
+span.setAttribute('db.operation', 'SELECT');
+span.setAttribute('messaging.system', 'kafka');
+
+// ❌ Bad - Custom names
+span.setAttribute('method', 'GET');
+span.setAttribute('status', 200);
+span.setAttribute('database', 'postgres');
+```
+
+#### 5. Choose the Right SpanKind
+
+```typescript
+import { SpanKind } from '@opentelemetry/api';
+
+// CLIENT: Outgoing requests, database calls, API calls
+tracer.startSpan('http.request', { kind: SpanKind.CLIENT });
+
+// SERVER: Incoming requests (usually auto-instrumented)
+tracer.startSpan('http.server', { kind: SpanKind.SERVER });
+
+// INTERNAL: Internal operations, business logic
+tracer.startSpan('process.data', { kind: SpanKind.INTERNAL });
+
+// PRODUCER: Publishing messages to queues
+tracer.startSpan('kafka.produce', { kind: SpanKind.PRODUCER });
+
+// CONSUMER: Consuming messages from queues
+tracer.startSpan('kafka.consume', { kind: SpanKind.CONSUMER });
+```
+
+#### 6. TypeScript Type Safety
+
+Make your instrumentation type-safe:
+
+```typescript
+import type { MyLibrary } from 'my-library';
+
+interface InstrumentedClient {
+  __instrumented?: boolean;
+}
+
+export function instrument<T extends MyLibrary>(client: T, config?: Config): T {
+  const instrumented = client as T & InstrumentedClient;
+  // ... instrumentation ...
+  return client;
+}
+```
+
+### Available Utilities
+
+Autolemetry provides these utilities for custom instrumentation:
+
+#### From `autolemetry/trace-helpers`
+
+```typescript
+import {
+  getTracer, // Get tracer instance
+  runWithSpan, // Execute function with span as active context
+  finalizeSpan, // Set status and end span with error handling
+  getActiveSpan, // Get currently active span
+  getTraceContext, // Get trace IDs for correlation
+  enrichWithTraceContext, // Add trace context to objects
+  getActiveContext, // Get current OpenTelemetry context
+} from 'autolemetry/trace-helpers';
+
+// Get a tracer
+const tracer = getTracer('my-service', '1.0.0');
+
+// Start a span
+const span = tracer.startSpan('operation.name');
+
+// Run code with span as active context
+const result = await runWithSpan(span, async () => {
+  // Any spans created here will be children of 'span'
+  return await doWork();
+});
+
+// Finalize span (OK status if no error, ERROR status if error provided)
+finalizeSpan(span); // Success
+finalizeSpan(span, error); // Error
+
+// Get current active span (to add attributes)
+const currentSpan = getActiveSpan();
+if (currentSpan) {
+  currentSpan.setAttribute('user.id', userId);
+}
+
+// Get trace context for logging correlation
+const context = getTraceContext();
+// { traceId: '...', spanId: '...', correlationId: '...' }
+
+// Enrich log objects with trace context
+logger.info(
+  enrichWithTraceContext({
+    message: 'User logged in',
+    userId: '123',
+  }),
+);
+// Logs: { message: '...', userId: '123', traceId: '...', spanId: '...' }
+```
+
+#### From `@opentelemetry/api`
+
+```typescript
+import {
+  trace, // Access to tracer provider
+  context, // Context management (advanced)
+  SpanKind, // CLIENT, SERVER, INTERNAL, PRODUCER, CONSUMER
+  SpanStatusCode, // OK, ERROR, UNSET
+  type Span, // Span interface
+  type Tracer, // Tracer interface
+} from '@opentelemetry/api';
+
+// Span methods
+span.setAttribute(key, value); // Add single attribute
+span.setAttributes({ key: value }); // Add multiple attributes
+span.addEvent('cache.hit'); // Add event
+span.recordException(error); // Record exception
+span.setStatus({ code: SpanStatusCode.ERROR }); // Set status
+span.end(); // End span
+```
+
+#### Semantic Conventions (Optional)
+
+For database instrumentation, you can reuse constants from `autolemetry-plugins`:
+
+```typescript
+import {
+  SEMATTRS_DB_SYSTEM,
+  SEMATTRS_DB_OPERATION,
+  SEMATTRS_DB_NAME,
+  SEMATTRS_DB_STATEMENT,
+  SEMATTRS_NET_PEER_NAME,
+  SEMATTRS_NET_PEER_PORT,
+} from 'autolemetry-plugins/common/constants';
+
+span.setAttribute(SEMATTRS_DB_SYSTEM, 'postgresql');
+span.setAttribute(SEMATTRS_DB_OPERATION, 'SELECT');
+```
+
+### Real-World Examples
+
+**Complete instrumentation template:**
+See [`INSTRUMENTATION_TEMPLATE.ts`](./INSTRUMENTATION_TEMPLATE.ts) for a comprehensive, commented template you can copy and customize.
+
+**Production example:**
+Check [`autolemetry-plugins/drizzle`](../autolemetry-plugins/src/drizzle/index.ts) for a real-world instrumentation of Drizzle ORM showing:
+
+- Idempotent instrumentation
+- Multiple instrumentation levels (client, database, session)
+- Configuration options
+- Security considerations (query text capture)
+- Full TypeScript support
+
+### When to Create Custom Instrumentation
+
+✅ **Create custom instrumentation when:**
+
+- No official `@opentelemetry/instrumentation-*` package exists
+- You're instrumenting internal tools or proprietary libraries
+- You need more control over captured data
+- You want simpler configuration than official packages
+
+❌ **Use official packages when available:**
+
+- MongoDB: `@opentelemetry/instrumentation-mongodb`
+- Mongoose: `@opentelemetry/instrumentation-mongoose`
+- PostgreSQL: `@opentelemetry/instrumentation-pg`
+- MySQL: `@opentelemetry/instrumentation-mysql2`
+- Redis: `@opentelemetry/instrumentation-redis`
+- See all: [opentelemetry-js-contrib](https://github.com/open-telemetry/opentelemetry-js-contrib/tree/main/plugins/node)
+
+### Using Official Instrumentation
+
+To use official OpenTelemetry instrumentation with autolemetry:
+
+```typescript
+import { init } from 'autolemetry';
+import { MongoDBInstrumentation } from '@opentelemetry/instrumentation-mongodb';
+import { RedisInstrumentation } from '@opentelemetry/instrumentation-redis';
+
+init({
+  service: 'my-service',
+  instrumentations: [
+    new MongoDBInstrumentation({
+      enhancedDatabaseReporting: true,
+    }),
+    new RedisInstrumentation(),
+  ],
+});
+
+// MongoDB and Redis operations are now automatically traced
+```
 
 Happy observing!

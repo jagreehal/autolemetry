@@ -96,6 +96,14 @@ export {
   createObservableGauge,
 } from './metrics-helpers';
 
+// Tracer helpers for custom spans
+export {
+  getTracer,
+  getActiveSpan,
+  getActiveContext,
+  runWithSpan,
+} from './trace-helpers';
+
 // Re-export analytics types
 export type {
   AnalyticsAdapter,

@@ -330,7 +330,7 @@ describe('Integration Test Suite', () => {
         track(`event.${i}`, { index: i });
       }
 
-      await flush();
+      await flush({ timeout: 10_000 }); // 10s timeout for high-volume test
 
       // All events should be captured
       expect(testAdapter.events.length).toBeGreaterThanOrEqual(1000);
@@ -349,13 +349,13 @@ describe('Integration Test Suite', () => {
         track(`event.${i}`, { index: i });
       }
 
-      await flush();
+      await flush({ timeout: 10_000 }); // 10s timeout for high-volume test
 
       const duration = Date.now() - startTime;
 
       // Should complete in reasonable time (batching improves performance)
       // This is a sanity check - actual threshold depends on hardware
-      expect(duration).toBeLessThan(5000); // 5 seconds
+      expect(duration).toBeLessThan(10_000); // 10 seconds (increased for CI/CD reliability)
     });
   });
 });

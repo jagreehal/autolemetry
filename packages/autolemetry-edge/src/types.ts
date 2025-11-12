@@ -73,14 +73,107 @@ export interface SamplingConfig<HS extends HeadSamplerConf = HeadSamplerConf> {
 export interface InstrumentationOptions {
   instrumentGlobalFetch?: boolean;
   instrumentGlobalCache?: boolean;
+  /**
+   * Disable instrumentation entirely (useful for local development)
+   * When enabled, the handler is returned as-is without any instrumentation
+   * @default false
+   */
+  disabled?: boolean;
 }
+
+/**
+ * Utility types
+ */
+export type OrPromise<T> = T | Promise<T>;
+
+/**
+ * Adapter event types
+ */
+export type FunnelStepStatus =
+  | 'started'
+  | 'completed'
+  | 'abandoned'
+  | 'failed'
+  | (string & {});
+
+export type OutcomeStatus =
+  | 'success'
+  | 'failure'
+  | 'partial'
+  | (string & {});
+
+export interface EdgeAdaptersEventBase {
+  [key: string]: unknown;
+  service: string;
+  timestamp: number;
+  attributes: Record<string, unknown>;
+  traceId?: string;
+  spanId?: string;
+  correlationId?: string;
+  name: string; // Normalized event name for easy access
+}
+
+export interface EdgeAdaptersTrackEvent extends EdgeAdaptersEventBase {
+  type: 'event';
+  event: string;
+}
+
+export interface EdgeAdaptersFunnelStepEvent extends EdgeAdaptersEventBase {
+  type: 'funnel-step';
+  funnel: string;
+  status: FunnelStepStatus;
+}
+
+export interface EdgeAdaptersOutcomeEvent extends EdgeAdaptersEventBase {
+  type: 'outcome';
+  operation: string;
+  outcome: OutcomeStatus;
+}
+
+export interface EdgeAdaptersValueEvent extends EdgeAdaptersEventBase {
+  type: 'value';
+  metric: string;
+  value: number;
+}
+
+export type EdgeAdaptersEvent =
+  | EdgeAdaptersTrackEvent
+  | EdgeAdaptersFunnelStepEvent
+  | EdgeAdaptersOutcomeEvent
+  | EdgeAdaptersValueEvent;
+
+export type EdgeAdaptersAdapter = (event: EdgeAdaptersEvent) => OrPromise<void>;
 
 export interface FetcherConfig {
   includeTraceContext?: boolean | ((request: Request) => boolean);
 }
 
+export interface PostProcessParams {
+  /**
+   * The request object that was passed to the fetch handler.
+   */
+  request: Request;
+  /**
+   * The generated response object.
+   */
+  response: Response;
+  /**
+   * A readable version of the span object that can be used to access the span's attributes and events.
+   */
+  readable: ReadableSpan;
+}
+
 export interface FetchHandlerConfig {
+  /**
+   * Whether to enable context propagation for incoming requests to `fetch`.
+   * This enables or disables distributed tracing from W3C Trace Context headers.
+   * @default true
+   */
   acceptTraceContext?: boolean | ((request: Request) => boolean);
+  /**
+   * Allows further customization of the generated span, based on the request/response data.
+   */
+  postProcess?: (span: Span, ctx: PostProcessParams) => void;
 }
 
 export interface HandlerConfig {
@@ -95,6 +188,7 @@ interface EdgeConfigBase {
   sampling?: SamplingConfig;
   propagator?: TextMapPropagator;
   instrumentation?: InstrumentationOptions;
+  adapters?: EdgeAdaptersAdapter[];
 }
 
 interface EdgeConfigExporter extends EdgeConfigBase {
@@ -121,6 +215,7 @@ export interface ResolvedEdgeConfig extends EdgeConfigBase {
   spanProcessors: SpanProcessor[];
   propagator: TextMapPropagator;
   instrumentation: InstrumentationOptions;
+  adapters: EdgeAdaptersAdapter[];
 }
 
 /**
@@ -168,4 +263,3 @@ export interface HandlerInstrumentation<T extends Trigger, R extends any> {
 /**
  * Utility types
  */
-export type OrPromise<T extends any> = T | Promise<T>;

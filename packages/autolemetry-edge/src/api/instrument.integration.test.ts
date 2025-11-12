@@ -172,7 +172,7 @@ describe('Handler Instrumentation - Integration Tests', () => {
   });
 
   describe('Handler with Scheduled Events', () => {
-    it('should handle scheduled events if defined', async () => {
+    it('should instrument scheduled handler', async () => {
       let scheduledCalled = false;
 
       const handler: ExportedHandler<Env> = {
@@ -188,8 +188,10 @@ describe('Handler Instrumentation - Integration Tests', () => {
         service: { name: 'test-worker' },
       });
 
+      expect(instrumented.scheduled).toBeDefined();
+
       if (instrumented.scheduled) {
-        const event = { scheduledTime: Date.now(), cron: '0 0 * * *' } as any;
+        const event = { scheduledTime: Date.now(), cron: '0 0 * * *' } as ScheduledController;
         const env = {} as Env;
         const ctx = {
           waitUntil: vi.fn(),
@@ -199,6 +201,193 @@ describe('Handler Instrumentation - Integration Tests', () => {
         await instrumented.scheduled(event, env, ctx);
 
         expect(scheduledCalled).toBe(true);
+        expect(ctx.waitUntil).toHaveBeenCalled();
+      }
+    });
+  });
+
+  describe('Handler with Queue Events', () => {
+    it('should instrument queue handler', async () => {
+      let queueCalled = false;
+      let messageCount = 0;
+
+      const handler: ExportedHandler<Env> = {
+        async queue(batch, env, ctx) {
+          queueCalled = true;
+          messageCount = batch.messages.length;
+        },
+      };
+
+      const instrumented = instrument(handler, {
+        service: { name: 'test-worker' },
+      });
+
+      expect(instrumented.queue).toBeDefined();
+
+      if (instrumented.queue) {
+        const batch = {
+          messages: [
+            { id: '1', body: 'message1', timestamp: new Date() },
+            { id: '2', body: 'message2', timestamp: new Date() },
+          ],
+          queue: 'test-queue',
+          ackAll: vi.fn(),
+          retryAll: vi.fn(),
+        } as MessageBatch;
+        const env = {} as Env;
+        const ctx = {
+          waitUntil: vi.fn(),
+          passThroughOnException: vi.fn(),
+        } as any;
+
+        await instrumented.queue(batch, env, ctx);
+
+        expect(queueCalled).toBe(true);
+        expect(messageCount).toBe(2);
+        expect(ctx.waitUntil).toHaveBeenCalled();
+      }
+    });
+
+    it('should track message ack operations', async () => {
+      const handler: ExportedHandler<Env> = {
+        async queue(batch, env, ctx) {
+          // Ack individual messages
+          batch.messages[0].ack();
+          batch.messages[1].ack();
+        },
+      };
+
+      const instrumented = instrument(handler, {
+        service: { name: 'test-worker' },
+      });
+
+      if (instrumented.queue) {
+        const messages = [
+          { id: '1', body: 'message1', timestamp: new Date(), ack: vi.fn(), retry: vi.fn() },
+          { id: '2', body: 'message2', timestamp: new Date(), ack: vi.fn(), retry: vi.fn() },
+        ];
+        const batch = {
+          messages,
+          queue: 'test-queue',
+          ackAll: vi.fn(),
+          retryAll: vi.fn(),
+        } as MessageBatch;
+        const env = {} as Env;
+        const ctx = {
+          waitUntil: vi.fn(),
+          passThroughOnException: vi.fn(),
+        } as any;
+
+        await instrumented.queue(batch, env, ctx);
+
+        // Verify ack was called on both messages
+        expect(messages[0].ack).toHaveBeenCalled();
+        expect(messages[1].ack).toHaveBeenCalled();
+      }
+    });
+
+    it('should track message retry operations', async () => {
+      const handler: ExportedHandler<Env> = {
+        async queue(batch, env, ctx) {
+          // Retry a message
+          batch.messages[0].retry();
+        },
+      };
+
+      const instrumented = instrument(handler, {
+        service: { name: 'test-worker' },
+      });
+
+      if (instrumented.queue) {
+        const messages = [
+          { id: '1', body: 'message1', timestamp: new Date(), ack: vi.fn(), retry: vi.fn() },
+        ];
+        const batch = {
+          messages,
+          queue: 'test-queue',
+          ackAll: vi.fn(),
+          retryAll: vi.fn(),
+        } as MessageBatch;
+        const env = {} as Env;
+        const ctx = {
+          waitUntil: vi.fn(),
+          passThroughOnException: vi.fn(),
+        } as any;
+
+        await instrumented.queue(batch, env, ctx);
+
+        // Verify retry was called
+        expect(messages[0].retry).toHaveBeenCalled();
+      }
+    });
+
+    it('should track ackAll operation', async () => {
+      const handler: ExportedHandler<Env> = {
+        async queue(batch, env, ctx) {
+          batch.ackAll();
+        },
+      };
+
+      const instrumented = instrument(handler, {
+        service: { name: 'test-worker' },
+      });
+
+      if (instrumented.queue) {
+        const ackAllFn = vi.fn();
+        const batch = {
+          messages: [
+            { id: '1', body: 'message1', timestamp: new Date() },
+            { id: '2', body: 'message2', timestamp: new Date() },
+          ],
+          queue: 'test-queue',
+          ackAll: ackAllFn,
+          retryAll: vi.fn(),
+        } as MessageBatch;
+        const env = {} as Env;
+        const ctx = {
+          waitUntil: vi.fn(),
+          passThroughOnException: vi.fn(),
+        } as any;
+
+        await instrumented.queue(batch, env, ctx);
+
+        expect(ackAllFn).toHaveBeenCalled();
+      }
+    });
+  });
+
+  describe('Handler with Email Events', () => {
+    it('should instrument email handler', async () => {
+      let emailCalled = false;
+
+      const handler: ExportedHandler<Env> = {
+        async email(message, env, ctx) {
+          emailCalled = true;
+        },
+      };
+
+      const instrumented = instrument(handler, {
+        service: { name: 'test-worker' },
+      });
+
+      expect(instrumented.email).toBeDefined();
+
+      if (instrumented.email) {
+        const message = {
+          from: 'sender@example.com',
+          to: 'recipient@example.com',
+          headers: new Headers({ subject: 'Test Email' }),
+        } as ForwardableEmailMessage;
+        const env = {} as Env;
+        const ctx = {
+          waitUntil: vi.fn(),
+          passThroughOnException: vi.fn(),
+        } as any;
+
+        await instrumented.email(message, env, ctx);
+
+        expect(emailCalled).toBe(true);
+        expect(ctx.waitUntil).toHaveBeenCalled();
       }
     });
   });

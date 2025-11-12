@@ -24,7 +24,7 @@ init({
 const metrics = new Metrics('example');
 
 // Example: Basic traced function
-export const createUser = trace((ctx: TraceContext) => async (name: string, email: string) => {
+export const createUser = trace((ctx) => async (name: string, email: string) => {
   console.log(`Creating user: ${name} (${email})`);
   console.log(`Trace ID: ${ctx.traceId}`);
   

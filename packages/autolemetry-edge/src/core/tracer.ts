@@ -1,6 +1,5 @@
 /**
  * Lightweight WorkerTracer for edge environments
- * Ported and adapted from @microlabs/otel-cf-workers
  */
 
 import type {

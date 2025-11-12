@@ -1,6 +1,10 @@
 /**
  * Durable Objects instrumentation for Cloudflare Workers
- * Adapted from otel-cf-workers with autolemetry-edge architecture
+ * 
+ * Note: This file uses Cloudflare Workers types (DurableObjectId, DurableObjectState, etc.)
+ * which are globally available via @cloudflare/workers-types when listed in tsconfig.json.
+ * These types are devDependencies only - they're not runtime dependencies.
+ * At runtime, Cloudflare Workers runtime provides the actual implementations.
  */
 
 import {
@@ -10,11 +14,6 @@ import {
   SpanStatusCode,
   SpanKind,
 } from '@opentelemetry/api';
-import {
-  SEMATTRS_HTTP_METHOD,
-  SEMATTRS_HTTP_URL,
-  SEMATTRS_HTTP_STATUS_CODE,
-} from '@opentelemetry/semantic-conventions';
 import type { ConfigurationOption } from '../types';
 import { createInitialiser, setConfig } from '../core/config';
 import { wrap } from '../instrumentation/common';
@@ -65,8 +64,8 @@ function instrumentDOFetch(
       {
         kind: SpanKind.SERVER,
         attributes: {
-          [SEMATTRS_HTTP_METHOD]: request.method,
-          [SEMATTRS_HTTP_URL]: request.url,
+          'http.request.method': request.method,
+          'url.full': request.url,
           'do.id': id.toString(),
           'do.id.name': id.name || '',
           'faas.trigger': 'http',
@@ -79,7 +78,7 @@ function instrumentDOFetch(
           const response = await fetchFn.call(this, request);
 
           span.setAttributes({
-            [SEMATTRS_HTTP_STATUS_CODE]: response.status,
+            'http.response.status_code': response.status,
           });
 
           if (response.ok) {
