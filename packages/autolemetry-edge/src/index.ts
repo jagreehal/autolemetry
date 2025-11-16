@@ -52,6 +52,34 @@ export {
 // Handler instrumentation (for Cloudflare Workers)
 export { instrument } from './api/instrument';
 export { instrumentDO } from './api/durable-objects';
+export { instrumentWorkflow } from './api/workflows';
+
+// Bindings instrumentation (auto-applied, but can be used manually)
+export {
+  instrumentKV,
+  instrumentR2,
+  instrumentD1,
+  instrumentServiceBinding,
+  instrumentBindings,
+} from './instrumentation/bindings';
+
+// Adapters hook
+export {
+  createEdgeAdapters,
+  getEdgeAdapters,
+  getEventName,
+  type EdgeAdapters,
+  type EdgeAdaptersEvent,
+  type EdgeAdaptersFunnelStepEvent,
+  type EdgeAdaptersOutcomeEvent,
+  type EdgeAdaptersTrackEvent,
+  type EdgeAdaptersValueEvent,
+  type EdgeAdaptersTransport,
+  type EdgeAdaptersDispatchOptions,
+  type AdaptersDeliveryMode,
+  type FunnelStepStatus,
+  type OutcomeStatus,
+} from './api/adapters';
 
 // Logger (zero dependencies!)
 export {
@@ -78,6 +106,7 @@ export type {
   TraceFlushableSpanProcessor,
   InitialSpanInfo,
   HandlerInstrumentation,
+  EdgeAdaptersAdapter,
 } from './types';
 
 // Re-export OpenTelemetry APIs for convenience

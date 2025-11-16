@@ -6,14 +6,19 @@
   "private": true,
   "type": "module",
   "scripts": {
-    "dev": "alchemy dev"
+    "dev": "alchemy dev",
+    "type-check": "tsc --noEmit"
   },
   "keywords": [],
   "author": "",
   "license": "ISC",
-  "packageManager": "pnpm@10.21.0",
+  "packageManager": "pnpm@10.22.0",
   "dependencies": {
-    "alchemy": "^0.77.1",
+    "alchemy": "^0.77.5",
     "autolemetry-edge": "workspace:*"
+  },
+  "devDependencies": {
+    "@cloudflare/workers-types": "^4.20251115.0",
+    "typescript": "^5.9.3"
   }
 }

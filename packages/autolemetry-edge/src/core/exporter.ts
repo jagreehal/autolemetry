@@ -1,6 +1,6 @@
 /**
  * Lightweight OTLP exporter for edge environments
- * Ported and adapted from @microlabs/otel-cf-workers
+ * Ported and adapted from @microlabs/
  *
  * This exporter is much smaller than the standard @opentelemetry/exporter-trace-otlp-http
  * because it uses fetch() directly instead of Node.js http/https modules.
@@ -13,7 +13,9 @@ import { JsonTraceSerializer } from '@opentelemetry/otlp-transformer';
 import type { SpanExporter } from '@opentelemetry/sdk-trace-base';
 import type { OTLPExporterConfig } from '../types';
 
-const PACKAGE_VERSION = '0.1.0'; // TODO: Auto-inject from package.json
+// Version is injected at build time via tsup define
+// This avoids runtime filesystem access which isn't available in edge environments
+const PACKAGE_VERSION = process.env.AUTOLEMETRY_EDGE_VERSION || '0.1.1';
 
 const defaultHeaders: Record<string, string> = {
   accept: 'application/json',

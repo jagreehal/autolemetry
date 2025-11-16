@@ -19,7 +19,7 @@ npm install autolemetry-edge @opentelemetry/api
 ### Complete Example: API Worker with Tracing
 
 ```typescript
-import { trace, createEdgeLogger, instrument } from 'autolemetry-edge'
+import { trace, createEdgeLogger, instrument, getEdgeAdapters } from 'autolemetry-edge'
 import { SamplingPresets } from 'autolemetry-edge/sampling'
 
 export interface Env {
@@ -401,6 +401,44 @@ function timed<T>(operation: string, fn: () => Promise<T>): Promise<T> {
 1. **Factory pattern** `trace(ctx => (...args) => result)` – Returns a wrapped function for reuse
 2. **Immediate execution** `trace(ctx => result)` – Executes once immediately, returns the result directly
 
+### Edge Analytics Hook
+
+Use `createEdgeAdapters` to plug in your own lightweight adapter for product analytics platforms from edge runtimes. You provide a transport function (PostHog HTTP API, Segment webhook, Durable Object, etc.) and decide whether to `await` it or fire-and-forget via `ctx.waitUntil()`.
+
+```typescript
+import { createEdgeAdapters } from 'autolemetry-edge'
+
+const analytics = createEdgeAdapters({
+  transport: async (event) => {
+    await fetch('https://analytics.example.com/events', {
+      method: 'POST',
+      headers: { 'content-type': 'application/json' },
+      body: JSON.stringify(event)
+    })
+  }
+})
+
+export default {
+  async fetch(request: Request, env: Env, ctx: ExecutionContext) {
+    const requestAnalytics = analytics.bind({
+      waitUntil: (promise) => ctx.waitUntil(promise) // optional convenience
+    })
+
+    // Fire-and-forget delivery (default)
+    requestAnalytics.trackEvent('user.signup', { plan: 'pro' })
+
+    // Opt-in to await completion for tests or control-plane paths
+    await requestAnalytics.trackEvent('billing.invoice.sent', { userId: '123' }, { delivery: 'await' })
+
+    return new Response('ok')
+  }
+}
+```
+
+The hook automatically enriches events with the active service name and trace context (`traceId`, `spanId`, `correlationId`) when available.
+
+Create the analytics instance once (outside the handler) and use `.bind()` inside your handler to reuse the transport while layering on per-request helpers like `ctx.waitUntil`.
+
 ### Trace Specific Code Blocks
 
 Use `span()` to trace smaller blocks of code without wrapping an entire function.
@@ -490,11 +528,16 @@ export const updateUser = withUserTracing(async function updateUser(id, data) {
 Instrument Cloudflare Workers fetch handlers to automatically create HTTP spans:
 
 ```typescript
-import { trace, createEdgeLogger, instrument } from 'autolemetry-edge'
+import { trace, createEdgeLogger, instrument, getEdgeAdapters, type EdgeAdaptersAdapter, type EdgeAdaptersEvent } from 'autolemetry-edge'
 
 export interface Env {
   OTLP_ENDPOINT: string
   API_KEY: string
+  POSTHOG_API_KEY?: string
+  ANALYTICS_WEBHOOK_URL?: string
+  MY_KV: KVNamespace
+  MY_R2: R2Bucket
+  MY_D1: D1Database
 }
 
 const log = createEdgeLogger('my-worker')
@@ -508,33 +551,103 @@ export const createUser = trace({
   return { id: '123', email }
 })
 
+// Reusable adapter factory functions
+function createPostHogAdapter(apiKey: string | undefined): EdgeAdaptersAdapter {
+  return async (event: EdgeAdaptersEvent) => {
+    if (!apiKey) return
+    
+    await fetch('https://us.i.posthog.com/capture/', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        api_key: apiKey,
+        event: event.name,
+        properties: event.attributes,
+        distinct_id: event.attributes.userId || 'anonymous',
+        timestamp: new Date(event.timestamp).toISOString(),
+      }),
+    });
+  }
+}
+
+function createWebhookAdapter(url: string | undefined): EdgeAdaptersAdapter {
+  return async (event: EdgeAdaptersEvent) => {
+    if (!url) return
+    await fetch(url, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(event),
+    });
+  }
+}
+
 const handler: ExportedHandler<Env> = {
   async fetch(request, env, ctx): Promise<Response> {
+    // Cloudflare bindings are automatically instrumented!
+    // All KV, R2, D1, and Service Binding operations create spans automatically
+    const value = await env.MY_KV.get('key') // Creates span: "KV MY_KV: get"
+    await env.MY_R2.put('object', data)      // Creates span: "R2 MY_R2: put"
+    const result = await env.MY_D1.prepare('SELECT * FROM users').first() // Creates span: "D1 MY_D1: first"
+    
     const user = await createUser('test@example.com')
+    
+    // Use adapters from config - automatically bound to ctx.waitUntil
+    const adapters = getEdgeAdapters(ctx)
+    if (adapters) {
+      adapters.trackEvent('user.created', { userId: user.id })
+    }
+    
     return Response.json(user)
   }
 }
 
-export default instrument(handler, (env: Env) => ({
-  exporter: {
-    url: env.OTLP_ENDPOINT,
-    headers: { 'x-api-key': env.API_KEY }
-  },
-  service: {
-    name: 'my-worker',
-    version: '1.0.0'
+export default instrument(handler, (env: Env) => {
+  // Create adapter instances - reusable across handlers
+  const postHogAdapter = createPostHogAdapter(env.POSTHOG_API_KEY)
+  const webhookAdapter = createWebhookAdapter(env.ANALYTICS_WEBHOOK_URL)
+
+  return {
+    exporter: {
+      url: env.OTLP_ENDPOINT,
+      headers: { 'x-api-key': env.API_KEY }
+    },
+    service: {
+      name: 'my-worker',
+      version: '1.0.0'
+    },
+    handlers: {
+      fetch: {
+        // Customize fetch spans with postProcess callback
+        postProcess: (span, { request, response, readable }) => {
+          // Add custom attributes based on request/response
+          if (request.url.includes('/api/')) {
+            span.setAttribute('api.endpoint', new URL(request.url).pathname)
+          }
+          if (response.status >= 500) {
+            span.setAttribute('error.severity', 'high')
+          }
+        }
+      }
+    },
+    adapters: [
+      postHogAdapter,
+      webhookAdapter,
+    ],
   }
-}))
+})
 ```
 
 This creates:
+
 - HTTP span with method, URL, and status code
 - Nested business logic spans
 - Structured logs with trace correlation
 - Context propagation across async boundaries
 - Span flushing via `ExecutionContext.waitUntil()`
+- **Automatic instrumentation of Cloudflare bindings** (KV, R2, D1, Service Bindings)
 
 **wrangler.toml:**
+
 ```toml
 name = "my-worker"
 main = "src/index.ts"
@@ -543,6 +656,7 @@ compatibility_flags = ["nodejs_compat"]
 ```
 
 **Set secrets:**
+
 ```bash
 wrangler secret put OTLP_ENDPOINT
 wrangler secret put API_KEY
@@ -582,6 +696,7 @@ export const CounterDO = instrumentDO(Counter, (env: Env) => ({
 ```
 
 This creates:
+
 - Spans for `fetch()` with HTTP attributes
 - Spans for `alarm()` calls
 - Cold start tracking via `faas.coldstart` attribute
@@ -589,11 +704,219 @@ This creates:
 - Durable Object attributes: `do.id`, `do.id.name`
 
 **wrangler.toml:**
+
 ```toml
 [[durable_objects.bindings]]
 name = "COUNTER"
 class_name = "CounterDO"
 script_name = "your-worker-name"
+```
+
+### Scheduled/Cron Handler Instrumentation
+
+Instrument scheduled handlers to automatically trace cron jobs:
+
+```typescript
+import { instrument } from 'autolemetry-edge'
+
+const handler: ExportedHandler<Env> = {
+  async scheduled(event, env, ctx) {
+    // Your scheduled task logic
+    await processScheduledTask(event.cron)
+  }
+}
+
+export default instrument(handler, (env: Env) => ({
+  exporter: { url: env.OTLP_ENDPOINT },
+  service: { name: 'scheduled-worker', version: '1.0.0' }
+}))
+```
+
+This creates spans with:
+
+- Name: `scheduledHandler {cron}`
+- Span kind: `INTERNAL`
+- Attributes: `faas.trigger` (timer), `faas.cron`, `faas.scheduled_time` (ISO format), `faas.coldstart`
+
+**wrangler.toml:**
+
+```toml
+[[triggers.crons]]
+cron = "0 0 * * *"  # Run daily at midnight
+```
+
+### Queue Handler Instrumentation
+
+Instrument queue handlers to automatically trace message processing:
+
+```typescript
+import { instrument } from 'autolemetry-edge'
+
+const handler: ExportedHandler<Env> = {
+  async queue(batch, env, ctx) {
+    for (const message of batch.messages) {
+      await processMessage(message)
+    }
+  }
+}
+
+export default instrument(handler, (env: Env) => ({
+  exporter: { url: env.OTLP_ENDPOINT },
+  service: { name: 'queue-worker', version: '1.0.0' }
+}))
+```
+
+This creates spans with:
+
+- Name: `queueHandler {queue-name}`
+- Span kind: `CONSUMER`
+- Attributes: `faas.trigger` (pubsub), `queue.name`, `faas.coldstart`
+- Message tracking attributes (set on completion):
+  - `queue.messages_count` - Total number of messages
+  - `queue.messages_success` - Number of successfully acked messages
+  - `queue.messages_failed` - Number of retried messages
+  - `queue.batch_success` - Whether all messages were acked
+  - `queue.implicitly_acked` - Messages acked implicitly (via ackAll)
+  - `queue.implicitly_retried` - Messages retried implicitly (via retryAll)
+  - `queue.message_attempts` - Number of retry attempts (from Cloudflare Queues API)
+- Events: `messageAck`, `messageRetry`, `ackAll`, `retryAll` (with message IDs, timestamps, and retry delays)
+- Retry delay tracking: When retrying with `delaySeconds`, adds `queue.retry_delay_seconds` attribute
+- Content type tracking: When retrying with `contentType`, adds `queue.message.content_type` attribute
+
+**wrangler.toml:**
+
+```toml
+[[queues.consumers]]
+queue = "my-queue"
+max_batch_size = 10
+```
+
+### Email Handler Instrumentation
+
+Instrument email handlers to automatically trace email processing:
+
+```typescript
+import { instrument } from 'autolemetry-edge'
+
+const handler: ExportedHandler<Env> = {
+  async email(message, env, ctx) {
+    // Process incoming email
+    await forwardEmail(message)
+  }
+}
+
+export default instrument(handler, (env: Env) => ({
+  exporter: { url: env.OTLP_ENDPOINT },
+  service: { name: 'email-worker', version: '1.0.0' }
+}))
+```
+
+This creates spans with:
+
+- Name: `emailHandler {to}`
+- Span kind: `CONSUMER`
+- Attributes: `faas.trigger` (other), `messaging.destination.name`, `rpc.message.id`, `email.header.*` (all headers), `faas.coldstart`
+
+### Fetch Span Customization
+
+Customize fetch handler spans using the `postProcess` callback:
+
+```typescript
+export default instrument(handler, (env: Env) => ({
+  exporter: { url: env.OTLP_ENDPOINT },
+  service: { name: 'my-worker', version: '1.0.0' },
+  handlers: {
+    fetch: {
+      postProcess: (span, { request, response, readable }) => {
+        // Add custom attributes based on request/response
+        const url = new URL(request.url)
+        if (url.pathname.startsWith('/api/')) {
+          span.setAttribute('api.version', url.pathname.split('/')[2])
+        }
+        if (response.status >= 400) {
+          span.setAttribute('error.category', response.status >= 500 ? 'server' : 'client')
+        }
+        // Access readable span for advanced use cases
+        const duration = readable.endTime[0] - readable.startTime[0]
+        if (duration > 1000) {
+          span.setAttribute('performance.slow', true)
+        }
+      }
+    }
+  }
+}))
+```
+
+### Disable Instrumentation for Local Development
+
+Disable all instrumentation for local development:
+
+```typescript
+export default instrument(handler, (env: Env) => ({
+  exporter: { url: env.OTLP_ENDPOINT },
+  service: { name: 'my-worker', version: '1.0.0' },
+  instrumentation: {
+    disabled: process.env.NODE_ENV === 'development' // Skip instrumentation in dev
+  }
+}))
+```
+
+When disabled, handlers are returned as-is without any instrumentation overhead.
+
+### Cloudflare Workflows Instrumentation
+
+Instrument Cloudflare Workflows to automatically trace workflow execution, steps, sleeps, and retries:
+
+```typescript
+import { WorkflowEntrypoint } from 'cloudflare:workers'
+import { instrumentWorkflow, trace } from 'autolemetry-edge'
+
+export class CheckoutWorkflow extends WorkflowEntrypoint {
+  async run(event, step) {
+    // Each step.do() creates a span automatically
+    const paymentResult = await step.do('submit payment', async () => {
+      return await submitToPaymentProcessor(event.params.payment)
+    })
+
+    // step.sleep() also creates a span
+    await step.sleep('wait for feedback', '2 days')
+
+    await step.do('send feedback email', sendFeedbackEmail)
+  }
+}
+
+export const CheckoutWorkflowInstrumented = instrumentWorkflow(
+  CheckoutWorkflow,
+  'checkout-workflow',
+  (env: Env) => ({
+    exporter: {
+      url: env.OTLP_ENDPOINT,
+      headers: { 'x-api-key': env.API_KEY }
+    },
+    service: { name: 'checkout-workflow', version: '1.0.0' }
+  })
+)
+```
+
+This creates spans with:
+
+- Name: `Workflow {workflow-name}: run` (main workflow execution)
+- Span kind: `INTERNAL`
+- Attributes: `workflow.name`, `faas.trigger` (workflow), `faas.coldstart`, `workflow.id`, `workflow.run_id`
+- Nested spans for each `step.do()`: `Workflow {name}: {step-name}`
+- Nested spans for each `step.sleep()`: `Workflow {name}: sleep {sleep-name}`
+- Automatic retry tracking via step operations
+
+**wrangler.toml:**
+
+```toml
+workflows = [
+  {
+    name = "checkout-workflow"
+    binding = "CHECKOUT"
+    class_name = "CheckoutWorkflowInstrumented"
+  }
+]
 ```
 
 ## Adaptive Sampling
@@ -623,6 +946,7 @@ tailSampler: createAdaptiveTailSampler({
 ```
 
 Available samplers:
+
 - `createAdaptiveTailSampler()` - Baseline rate plus errors and slow requests
 - `createErrorOnlyTailSampler()` - Only errors
 - `createSlowOnlyTailSampler()` - Only slow requests
@@ -656,6 +980,7 @@ const response = await fetch('https://api.example.com/users')
 ```
 
 Creates a span with:
+
 - Name: `GET api.example.com`
 - Attributes: `http.request.method`, `url.full`, `http.response.status_code`
 - Automatic trace context propagation
@@ -678,10 +1003,58 @@ Disable if needed:
 export default instrument(handler, {
   instrumentation: {
     instrumentGlobalFetch: false,
-    instrumentGlobalCache: false
+    instrumentGlobalCache: false,
+    disabled: false // Set to true to disable all instrumentation (useful for local dev)
   }
 })
 ```
+
+### Cloudflare Bindings Auto-Instrumentation
+
+All Cloudflare bindings in your environment are automatically instrumented when using `instrument()`:
+
+- **KV Namespaces**: `get()`, `put()`, `delete()`, `list()` operations
+- **R2 Buckets**: `get()`, `put()`, `delete()`, `list()` operations
+- **D1 Databases**: `prepare()`, `exec()`, and prepared statement methods (`first()`, `run()`, `all()`, `raw()`)
+- **Service Bindings**: `fetch()` calls to service bindings
+
+**Example:**
+
+```typescript
+const handler: ExportedHandler<Env> = {
+  async fetch(request, env, ctx) {
+    // All these operations are automatically traced!
+    await env.MY_KV.get('key')                    // Span: "KV MY_KV: get"
+    await env.MY_KV.put('key', 'value')          // Span: "KV MY_KV: put"
+    await env.MY_R2.get('object')                // Span: "R2 MY_R2: get"
+    await env.MY_D1.prepare('SELECT * FROM users').first() // Span: "D1 MY_D1: first"
+    await env.MY_SERVICE.fetch(request)          // Span: "Service MY_SERVICE: GET"
+    
+    return new Response('OK')
+  }
+}
+```
+
+**Manual Instrumentation:**
+
+You can also manually instrument specific bindings if needed:
+
+```typescript
+import { instrumentKV, instrumentR2, instrumentD1, instrumentServiceBinding } from 'autolemetry-edge'
+
+// Manually instrument bindings
+env.MY_KV = instrumentKV(env.MY_KV, 'my-kv-namespace')
+env.MY_R2 = instrumentR2(env.MY_R2, 'my-r2-bucket')
+env.MY_D1 = instrumentD1(env.MY_D1, 'my-d1-database')
+env.MY_SERVICE = instrumentServiceBinding(env.MY_SERVICE, 'my-service')
+```
+
+**Span Attributes:**
+
+- **KV**: `db.system` (cloudflare-kv), `db.operation`, `db.namespace`, `db.key`, `db.cache_hit`, `db.result.type`
+- **R2**: `db.system` (cloudflare-r2), `db.operation`, `db.bucket`, `db.key`, `db.result.size`, `db.result.etag`, `db.result.content_type`
+- **D1**: `db.system` (cloudflare-d1), `db.operation`, `db.name`, `db.statement`, `db.result.rows_count`
+- **Service Bindings**: `rpc.system` (cloudflare-service-binding), `rpc.service`, `http.request.method`, `http.response.status_code`
 
 ## Composition Utilities
 
@@ -774,28 +1147,6 @@ Available utilities:
 - `memoize(fn)` - Cache expensive operations
 - `retry(fn, options)` - Retry on failure
 
-## Bundle Size
-
-```
-Core bundle (index.js):    24.58KB minified
-Shared chunk:              15.04KB (included in index.js)
-Sampling strategies:       3.40KB (optional, standalone)
-Compose utilities:         1.59KB (optional, standalone)
-Instrumentation exports:   152B (re-exports only)
-Testing utilities:         68B (re-exports only)
-──────────────────────────────────────────────────
-Total source:              ~6,797 LOC
-Main bundle (index.js):    24.58KB minified (~7.5KB gzipped)
-With sampling:             +3.40KB (~1KB gzipped)
-With compose:              +1.59KB (~0.5KB gzipped)
-Full bundle (all):         ~43KB minified (~13KB gzipped)
-```
-
-Tree-shakeable exports:
-- Core only: `import { trace } from 'autolemetry-edge'` → 24.58KB
-- With sampling: `import { SamplingPresets } from 'autolemetry-edge/sampling'` → +3.40KB
-- With compose: `import { compose } from 'autolemetry-edge/compose'` → +1.59KB
-
 ## API Reference
 
 ### Core Exports
@@ -804,6 +1155,9 @@ Tree-shakeable exports:
 - `withTracing()` - Create composable tracing middleware
 - `instrument()` - Instrument Cloudflare Workers handlers
 - `instrumentDO()` - Instrument Durable Object classes
+- `instrumentWorkflow()` - Instrument Cloudflare Workflows
+- `instrumentKV()`, `instrumentR2()`, `instrumentD1()`, `instrumentServiceBinding()` - Manually instrument Cloudflare bindings
+- `instrumentBindings()` - Auto-instrument all bindings in an environment
 - `createEdgeLogger()` - Create structured logger with trace correlation
 - `getEdgeTraceContext()` - Get current trace context
 
@@ -843,6 +1197,7 @@ Environment-based configuration resolution. Per-request config isolation prevent
 ## Testing
 
 163 tests covering:
+
 - Unit tests for all core components
 - Integration tests for handler instrumentation
 - Distributed trace scenarios
@@ -852,4 +1207,3 @@ Environment-based configuration resolution. Per-request config isolation prevent
 ## License
 
 MIT
-

@@ -91,6 +91,115 @@ describe('shutdown module', () => {
 
       await expect(flush()).resolves.toBeUndefined();
     });
+
+    it('should flush OpenTelemetry spans', async () => {
+      // Mock tracer provider with forceFlush
+      const mockForceFlush = vi.fn().mockResolvedValue();
+      const mockTracerProvider = {
+        forceFlush: mockForceFlush,
+      };
+      const mockSdk = {
+        getTracerProvider: () => mockTracerProvider,
+        shutdown: vi.fn(),
+        start: vi.fn(),
+      };
+
+      init({
+        service: 'test-service',
+        sdkFactory: () => mockSdk as any,
+        adapters: [mockAdapter],
+      });
+
+      // Flush should call tracer provider's forceFlush
+      await flush();
+
+      expect(mockForceFlush).toHaveBeenCalledOnce();
+    });
+
+    it('should handle flush timeout', async () => {
+      // Mock tracer provider that hangs
+      const mockForceFlush = vi.fn().mockImplementation(
+        () =>
+          new Promise((resolve) => {
+            // Never resolves (simulates hanging)
+            setTimeout(resolve, 10_000);
+          }),
+      );
+      const mockTracerProvider = {
+        forceFlush: mockForceFlush,
+      };
+      const mockSdk = {
+        getTracerProvider: () => mockTracerProvider,
+        shutdown: vi.fn(),
+        start: vi.fn(),
+      };
+
+      init({
+        service: 'test-service',
+        sdkFactory: () => mockSdk as any,
+        adapters: [mockAdapter],
+      });
+
+      // Flush should timeout and throw
+      await expect(flush({ timeout: 100 })).rejects.toThrow('Flush timeout');
+    });
+
+    it('should respect custom timeout', async () => {
+      const mockForceFlush = vi.fn().mockResolvedValue();
+      const mockTracerProvider = {
+        forceFlush: mockForceFlush,
+      };
+      const mockSdk = {
+        getTracerProvider: () => mockTracerProvider,
+        shutdown: vi.fn(),
+        start: vi.fn(),
+      };
+
+      init({
+        service: 'test-service',
+        sdkFactory: () => mockSdk as any,
+      });
+
+      // Flush with custom timeout should work
+      await flush({ timeout: 5000 });
+
+      expect(mockForceFlush).toHaveBeenCalledOnce();
+    });
+
+    it('should handle SDK without forceFlush gracefully', async () => {
+      // Mock SDK without forceFlush method
+      const mockTracerProvider = {};
+      const mockSdk = {
+        getTracerProvider: () => mockTracerProvider,
+        shutdown: vi.fn(),
+        start: vi.fn(),
+      };
+
+      init({
+        service: 'test-service',
+        sdkFactory: () => mockSdk as any,
+      });
+
+      // Should not throw even if forceFlush doesn't exist
+      await expect(flush()).resolves.toBeUndefined();
+    });
+
+    it('should handle missing tracer provider gracefully', async () => {
+      // Mock SDK that returns null tracer provider
+      const mockSdk = {
+        getTracerProvider: () => null,
+        shutdown: vi.fn(),
+        start: vi.fn(),
+      };
+
+      init({
+        service: 'test-service',
+        sdkFactory: () => mockSdk as any,
+      });
+
+      // Should not throw
+      await expect(flush()).resolves.toBeUndefined();
+    });
   });
 
   describe('shutdown()', () => {

@@ -1,6 +1,5 @@
 /**
  * Span processor with flush and tail sampling support
- * Adapted from otel-cf-workers
  */
 
 import type { Context } from '@opentelemetry/api';
@@ -69,6 +68,7 @@ export class SpanProcessorWithFlush implements SpanProcessor {
 
   /**
    * Export spans with post-processing
+   * Errors are caught and logged but don't throw to prevent worker instability
    */
   private async exportSpans(spans: ReadableSpan[]): Promise<void> {
     if (spans.length === 0) return;
@@ -77,15 +77,28 @@ export class SpanProcessorWithFlush implements SpanProcessor {
     let processedSpans = spans;
 
     if (this.postProcessor) {
-      processedSpans = this.postProcessor(spans);
+      try {
+        processedSpans = this.postProcessor(spans);
+      } catch (error) {
+        // Post-processor errors should not prevent export
+        console.error('[autolemetry-edge] Post-processor error:', error);
+        // Continue with original spans
+        processedSpans = spans;
+      }
     }
 
-    return new Promise((resolve, reject) => {
+    return new Promise((resolve) => {
       this.exporter.export(processedSpans, (result) => {
-        if (result.code === 0) { // SUCCESS
+        if (result.code === 0) {
+          // SUCCESS
           resolve();
         } else {
-          reject(result.error);
+          // Log but don't reject - exporter failures shouldn't crash the worker
+          console.error(
+            '[autolemetry-edge] Exporter error:',
+            result.error?.message || 'Unknown error',
+          );
+          resolve(); // Resolve instead of reject to prevent unhandled promise rejection
         }
       });
     });

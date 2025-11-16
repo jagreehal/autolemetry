@@ -1,6 +1,5 @@
 /**
  * AsyncLocalStorage-based context manager for edge environments
- * Adapted from OpenTelemetry and @microlabs/otel-cf-workers
  *
  * Copyright The OpenTelemetry Authors
  * Licensed under the Apache License, Version 2.0

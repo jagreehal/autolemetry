@@ -1,6 +1,5 @@
 /**
  * Common instrumentation utilities
- * Adapted from otel-cf-workers
  */
 
 /**

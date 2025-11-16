@@ -1,6 +1,8 @@
 /**
  * Testing utilities for autolemetry-edge
- * TODO: Port from autolemetry
+ *
+ * This module provides testing helpers for edge runtime environments.
+ * Currently minimal - can be extended with utilities from autolemetry package as needed.
  */
 
 export {};

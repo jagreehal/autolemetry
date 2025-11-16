@@ -39,7 +39,7 @@ import {
   type Span,
 } from '@opentelemetry/api';
 import { getConfig } from './config';
-import { getConfig as getInitConfig } from './init';
+import { getConfig as getInitConfig, getSdk } from './init';
 import { type Sampler, type SamplingContext, AlwaysSampler } from './sampling';
 import { getAnalyticsQueue } from './track';
 import type { TraceContext } from './trace-context';
@@ -321,7 +321,7 @@ export interface TracingOptions<
    * Only flushes on root spans (to avoid excessive flushing)
    * @default true
    */
-  autoFlush?: boolean;
+  autoFlushAnalytics?: boolean;
 }
 
 /**
@@ -630,23 +630,51 @@ function wrapWithTracing<TArgs extends unknown[], TReturn>(
     const isRootSpan =
       options.startNewRoot || otelTrace.getActiveSpan() === undefined;
     const shouldAutoFlush =
-      options.autoFlush ?? getInitConfig()?.autoFlush ?? true;
+      options.autoFlushAnalytics ?? getInitConfig()?.autoFlushAnalytics ?? true;
+    const shouldAutoFlushSpans = getInitConfig()?.autoFlush ?? false;
 
-    const flushIfNeeded = () => {
+    const flushIfNeeded = async () => {
       if (!shouldAutoFlush || !isRootSpan) return;
-      const queue = getAnalyticsQueue();
-      if (queue && queue.size() > 0) {
-        void queue.flush().catch((error) => {
-          const initConfig = getInitConfig();
-          const logger = initConfig?.logger;
-          if (logger?.error) {
-            if (error instanceof Error) {
-              logger.error('[autolemetry] Auto-flush failed', error);
-            } else {
-              logger.error(`[autolemetry] Auto-flush failed: ${String(error)}`);
+
+      try {
+        // Flush analytics queue
+        const queue = getAnalyticsQueue();
+        if (queue && queue.size() > 0) {
+          await queue.flush();
+        }
+
+        // Flush OpenTelemetry spans if enabled
+        if (shouldAutoFlushSpans) {
+          const sdk = getSdk();
+          if (sdk) {
+            try {
+              // Type assertion needed as getTracerProvider is not in the public NodeSDK interface
+              // eslint-disable-next-line @typescript-eslint/no-explicit-any
+              const sdkAny = sdk as any;
+              if (typeof sdkAny.getTracerProvider === 'function') {
+                const tracerProvider = sdkAny.getTracerProvider();
+                if (
+                  tracerProvider &&
+                  typeof tracerProvider.forceFlush === 'function'
+                ) {
+                  await tracerProvider.forceFlush();
+                }
+              }
+            } catch {
+              // Ignore errors when accessing tracer provider (may not be available in test mocks)
             }
           }
-        });
+        }
+      } catch (error) {
+        const initConfig = getInitConfig();
+        const logger = initConfig?.logger;
+        if (logger?.error) {
+          if (error instanceof Error) {
+            logger.error('[autolemetry] Auto-flush failed', error);
+          } else {
+            logger.error(`[autolemetry] Auto-flush failed: ${String(error)}`);
+          }
+        }
       }
     };
 
@@ -685,7 +713,7 @@ function wrapWithTracing<TArgs extends unknown[], TReturn>(
             }
           };
 
-          const onSuccess = (result: TReturn) => {
+          const onSuccess = async (result: TReturn) => {
             const duration = performance.now() - startTime;
 
             callCounter?.add(1, {
@@ -715,11 +743,11 @@ function wrapWithTracing<TArgs extends unknown[], TReturn>(
             handleTailSampling(true, duration);
 
             span.end();
-            flushIfNeeded();
+            await flushIfNeeded();
             return result;
           };
 
-          const onError = (error: unknown) => {
+          const onError = async (error: unknown): Promise<never> => {
             const duration = performance.now() - startTime;
 
             callCounter?.add(1, {
@@ -767,7 +795,7 @@ function wrapWithTracing<TArgs extends unknown[], TReturn>(
             handleTailSampling(false, duration, error);
 
             span.end();
-            flushIfNeeded();
+            await flushIfNeeded();
             throw error;
           };
 
@@ -779,9 +807,9 @@ function wrapWithTracing<TArgs extends unknown[], TReturn>(
 
             const result = await fn.call(this, ...args);
 
-            return onSuccess(result);
+            return await onSuccess(result);
           } catch (error) {
-            onError(error);
+            await onError(error);
             throw error;
           }
         });
@@ -870,10 +898,16 @@ function wrapWithTracingSync<TArgs extends unknown[], TReturn>(
     const isRootSpan =
       options.startNewRoot || otelTrace.getActiveSpan() === undefined;
     const shouldAutoFlush =
-      options.autoFlush ?? getInitConfig()?.autoFlush ?? true;
+      options.autoFlushAnalytics ?? getInitConfig()?.autoFlushAnalytics ?? true;
+    const shouldAutoFlushSpans = getInitConfig()?.autoFlush ?? false;
 
+    // Note: This is intentionally fire-and-forget (void) for synchronous functions.
+    // Synchronous functions cannot await flush completion without blocking execution.
+    // The autoFlush guarantee only applies to async functions.
     const flushIfNeeded = () => {
       if (!shouldAutoFlush || !isRootSpan) return;
+
+      // Flush analytics queue
       const queue = getAnalyticsQueue();
       if (queue && queue.size() > 0) {
         void queue.flush().catch((error) => {
@@ -887,6 +921,41 @@ function wrapWithTracingSync<TArgs extends unknown[], TReturn>(
             }
           }
         });
+      }
+
+      // Flush OpenTelemetry spans if enabled
+      if (shouldAutoFlushSpans) {
+        const sdk = getSdk();
+        if (sdk) {
+          try {
+            // Type assertion needed as getTracerProvider is not in the public NodeSDK interface
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any
+            const sdkAny = sdk as any;
+            if (typeof sdkAny.getTracerProvider === 'function') {
+              const tracerProvider = sdkAny.getTracerProvider();
+              if (
+                tracerProvider &&
+                typeof tracerProvider.forceFlush === 'function'
+              ) {
+                void tracerProvider.forceFlush().catch((error: unknown) => {
+                  const initConfig = getInitConfig();
+                  const logger = initConfig?.logger;
+                  if (logger?.error) {
+                    if (error instanceof Error) {
+                      logger.error('[autolemetry] Span flush failed', error);
+                    } else {
+                      logger.error(
+                        `[autolemetry] Span flush failed: ${String(error)}`,
+                      );
+                    }
+                  }
+                });
+              }
+            }
+          } catch {
+            // Ignore errors when accessing tracer provider (may not be available in test mocks)
+          }
+        }
       }
     };
 
@@ -963,11 +1032,11 @@ function wrapWithTracingSync<TArgs extends unknown[], TReturn>(
             handleTailSampling(true, duration);
 
             span.end();
-            flushIfNeeded();
+            void flushIfNeeded();
             return result;
           };
 
-          const onError = (error: unknown) => {
+          const onError = (error: unknown): never => {
             const duration = performance.now() - startTime;
 
             callCounter?.add(1, {
@@ -1008,7 +1077,7 @@ function wrapWithTracingSync<TArgs extends unknown[], TReturn>(
             handleTailSampling(false, duration, error);
 
             span.end();
-            flushIfNeeded();
+            void flushIfNeeded();
             throw error;
           };
 
@@ -1083,7 +1152,8 @@ function executeImmediately<TReturn = unknown>(
   const isRootSpan =
     options.startNewRoot || otelTrace.getActiveSpan() === undefined;
   const shouldAutoFlush =
-    options.autoFlush ?? getInitConfig()?.autoFlush ?? true;
+    options.autoFlushAnalytics ?? getInitConfig()?.autoFlushAnalytics ?? true;
+  const shouldAutoFlushSpans = getInitConfig()?.autoFlush ?? false;
 
   const callCounter = options.withMetrics
     ? meter.createCounter(`${spanName}.calls`, {
@@ -1099,21 +1169,48 @@ function executeImmediately<TReturn = unknown>(
       })
     : undefined;
 
-  const flushIfNeeded = () => {
+  const flushIfNeeded = async () => {
     if (!shouldAutoFlush || !isRootSpan) return;
-    const queue = getAnalyticsQueue();
-    if (queue && queue.size() > 0) {
-      void queue.flush().catch((error) => {
-        const initConfig = getInitConfig();
-        const logger = initConfig?.logger;
-        if (logger?.error) {
-          if (error instanceof Error) {
-            logger.error('[autolemetry] Auto-flush failed', error);
-          } else {
-            logger.error(`[autolemetry] Auto-flush failed: ${String(error)}`);
+
+    try {
+      // Flush analytics queue
+      const queue = getAnalyticsQueue();
+      if (queue && queue.size() > 0) {
+        await queue.flush();
+      }
+
+      // Flush OpenTelemetry spans if enabled
+      if (shouldAutoFlushSpans) {
+        const sdk = getSdk();
+        if (sdk) {
+          try {
+            // Type assertion needed as getTracerProvider is not in the public NodeSDK interface
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any
+            const sdkAny = sdk as any;
+            if (typeof sdkAny.getTracerProvider === 'function') {
+              const tracerProvider = sdkAny.getTracerProvider();
+              if (
+                tracerProvider &&
+                typeof tracerProvider.forceFlush === 'function'
+              ) {
+                await tracerProvider.forceFlush();
+              }
+            }
+          } catch {
+            // Ignore errors when accessing tracer provider (may not be available in test mocks)
           }
         }
-      });
+      }
+    } catch (error) {
+      const initConfig = getInitConfig();
+      const logger = initConfig?.logger;
+      if (logger?.error) {
+        if (error instanceof Error) {
+          logger.error('[autolemetry] Auto-flush failed', error);
+        } else {
+          logger.error(`[autolemetry] Auto-flush failed: ${String(error)}`);
+        }
+      }
     }
   };
 
@@ -1147,7 +1244,10 @@ function executeImmediately<TReturn = unknown>(
           }
         };
 
-        const onSuccess = (result: TReturn) => {
+        // Sync handlers for synchronous results (can't await)
+        // NOTE: autoFlush will NOT block for synchronous trace() calls
+        // Flush is fire-and-forget, so spans may be dropped if process exits immediately
+        const onSuccessSync = (result: TReturn) => {
           const duration = performance.now() - startTime;
 
           callCounter?.add(1, {
@@ -1171,11 +1271,11 @@ function executeImmediately<TReturn = unknown>(
           handleTailSampling(true, duration);
 
           span.end();
-          flushIfNeeded();
+          void flushIfNeeded();
           return result;
         };
 
-        const onError = (error: unknown): never => {
+        const onErrorSync = (error: unknown): never => {
           const duration = performance.now() - startTime;
 
           callCounter?.add(1, {
@@ -1222,7 +1322,87 @@ function executeImmediately<TReturn = unknown>(
           handleTailSampling(false, duration, error);
 
           span.end();
-          flushIfNeeded();
+          void flushIfNeeded();
+          throw error;
+        };
+
+        // Async handlers for Promise results (await flush)
+        const onSuccessAsync = async (result: TReturn) => {
+          const duration = performance.now() - startTime;
+
+          callCounter?.add(1, {
+            operation: spanName,
+            status: 'success',
+          });
+
+          durationHistogram?.record(duration, {
+            operation: spanName,
+            status: 'success',
+          });
+
+          span.setStatus({ code: SpanStatusCode.OK });
+          span.setAttributes({
+            'operation.name': spanName,
+            'code.function': spanName,
+            'operation.duration': duration,
+            'operation.success': true,
+          });
+
+          handleTailSampling(true, duration);
+
+          span.end();
+          await flushIfNeeded();
+          return result;
+        };
+
+        const onErrorAsync = async (error: unknown): Promise<never> => {
+          const duration = performance.now() - startTime;
+
+          callCounter?.add(1, {
+            operation: spanName,
+            status: 'error',
+          });
+
+          durationHistogram?.record(duration, {
+            operation: spanName,
+            status: 'error',
+          });
+
+          const errorMessage =
+            error instanceof Error ? error.message : 'Unknown error';
+          const truncatedMessage = truncateErrorMessage(errorMessage);
+
+          span.setStatus({
+            code: SpanStatusCode.ERROR,
+            message: truncatedMessage,
+          });
+
+          span.setAttributes({
+            'operation.name': spanName,
+            'code.function': spanName,
+            'operation.duration': duration,
+            'operation.success': false,
+            error: true,
+            'exception.type':
+              error instanceof Error ? error.constructor.name : 'Error',
+            'exception.message': truncatedMessage,
+          });
+
+          if (error instanceof Error && error.stack) {
+            span.setAttribute(
+              'exception.stack',
+              error.stack.slice(0, MAX_ERROR_MESSAGE_LENGTH),
+            );
+          }
+
+          span.recordException(
+            error instanceof Error ? error : new Error(String(error)),
+          );
+
+          handleTailSampling(false, duration, error);
+
+          span.end();
+          await flushIfNeeded();
           throw error;
         };
 
@@ -1234,14 +1414,15 @@ function executeImmediately<TReturn = unknown>(
 
           const result = fn(ctxValue);
 
-          // Check if result is a Promise
+          // Check if result is a Promise - use async handlers to await flush
           if (result instanceof Promise) {
-            return result.then(onSuccess, onError);
+            return result.then(onSuccessAsync, onErrorAsync);
           }
 
-          return onSuccess(result);
+          // Synchronous result - use sync handlers
+          return onSuccessSync(result);
         } catch (error) {
-          return onError(error);
+          return onErrorSync(error);
         }
       });
     },
@@ -1336,23 +1517,26 @@ function executeImmediately<TReturn = unknown>(
  * })
  * ```
  */
-// Sync overloads - Factory pattern with explicit return type helps TypeScript infer
-// Overload 1a: Plain sync function with no args (auto-inferred name)
-export function trace<TReturn = unknown>(fn: () => TReturn): () => TReturn;
-// Overload 1b: Plain sync function (auto-inferred name)
-export function trace<TArgs extends unknown[], TReturn = unknown>(
-  fn: (...args: TArgs) => TReturn,
-): (...args: TArgs) => TReturn;
+// Sync overloads - Ordered from most specific to most generic for better type inference
 
-// Overload 1c: Factory sync function with no args returning explicit type (auto-inferred name)
-export function trace<TReturn = unknown>(
-  fnFactory: (ctx: TraceContext) => () => TReturn,
-): () => TReturn;
-// Overload 1d: Immediate execution - sync function with context (NEW PATTERN)
+// Single argument - Specific overloads with TraceContext first
+// Overload 1a: Immediate execution - sync function with context
 export function trace<TReturn = unknown>(
   fn: (ctx: TraceContext) => TReturn,
 ): TReturn;
-// Overload 1e: Factory sync function - use conditional type to extract signature (MUST come before generic)
+// Overload 1b: Factory sync function with no args - non-generic for type inference
+export function trace(
+  fnFactory: (ctx: TraceContext) => () => unknown,
+): () => unknown;
+// Overload 1c: Factory sync function - non-generic for type inference
+export function trace<TArgs extends unknown[], TReturn>(
+  fnFactory: (ctx: TraceContext) => (...args: TArgs) => TReturn,
+): (...args: TArgs) => TReturn;
+// Overload 1d: Factory sync function with no args returning explicit type (typed generic)
+export function trace<TReturn = unknown>(
+  fnFactory: (ctx: TraceContext) => () => TReturn,
+): () => TReturn;
+// Overload 1e: Factory sync function - use conditional type to extract signature
 // This overload is more specific and helps TypeScript infer types from factory functions
 export function trace<
   TFactory extends (ctx: TraceContext) => (...args: unknown[]) => unknown,
@@ -1362,113 +1546,182 @@ export function trace<TArgs extends unknown[], TReturn = unknown>(
   fnFactory: (ctx: TraceContext) => (...args: TArgs) => TReturn,
 ): (...args: TArgs) => TReturn;
 
-// Overload 2a: Name + plain sync function
-export function trace<TArgs extends unknown[] = unknown[], TReturn = unknown>(
-  name: string,
+// Single argument - Plain function overloads (no ctx parameter)
+// Overload 1g: Plain sync function with no args
+export function trace<TReturn = unknown>(fn: () => TReturn): () => TReturn;
+// Overload 1h: Plain sync function (generic fallback)
+export function trace<TArgs extends unknown[], TReturn = unknown>(
   fn: (...args: TArgs) => TReturn,
 ): (...args: TArgs) => TReturn;
 
-// Overload 2b: Name + factory sync function - use conditional type to extract signature
-// This overload allows TypeScript to infer types from the factory function parameter
-export function trace<
-  TFactory extends (ctx: TraceContext) => (...args: unknown[]) => unknown,
->(name: string, fnFactory: TFactory): ExtractFunctionSignature<TFactory>;
-
-// Overload 2c: Name + immediate execution sync with context
+// Two arguments - name + function - Specific overloads with TraceContext first
+// Overload 2a: Name + immediate execution sync with context
 // This overload only matches functions that DON'T return functions (factories)
 export function trace<TReturn = unknown>(
   name: string,
   fn: ExcludeFactoryReturn<(ctx: TraceContext) => TReturn>,
 ): TReturn;
-// Overload 2d: Name + factory sync function (fallback)
+// Overload 2b: Name + factory sync function with no args - non-generic for type inference
+export function trace(
+  name: string,
+  fnFactory: (ctx: TraceContext) => () => unknown,
+): () => unknown;
+// Overload 2c: Name + factory sync function - non-generic for type inference
+export function trace<TArgs extends unknown[], TReturn>(
+  name: string,
+  fnFactory: (ctx: TraceContext) => (...args: TArgs) => TReturn,
+): (...args: TArgs) => TReturn;
+// Overload 2d: Name + factory sync function - use conditional type to extract signature
+// This overload allows TypeScript to infer types from the factory function parameter
+export function trace<
+  TFactory extends (ctx: TraceContext) => (...args: unknown[]) => unknown,
+>(name: string, fnFactory: TFactory): ExtractFunctionSignature<TFactory>;
+// Overload 2e: Name + factory sync function (fallback)
 export function trace<TArgs extends unknown[] = unknown[], TReturn = unknown>(
   name: string,
   fnFactory: (ctx: TraceContext) => (...args: TArgs) => TReturn,
 ): (...args: TArgs) => TReturn;
 
-// Overload 3a: Options + plain sync function
+// Two arguments - name + function - Plain function overloads
+// Overload 2f: Name + plain sync function
+export function trace<TArgs extends unknown[] = unknown[], TReturn = unknown>(
+  name: string,
+  fn: (...args: TArgs) => TReturn,
+): (...args: TArgs) => TReturn;
+
+// Two arguments - options + function - Specific overloads with TraceContext first
+// Overload 3a: Options + immediate execution sync with context
+export function trace<TReturn = unknown>(
+  options: TracingOptions<[], TReturn>,
+  fn: (ctx: TraceContext) => TReturn,
+): TReturn;
+// Overload 3b: Options + factory sync function with no args - non-generic for type inference
+export function trace(
+  options: TracingOptions,
+  fnFactory: (ctx: TraceContext) => () => unknown,
+): () => unknown;
+// Overload 3c: Options + factory sync function - non-generic for type inference
+export function trace<TArgs extends unknown[], TReturn>(
+  options: TracingOptions<TArgs, TReturn>,
+  fnFactory: (ctx: TraceContext) => (...args: TArgs) => TReturn,
+): (...args: TArgs) => TReturn;
+// Overload 3d: Options + factory sync function (fallback)
+export function trace<TArgs extends unknown[] = unknown[], TReturn = unknown>(
+  options: TracingOptions<TArgs, TReturn>,
+  fnFactory: (ctx: TraceContext) => (...args: TArgs) => TReturn,
+): (...args: TArgs) => TReturn;
+
+// Two arguments - options + function - Plain function overloads
+// Overload 3e: Options + plain sync function
 export function trace<TArgs extends unknown[] = unknown[], TReturn = unknown>(
   options: TracingOptions<TArgs, TReturn>,
   fn: (...args: TArgs) => TReturn,
 ): (...args: TArgs) => TReturn;
 
-// Overload 3b: Options + immediate execution sync with context
-export function trace<TReturn = unknown>(
-  options: TracingOptions<[], TReturn>,
-  fn: (ctx: TraceContext) => TReturn,
-): TReturn;
+// Async overloads - Ordered from most specific to most generic
 
-// Overload 3c: Options + factory sync function
-export function trace<TArgs extends unknown[] = unknown[], TReturn = unknown>(
-  options: TracingOptions<TArgs, TReturn>,
-  fnFactory: (ctx: TraceContext) => (...args: TArgs) => TReturn,
-): (...args: TArgs) => TReturn;
-
-// Async overloads
-// Overload 4a: Plain async function with no args (auto-inferred name)
-export function trace<TReturn = unknown>(
-  fn: () => Promise<TReturn>,
-): () => Promise<TReturn>;
-// Overload 4b: Plain async function (auto-inferred name)
-export function trace<TArgs extends unknown[] = unknown[], TReturn = unknown>(
-  fn: (...args: TArgs) => Promise<TReturn>,
-): (...args: TArgs) => Promise<TReturn>;
-
-// Overload 4c: Immediate execution - async function with context (NEW PATTERN)
+// Single argument - Specific async overloads with TraceContext first
+// Overload 4a: Immediate execution - async function with context
 export function trace<TReturn = unknown>(
   fn: (ctx: TraceContext) => Promise<TReturn>,
 ): Promise<TReturn>;
-// Overload 4d: Factory async function with no args (auto-inferred name)
+// Overload 4b: Factory async function with no args - non-generic for type inference
+export function trace(
+  fnFactory: (ctx: TraceContext) => () => Promise<unknown>,
+): () => Promise<unknown>;
+// Overload 4c: Factory async function - non-generic for type inference
+export function trace<TArgs extends unknown[], TReturn>(
+  fnFactory: (ctx: TraceContext) => (...args: TArgs) => Promise<TReturn>,
+): (...args: TArgs) => Promise<TReturn>;
+// Overload 4d: Factory async function with no args (typed generic)
 export function trace<TReturn = unknown>(
   fnFactory: (ctx: TraceContext) => () => Promise<TReturn>,
 ): () => Promise<TReturn>;
-// Overload 4e: Factory async function (auto-inferred name)
+// Overload 4e: Factory async function - use conditional type to extract signature
+export function trace<
+  TFactory extends (
+    ctx: TraceContext,
+  ) => (...args: unknown[]) => Promise<unknown>,
+>(fnFactory: TFactory): ExtractFunctionSignature<TFactory>;
+// Overload 4f: Generic factory async function (fallback)
 export function trace<TArgs extends unknown[] = unknown[], TReturn = unknown>(
   fnFactory: (ctx: TraceContext) => (...args: TArgs) => Promise<TReturn>,
 ): (...args: TArgs) => Promise<TReturn>;
 
-// Overload 5a: Name + plain async function
+// Single argument - Plain async function overloads (no ctx parameter)
+// Overload 4g: Plain async function with no args
+export function trace<TReturn = unknown>(
+  fn: () => Promise<TReturn>,
+): () => Promise<TReturn>;
+// Overload 4h: Plain async function (generic fallback)
 export function trace<TArgs extends unknown[] = unknown[], TReturn = unknown>(
-  name: string,
   fn: (...args: TArgs) => Promise<TReturn>,
 ): (...args: TArgs) => Promise<TReturn>;
 
-// Overload 5b: Name + factory async function - use conditional type to extract signature
+// Two arguments - name + async function - Specific overloads with TraceContext first
+// Overload 5a: Name + immediate execution async with context
+// This overload only matches functions that DON'T return functions (factories)
+export function trace<TReturn = unknown>(
+  name: string,
+  fn: ExcludeFactoryReturn<(ctx: TraceContext) => Promise<TReturn>>,
+): Promise<TReturn>;
+// Overload 5b: Name + factory async function with no args - non-generic for type inference
+export function trace(
+  name: string,
+  fnFactory: (ctx: TraceContext) => () => Promise<unknown>,
+): () => Promise<unknown>;
+// Overload 5c: Name + factory async function - non-generic for type inference
+export function trace<TArgs extends unknown[], TReturn>(
+  name: string,
+  fnFactory: (ctx: TraceContext) => (...args: TArgs) => Promise<TReturn>,
+): (...args: TArgs) => Promise<TReturn>;
+// Overload 5d: Name + factory async function - use conditional type to extract signature
 // This overload allows TypeScript to infer types from the factory function parameter
 export function trace<
   TFactory extends (
     ctx: TraceContext,
   ) => (...args: unknown[]) => Promise<unknown>,
 >(name: string, fnFactory: TFactory): ExtractFunctionSignature<TFactory>;
-
-// Overload 5c: Name + immediate execution async with context
-// This overload only matches functions that DON'T return functions (factories)
-export function trace<TReturn = unknown>(
-  name: string,
-  fn: ExcludeFactoryReturn<(ctx: TraceContext) => Promise<TReturn>>,
-): Promise<TReturn>;
-// Overload 5d: Name + factory async function (fallback)
+// Overload 5e: Name + factory async function (fallback)
 export function trace<TArgs extends unknown[] = unknown[], TReturn = unknown>(
   name: string,
   fnFactory: (ctx: TraceContext) => (...args: TArgs) => Promise<TReturn>,
 ): (...args: TArgs) => Promise<TReturn>;
 
-// Overload 6a: Options + plain async function
+// Two arguments - name + async function - Plain function overloads
+// Overload 5f: Name + plain async function
 export function trace<TArgs extends unknown[] = unknown[], TReturn = unknown>(
-  options: TracingOptions<TArgs, TReturn>,
+  name: string,
   fn: (...args: TArgs) => Promise<TReturn>,
 ): (...args: TArgs) => Promise<TReturn>;
 
-// Overload 6b: Options + immediate execution async with context
+// Two arguments - options + async function - Specific overloads with TraceContext first
+// Overload 6a: Options + immediate execution async with context
 export function trace<TReturn = unknown>(
   options: TracingOptions<[], TReturn>,
   fn: (ctx: TraceContext) => Promise<TReturn>,
 ): Promise<TReturn>;
-
-// Overload 6c: Options + factory async function
+// Overload 6b: Options + factory async function with no args - non-generic for type inference
+export function trace(
+  options: TracingOptions,
+  fnFactory: (ctx: TraceContext) => () => Promise<unknown>,
+): () => Promise<unknown>;
+// Overload 6c: Options + factory async function - non-generic for type inference
+export function trace<TArgs extends unknown[], TReturn>(
+  options: TracingOptions<TArgs, TReturn>,
+  fnFactory: (ctx: TraceContext) => (...args: TArgs) => Promise<TReturn>,
+): (...args: TArgs) => Promise<TReturn>;
+// Overload 6d: Options + factory async function (fallback)
 export function trace<TArgs extends unknown[] = unknown[], TReturn = unknown>(
   options: TracingOptions<TArgs, TReturn>,
   fnFactory: (ctx: TraceContext) => (...args: TArgs) => Promise<TReturn>,
+): (...args: TArgs) => Promise<TReturn>;
+
+// Two arguments - options + async function - Plain function overloads
+// Overload 6e: Options + plain async function
+export function trace<TArgs extends unknown[] = unknown[], TReturn = unknown>(
+  options: TracingOptions<TArgs, TReturn>,
+  fn: (...args: TArgs) => Promise<TReturn>,
 ): (...args: TArgs) => Promise<TReturn>;
 
 // Implementation

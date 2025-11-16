@@ -1,6 +1,5 @@
 /**
  * Tracer provider for edge environments
- * Adapted from otel-cf-workers
  */
 
 import { trace } from '@opentelemetry/api';

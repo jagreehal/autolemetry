@@ -210,8 +210,8 @@ describe('Durable Objects Instrumentation', () => {
 
       const options = mockTracer.startActiveSpan.mock.calls[0][1];
       expect(options.kind).toBe(SpanKind.SERVER);
-      expect(options.attributes['http.method']).toBe('POST');
-      expect(options.attributes['http.url']).toBe('http://example.com/increment');
+      expect(options.attributes['http.request.method']).toBe('POST');
+      expect(options.attributes['url.full']).toBe('http://example.com/increment');
     });
 
     it('should add DO-specific attributes (do.id, do.id.name)', async () => {

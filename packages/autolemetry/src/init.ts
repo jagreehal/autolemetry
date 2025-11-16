@@ -263,6 +263,32 @@ export interface AutolemetryConfig {
    * Default is true for serverless/short-lived processes. Set to false
    * for long-running services where batching is more efficient.
    */
+  autoFlushAnalytics?: boolean;
+
+  /**
+   * Include OpenTelemetry span flushing in auto-flush (default: false)
+   *
+   * When enabled, spans are force-flushed along with analytics events on root
+   * span completion. This is useful for serverless/short-lived processes where
+   * spans may not export before the process ends.
+   *
+   * - true: Force-flush spans on root span completion (~50-200ms latency)
+   * - false: Spans export via normal batch processor (default behavior)
+   *
+   * Only applies when autoFlushAnalytics is also enabled.
+   *
+   * Note: For edge runtimes (Cloudflare Workers, Vercel Edge), use the
+   * 'autolemetry-edge' package instead, which handles this automatically.
+   *
+   * @example Serverless with auto-flush
+   * ```typescript
+   * init({
+   *   service: 'my-lambda',
+   *   autoFlushAnalytics: true,
+   *   autoFlush: true, // Force-flush spans
+   * });
+   * ```
+   */
   autoFlush?: boolean;
 
   /**
