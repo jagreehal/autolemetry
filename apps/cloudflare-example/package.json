@@ -12,13 +12,13 @@
   "keywords": [],
   "author": "",
   "license": "ISC",
-  "packageManager": "pnpm@10.21.0",
+  "packageManager": "pnpm@10.22.0",
   "dependencies": {
     "alchemy": "^0.77.5",
     "autolemetry-edge": "workspace:*"
   },
   "devDependencies": {
-    "@cloudflare/workers-types": "^4.20251111.0",
+    "@cloudflare/workers-types": "^4.20251115.0",
     "typescript": "^5.9.3"
   }
 }

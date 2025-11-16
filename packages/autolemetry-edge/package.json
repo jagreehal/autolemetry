@@ -70,13 +70,13 @@
     "@opentelemetry/semantic-conventions": "^1.38.0"
   },
   "devDependencies": {
-    "@cloudflare/workers-types": "^4.20251111.0",
+    "@cloudflare/workers-types": "^4.20251115.0",
     "@opentelemetry/context-async-hooks": "^2.2.0",
     "@types/node": "^24.10.1",
     "rimraf": "^6.1.0",
-    "tsup": "^8.5.0",
+    "tsup": "^8.5.1",
     "typescript": "^5.9.3",
-    "vitest": "^4.0.8",
+    "vitest": "^4.0.9",
     "vitest-mock-extended": "^3.1.0"
   },
   "repository": {
