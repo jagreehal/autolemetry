@@ -24,8 +24,8 @@ Replace `NODE_OPTIONS` and 30+ lines of SDK boilerplate with `init()`, wrap func
 ## Table of Contents
 
 - [🔭 autolemetry](#-autolemetry)
-  - [Table of Contents](#table-of-contents)
   - [Migrating from OpenTelemetry?](#migrating-from-opentelemetry)
+  - [Table of Contents](#table-of-contents)
   - [Why Autolemetry](#why-autolemetry)
   - [Quick Start](#quick-start)
     - [1. Install](#1-install)
@@ -62,6 +62,27 @@ Replace `NODE_OPTIONS` and 30+ lines of SDK boilerplate with `init()`, wrap func
     - [Edge Runtimes (Cloudflare Workers, Vercel Edge)](#edge-runtimes-cloudflare-workers-vercel-edge)
   - [API Reference](#api-reference)
   - [FAQ \& Next Steps](#faq--next-steps)
+  - [Troubleshooting \& Debugging](#troubleshooting--debugging)
+    - [ConsoleSpanExporter (Visual Debugging)](#consolespanexporter-visual-debugging)
+    - [InMemorySpanExporter (Testing \& Assertions)](#inmemoryspanexporter-testing--assertions)
+    - [Using Both (Advanced)](#using-both-advanced)
+  - [Creating Custom Instrumentation](#creating-custom-instrumentation)
+    - [Quick Start Template](#quick-start-template)
+    - [Step-by-Step Tutorial: Instrumenting Axios](#step-by-step-tutorial-instrumenting-axios)
+    - [Best Practices](#best-practices)
+      - [1. Idempotent Instrumentation](#1-idempotent-instrumentation)
+      - [2. Error Handling](#2-error-handling)
+      - [3. Security - Don't Capture Sensitive Data](#3-security---dont-capture-sensitive-data)
+      - [4. Follow OpenTelemetry Semantic Conventions](#4-follow-opentelemetry-semantic-conventions)
+      - [5. Choose the Right SpanKind](#5-choose-the-right-spankind)
+      - [6. TypeScript Type Safety](#6-typescript-type-safety)
+    - [Available Utilities](#available-utilities)
+      - [From `autolemetry/trace-helpers`](#from-autolemetrytrace-helpers)
+      - [From `@opentelemetry/api`](#from-opentelemetryapi)
+      - [Semantic Conventions (Optional)](#semantic-conventions-optional)
+    - [Real-World Examples](#real-world-examples)
+    - [When to Create Custom Instrumentation](#when-to-create-custom-instrumentation)
+    - [Using Official Instrumentation](#using-official-instrumentation)
 
 ## Why Autolemetry
 
@@ -154,6 +175,16 @@ init({
   // Datadog (traces + metrics + logs via OTLP)
   endpoint: 'https://otlp.datadoghq.com',
   otlpHeaders: 'dd-api-key=...',
+});
+
+init({
+  service: 'my-app',
+  // Honeycomb (gRPC protocol)
+  protocol: 'grpc',
+  endpoint: 'api.honeycomb.io:443',
+  otlpHeaders: {
+    'x-honeycomb-team': process.env.HONEYCOMB_API_KEY!,
+  },
 });
 
 init({
@@ -560,6 +591,7 @@ init({
   service: string; // required
   adapters?: AnalyticsAdapter[];
   endpoint?: string;
+  protocol?: 'http' | 'grpc'; // OTLP protocol (default: 'http')
   metrics?: boolean | 'auto';
   sampler?: Sampler;
   version?: string;
@@ -573,7 +605,7 @@ init({
   logRecordProcessors?: LogRecordProcessor[];
   resource?: Resource;
   resourceAttributes?: Record<string, string>;
-  otlpHeaders?: string;
+  otlpHeaders?: Record<string, string> | string;
   sdkFactory?: (defaults: NodeSDK) => NodeSDK;
   validation?: Partial<ValidationConfig>;
   logger?: Logger; // created via createLogger() or bring your own
@@ -582,6 +614,64 @@ init({
     options?: Record<string, unknown>; // Passed to @traceloop/node-server-sdk
   };
 });
+```
+
+**Protocol Configuration:**
+
+Use the `protocol` parameter to switch between HTTP/protobuf (default) and gRPC:
+
+```typescript
+// HTTP (default) - uses port 4318
+init({
+  service: 'my-app',
+  protocol: 'http', // or omit (defaults to http)
+  endpoint: 'http://localhost:4318',
+});
+
+// gRPC - uses port 4317, better performance
+init({
+  service: 'my-app',
+  protocol: 'grpc',
+  endpoint: 'localhost:4317',
+});
+```
+
+**Vendor Presets:**
+
+For common observability platforms, use presets for simplified configuration:
+
+```typescript
+import { init } from 'autolemetry';
+import { createDatadogConfig } from 'autolemetry/presets/datadog';
+import { createHoneycombConfig } from 'autolemetry/presets/honeycomb';
+
+// Datadog preset
+init(
+  createDatadogConfig({
+    apiKey: process.env.DATADOG_API_KEY!,
+    service: 'my-app',
+    environment: 'production',
+  }),
+);
+
+// Honeycomb preset (automatically uses gRPC)
+init(
+  createHoneycombConfig({
+    apiKey: process.env.HONEYCOMB_API_KEY!,
+    service: 'my-app',
+    environment: 'production',
+    dataset: 'production', // optional, for classic accounts
+  }),
+);
+```
+
+**Environment Variables:**
+
+The protocol can also be configured via `OTEL_EXPORTER_OTLP_PROTOCOL`:
+
+```bash
+export OTEL_EXPORTER_OTLP_PROTOCOL=grpc
+export OTLP_ENDPOINT=api.honeycomb.io:443
 ```
 
 Validation tuning example:
@@ -924,6 +1014,115 @@ Each API is type-safe, works in both ESM and CJS, and is designed to minimize bo
 2. Wrap your critical paths with `trace()` (or `Trace` decorators if you prefer classes).
 3. Point the OTLP endpoint at your favorite observability backend and optionally add analytics adapters.
 4. Expand coverage with `instrumentDatabase()`, `withTracing()`, metrics, logging, and auto-instrumentations.
+
+## Troubleshooting & Debugging
+
+### Quick Debug Mode (Recommended)
+
+The simplest way to see spans locally during development - perfect for progressive development:
+
+```typescript
+import { init } from 'autolemetry';
+
+// Start with console-only (no backend needed)
+init({
+  service: 'my-app',
+  debug: true, // Outputs spans to console
+});
+
+// Later: add endpoint to send to backend while keeping console output
+init({
+  service: 'my-app',
+  debug: true,
+  endpoint: 'https://otlp.datadoghq.com', // Now sends to both console AND Datadog
+});
+
+// Production: remove debug to send to backend only
+init({
+  service: 'my-app',
+  endpoint: 'https://otlp.datadoghq.com', // Backend only (clean production config)
+});
+```
+
+**How it Works:**
+
+- **`debug: true`**: Print spans to console AND send to backend (if endpoint configured)
+  - No endpoint = console-only (perfect for local development)
+  - With endpoint = console + backend (verify before choosing provider)
+- **No debug flag**: Export to backend only (default production behavior)
+
+**Environment Variable:**
+
+```bash
+# Enable debug mode
+AUTOLEMETRY_DEBUG=true node server.js
+# or
+AUTOLEMETRY_DEBUG=1 node server.js
+
+# Disable debug mode
+AUTOLEMETRY_DEBUG=false node server.js
+```
+
+### Manual Configuration (Advanced)
+
+When developing or debugging your instrumentation, you may want more control over span export. Autolemetry supports manual exporter configuration:
+
+#### ConsoleSpanExporter (Visual Debugging)
+
+Use `ConsoleSpanExporter` to print all spans to the console in real-time. This is great for:
+
+- Quick visual inspection during development
+- Seeing spans as they're created
+- Debugging span structure and attributes
+- Examples and demos
+
+```typescript
+import { init } from 'autolemetry';
+import { ConsoleSpanExporter } from '@opentelemetry/sdk-trace-base';
+
+init({
+  service: 'my-app',
+  spanExporter: new ConsoleSpanExporter(), // Prints spans to console
+});
+```
+
+### InMemorySpanExporter (Testing & Assertions)
+
+Use `InMemorySpanExporter` for programmatic access to spans in tests. This is ideal for:
+
+- Writing test assertions on spans
+- Querying spans by name or attributes
+- Verifying instrumentation behavior
+- Automated testing
+
+```typescript
+import { init } from 'autolemetry';
+import {
+  InMemorySpanExporter,
+  SimpleSpanProcessor,
+} from '@opentelemetry/sdk-trace-base';
+
+const exporter = new InMemorySpanExporter();
+
+init({
+  service: 'test',
+  spanProcessor: new SimpleSpanProcessor(exporter),
+});
+
+// After running your code...
+const spans = exporter.getFinishedSpans();
+expect(spans).toHaveLength(1);
+expect(spans[0]?.name).toBe('my.operation');
+```
+
+### Using Both (Advanced)
+
+For comprehensive debugging, use the `debug: true` option to combine console output with backend export. See the "Quick Debug Mode" section above for the recommended approach.
+
+**Quick Reference:**
+
+- **ConsoleSpanExporter**: See spans in console output (development/debugging)
+- **InMemorySpanExporter**: Query spans programmatically (testing/assertions)
 
 ## Creating Custom Instrumentation
 

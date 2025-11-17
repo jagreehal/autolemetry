@@ -250,21 +250,35 @@ function wrapFactoryWithTracing<TArgs extends unknown[], TReturn>(
   variableName?: string,
 ): WrappedFunction<TArgs, TReturn> {
   const factory = ensureTraceFactory(fnOrFactory);
+
+  // Get the inner function (the actual function being traced)
   const sampleFn = factory(createDummyCtx());
+
+  // Infer function name with priority:
+  // 1. Explicit variable name (from instrument() or explicit name parameter)
+  // 2. Inner function name (the actual function being traced - e.g., "createUser")
+  // 3. Factory function name (for cases where factory itself is named)
+  const innerFunctionName = inferFunctionName(
+    sampleFn as InstrumentableFunction,
+  );
+  const factoryName = inferFunctionName(factory as InstrumentableFunction);
+  const effectiveVariableName =
+    variableName || innerFunctionName || factoryName;
+
   const useAsyncWrapper = isAsyncFunction(sampleFn);
 
   if (useAsyncWrapper) {
     return wrapWithTracing(
       factory as (ctx: TraceContext) => (...args: TArgs) => Promise<TReturn>,
       options,
-      variableName,
+      effectiveVariableName,
     ) as WrappedFunction<TArgs, TReturn>;
   }
 
   return wrapWithTracingSync(
     factory as (ctx: TraceContext) => (...args: TArgs) => TReturn,
     options,
-    variableName,
+    effectiveVariableName,
   ) as WrappedFunction<TArgs, TReturn>;
 }
 
@@ -419,11 +433,13 @@ function inferFunctionName<
     return displayName;
   }
 
-  // Check function.name (works for named functions)
-  if (fn.name && fn.name !== 'anonymous') {
+  // Check function.name (works for named functions and modern arrow function assignment)
+  // Note: Empty string is falsy, so this handles both undefined and ''
+  if (fn.name && fn.name !== 'anonymous' && fn.name !== '') {
     return fn.name;
   }
 
+  // Try to extract name from function source (for function declarations)
   const source = Function.prototype.toString.call(fn);
   const match = source.match(/function\s+([^(\s]+)/);
   if (match && match[1] && match[1] !== 'anonymous') {

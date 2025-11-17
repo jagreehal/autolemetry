@@ -117,6 +117,41 @@ pnpm add autolemetry
 pnpm add autolemetry-adapters  # Optional
 ```
 
+### Quick Debug Mode
+
+See traces instantly during development - perfect for progressive development:
+
+```typescript
+import { init, trace } from 'autolemetry';
+
+// Start with console-only (no backend needed)
+init({
+  service: 'my-app',
+  debug: true  // Outputs spans to console
+});
+
+// Your traced functions work as normal
+const result = await trace(async () => {
+  // Your code here
+  return 'success';
+})();
+
+// Span printed to console automatically!
+```
+
+**How it works:**
+- `debug: true` - Print spans to console AND send to backend (if endpoint configured)
+  - No endpoint = console-only (perfect for local development)
+  - With endpoint = console + backend (verify before choosing provider)
+- No debug flag - Send to backend only (default production behavior)
+
+Or use environment variable:
+```bash
+AUTOLEMETRY_DEBUG=true node server.js
+```
+
+**[→ Full API documentation](./packages/autolemetry/README.md)**
+
 ## Development
 
 ### Prerequisites
@@ -245,6 +280,10 @@ Autolemetry is built on top of OpenTelemetry and provides:
 | Vendor SDKs create lock-in          | OTLP-native, works with any backend                 |
 | Need both observability & analytics | Unified API for traces, metrics, logs, and events   |
 | Production safety concerns          | Built-in sampling, rate limiting, redaction         |
+
+## Troubleshooting
+
+Having issues seeing your traces? Use `ConsoleSpanExporter` for visual debugging or `InMemorySpanExporter` for testing. See the [full troubleshooting guide](./packages/autolemetry/README.md#troubleshooting--debugging) in the detailed docs.
 
 ## Roadmap
 
