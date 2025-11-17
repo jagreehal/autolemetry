@@ -46,6 +46,7 @@ import type { TraceContext } from './trace-context';
 import { createTraceContext } from './trace-context';
 import { setSpanName } from './trace-helpers';
 import { runInOperationContext } from './operation-context';
+import { inferVariableNameFromCallStack } from './variable-name-inference';
 
 /**
  * Complete trace context containing trace identifiers and span methods
@@ -256,14 +257,18 @@ function wrapFactoryWithTracing<TArgs extends unknown[], TReturn>(
 
   // Infer function name with priority:
   // 1. Explicit variable name (from instrument() or explicit name parameter)
-  // 2. Inner function name (the actual function being traced - e.g., "createUser")
-  // 3. Factory function name (for cases where factory itself is named)
+  // 2. Inner function name (named function expressions - e.g., "async function createUser")
+  // 3. Variable name from call stack (inferred from const assignment, for arrow functions)
+  // 4. Factory function name (for cases where factory itself is named)
   const innerFunctionName = inferFunctionName(
     sampleFn as InstrumentableFunction,
   );
+  const callStackVariableName = innerFunctionName
+    ? undefined
+    : inferVariableNameFromCallStack(); // Only infer from call stack if no inner function name
   const factoryName = inferFunctionName(factory as InstrumentableFunction);
   const effectiveVariableName =
-    variableName || innerFunctionName || factoryName;
+    variableName || innerFunctionName || callStackVariableName || factoryName;
 
   const useAsyncWrapper = isAsyncFunction(sampleFn);
 

@@ -109,6 +109,26 @@ describe('Functional API', () => {
         expect(spans[0]!.name).toBe('inferredName');
       });
 
+      it('should infer name from const assignment for factory pattern with arrow functions', async () => {
+        const collector = createTraceCollector();
+
+        // This is the factory pattern that was producing "unknown" trace names
+        const processDocuments = traceFactory(
+          (_ctx: TraceContext) => async (data: string) => {
+            return data.toUpperCase();
+          },
+        );
+
+        const result = await processDocuments('test');
+
+        expect(result).toBe('TEST');
+
+        const spans = collector.getSpans();
+        expect(spans).toHaveLength(1);
+        // Should infer 'processDocuments' from the const assignment, not 'unknown'
+        expect(spans[0]!.name).toBe('processDocuments');
+      });
+
       it('preserves sync return type for factory functions', () => {
         const collector = createTraceCollector();
 
