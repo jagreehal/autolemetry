@@ -25,14 +25,17 @@ init({
 });
 
 // Wrap any function - automatic spans, error tracking, and context
-export const processOrder = trace(async function processOrder(orderId: string, amount: number) {
+export const processOrder = trace(async function processOrder(
+  orderId: string,
+  amount: number,
+) {
   const user = await db.users.findById(orderId);
   const payment = await chargeCard(user.cardId, amount);
-  
+
   // Product analytics automatically enriched with trace context
   // Sent to: OTLP + PostHog + Slack (all in one call!)
   track('order.completed', { orderId, amount, userId: user.id });
-  
+
   return payment;
 });
 ```
@@ -90,6 +93,18 @@ Edge runtime support for:
 - Other edge environments
 
 **[→ View edge documentation](./packages/autolemetry-edge/README.md)**
+
+## Migrating from OpenTelemetry?
+
+**[Migration Guide](./docs/MIGRATION.md)** - Migrate from vanilla OpenTelemetry to autolemetry:
+
+- Quick start with copy-paste code examples
+- Pattern-by-pattern transformations (environment variables, manual SDK setup, manual spans, logger integration, sampling)
+- Side-by-side before/after comparisons
+- 9-phase migration checklist
+- Edge cases and when not to migrate
+
+Typical migration: Replace `NODE_OPTIONS` and 30+ lines of SDK boilerplate with `init()`, wrap functions with `trace()` instead of manual `span.start()`/`span.end()`.
 
 ## Quick Start
 
@@ -224,12 +239,12 @@ Autolemetry is built on top of OpenTelemetry and provides:
 
 ## Why Autolemetry?
 
-| Challenge | With autolemetry |
-| --- | --- |
-| Raw OpenTelemetry is verbose | One-line `trace()` wrapper with automatic lifecycle |
-| Vendor SDKs create lock-in | OTLP-native, works with any backend |
-| Need both observability & analytics | Unified API for traces, metrics, logs, and events |
-| Production safety concerns | Built-in sampling, rate limiting, redaction |
+| Challenge                           | With autolemetry                                    |
+| ----------------------------------- | --------------------------------------------------- |
+| Raw OpenTelemetry is verbose        | One-line `trace()` wrapper with automatic lifecycle |
+| Vendor SDKs create lock-in          | OTLP-native, works with any backend                 |
+| Need both observability & analytics | Unified API for traces, metrics, logs, and events   |
+| Production safety concerns          | Built-in sampling, rate limiting, redaction         |
 
 ## Roadmap
 

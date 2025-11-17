@@ -1,0 +1,190 @@
+# Autolemetry
+
+> OpenTelemetry instrumentation wrapper for Node.js and edge runtimes. Instrument code once and export to any OTLP-compatible backend.
+
+Functional API wrapper around OpenTelemetry with automatic span lifecycle management, tail sampling, rate limiting, circuit breakers, and PII redaction. Reduces typical SDK setup from 30+ lines to 5-10 lines.
+
+**Core Packages:**
+- `autolemetry` - Main package with trace/span/init functions for Node.js
+- `autolemetry-edge` - Lightweight version for Cloudflare Workers, Vercel Edge, Deno Deploy
+- `autolemetry-adapters` - Analytics adapters for PostHog, Mixpanel, Amplitude, Segment
+
+**Approach:** Functional wrappers (`trace()`, `span()`, `instrument()`) that handle span lifecycle, error recording, and context propagation automatically.
+
+**Main APIs:**
+- **Tracing**: `trace()`, `span()`, `withTracing()`, `instrument()`, `@Trace` decorators
+- **Analytics**: `track()`, `Analytics` class, adapters for PostHog/Mixpanel/Amplitude/Segment
+- **Metrics**: `Metrics` class, `createCounter()`, `createHistogram()` helpers
+- **Logging**: `createLogger()` with automatic trace context (pino/winston)
+- **Database**: `instrumentDatabase()` for query tracing (Drizzle support)
+- **LLM**: OpenLLMetry integration (OpenAI/Anthropic/LangChain/LlamaIndex)
+- **Serverless**: `flush()` for Lambda/Vercel, `autoFlush` for edge runtimes
+- **Runtime**: Adaptive sampling (10% baseline, 100% errors), rate limiting, circuit breakers, PII redaction
+- **Custom**: Helpers for instrumenting queues, cron jobs, custom libraries
+
+## Getting Started
+
+- [Main README](README.md): Project overview, installation, quick start examples
+- [Migration Guide](docs/MIGRATION.md): 5-minute migration from vanilla OpenTelemetry with pattern-by-pattern transformations
+
+### Quick Init
+
+```ts
+import { init } from 'autolemetry';
+
+init({
+  service: 'checkout-api',
+  endpoint: process.env.OTLP_ENDPOINT ?? 'http://localhost:4318',
+  environment: process.env.NODE_ENV ?? 'local',
+  integrations: true, // pulls in @opentelemetry/auto-instrumentations-node
+  adapters: [], // add PostHog/Mixpanel/Amplitude from autolemetry-adapters
+});
+```
+
+### Migrating a Manual Span (from MIGRATION.md → Pattern 3)
+
+```ts
+import { trace } from 'autolemetry';
+
+export const createUser = trace((ctx) => async (data: CreateUserInput) => {
+  ctx.setAttributes({
+    'user.id': data.id,
+    'user.plan': data.plan,
+  });
+
+  // Errors are auto-recorded, status auto-set
+  return await db.users.create(data);
+});
+```
+
+### Tail Sampling (MIGRATION.md → Pattern 5)
+
+```ts
+import { AdaptiveSampler, init } from 'autolemetry';
+
+init({
+  service: 'checkout',
+  sampler: new AdaptiveSampler({
+    baselineSampleRate: 0.1,
+    alwaysSampleErrors: true,
+    slowThresholdMs: 750,
+  }),
+});
+```
+
+### Serverless Flush (README → Serverless section)
+
+```ts
+import { init, trace, flush } from 'autolemetry';
+
+init({ service: 'my-lambda', endpoint: process.env.OTEL_EXPORTER_OTLP_ENDPOINT });
+
+export const handler = trace(async (event) => {
+  const result = await processEvent(event);
+  await flush({ timeout: 3000 });
+  return result;
+});
+```
+
+## Core Documentation
+
+- [Core Package (autolemetry)](packages/autolemetry/README.md): Complete API reference (1350 lines) covering functional API (trace, span, withTracing, instrument, decorators), analytics & metrics, logger integration, custom instrumentation (queues, cron, database, low-level spans), serverless & edge support, OpenLLMetry integration, runtime controls (sampling, rate limiting, circuit breakers, PII redaction), and configuration options.
+- [Edge Runtime (autolemetry-edge)](packages/autolemetry-edge/README.md): Edge-optimized OpenTelemetry for Cloudflare Workers, bundle size constraints (~43KB vs 700KB), automatic flush behavior
+- [Analytics Adapters](packages/autolemetry-adapters/README.md): Product analytics integration with PostHog, Mixpanel, Amplitude, Segment, webhook adapters
+
+## Examples
+
+- [Basic Example](apps/example-basic/README.md): Simple trace() usage, demonstrates functional API patterns
+- [HTTP Server Example](apps/example-http/README.md): Express/HTTP instrumentation with auto-instrumentations
+- [Cloudflare Workers Example](apps/cloudflare-example/README.md): Edge runtime deployment with autolemetry-edge
+- [AI Agent Example](apps/example-ai-agent/README.md): Tracing AI agent workflows with LLM calls
+
+## Usage Recipes
+
+### Add tracing to an Express server (README → Quick Start)
+
+```ts
+import './instrumentation'; // calls init() once
+import express from 'express';
+import { trace } from 'autolemetry';
+
+const app = express();
+
+app.get(
+  '/users/:id',
+  trace(async function getUser(req, res) {
+    const user = await db.users.find(req.params.id);
+    res.json(user);
+  }),
+);
+```
+
+### Track product analytics alongside traces (README → Business Metrics & Analytics)
+
+```ts
+import { init, track } from 'autolemetry';
+import { PostHogAdapter } from 'autolemetry-adapters';
+
+init({
+  service: 'checkout-api',
+  adapters: [new PostHogAdapter({ apiKey: process.env.POSTHOG_KEY! })],
+});
+
+export const processOrder = trace(async (order) => {
+  track('order.completed', {
+    orderId: order.id,
+    amount: order.total,
+  });
+  return charge(order);
+});
+```
+
+### Instrument Drizzle database queries (README → Database Instrumentation)
+
+```ts
+import { instrumentDatabase } from 'autolemetry/db';
+import { drizzle } from 'drizzle-orm/postgres-js';
+
+const db = drizzle(pool);
+
+instrumentDatabase(db, {
+  dbSystem: 'postgresql',
+  dbName: 'myapp',
+});
+
+export const getUsers = trace(async () => {
+  return await db.select().from(users);
+});
+```
+
+### Observe LLM calls with OpenLLMetry (README → LLM Observability)
+
+```ts
+import { init } from 'autolemetry';
+
+init({
+  service: 'rag-service',
+  endpoint: process.env.OTLP_ENDPOINT,
+  openllmetry: {
+    enabled: true,
+    options: {
+      disableBatch: process.env.NODE_ENV !== 'production',
+      apiKey: process.env.TRACELOOP_API_KEY,
+    },
+  },
+});
+```
+
+## Migration Nuggets
+
+- Replace `NODE_OPTIONS="--require @opentelemetry/auto-instrumentations-node/register"` with `init({ integrations: true })`
+- Swap manual `new NodeSDK()` setups for a single `init()` call and `shutdown()` in signal handlers
+- Wrap functions with `trace()` instead of manually calling `tracer.startSpan()` / `span.end()`
+- Use `AdaptiveSampler` for tail sampling—captures 100% of errors/slow spans while keeping cost low
+
+## Troubleshooting & Support
+
+- **No spans showing up?** Confirm `OTLP_ENDPOINT`/`endpoint` is reachable and check exporter logs.
+- **Need to disable metrics?** Set `metrics: false` or use `AUTOTELEMETRY_METRICS=off`.
+- **Serverless exports missing?** Call `await flush()` before returning or enable `autoFlush: true`.
+- **Have questions?** See `docs/MIGRATION.md` for pattern-by-pattern guides or open an issue in the repo.
