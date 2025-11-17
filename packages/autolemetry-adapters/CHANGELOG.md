@@ -1,5 +1,13 @@
 # autolemetry-adapters
 
+## 1.0.3
+
+### Patch Changes
+
+- 856a69e: Refresh LLM quickstart docs with user-focused recipes, migration notes, and troubleshooting tips.
+- Updated dependencies [856a69e]
+  - autolemetry@0.1.3
+
 ## 1.0.2
 
 ### Patch Changes
