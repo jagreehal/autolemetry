@@ -5,10 +5,14 @@
   "type": "module",
   "scripts": {
     "start:multi-agent": "tsx src/multi-agent-workflow.ts",
+    "start:multi-agent-openllmetry": "tsx src/multi-agent-workflow-with-openllmetry.ts",
     "start:rag": "tsx src/rag-pipeline.ts"
   },
   "dependencies": {
+    "@openai/agents": "^0.3.2",
     "@opentelemetry/auto-instrumentations-node": "^0.67.0",
+    "@traceloop/node-server-sdk": "^0.20.1",
+    "openai": "^6.9.0",
     "autolemetry": "workspace:*",
     "autolemetry-adapters": "workspace:*",
     "dotenv": "^17.2.3",

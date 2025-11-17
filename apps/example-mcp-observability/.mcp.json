@@ -1,0 +1,12 @@
+{
+  "mcpServers": {
+    "opentelemetry-mcp": {
+      "command": "pipx",
+      "args": ["run", "opentelemetry-mcp"],
+      "env": {
+        "BACKEND_TYPE": "jaeger",
+        "BACKEND_URL": "http://localhost:16686"
+      }
+    }
+  }
+}

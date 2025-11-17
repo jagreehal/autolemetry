@@ -5,6 +5,10 @@ This guide demonstrates how to instrument AI/LLM applications using Autolemetry'
 ## Table of Contents
 
 - [Overview](#overview)
+- [When to Use OpenLLMetry](#when-to-use-openllmetry)
+  - [Decision Criteria](#decision-criteria)
+  - [What Each Approach Provides](#what-each-approach-provides)
+  - [Best Practice: Use Both Together](#best-practice-use-both-together)
 - [Quick Reference](#quick-reference)
   - [Setup](#setup)
   - [Essential Patterns](#essential-patterns)
@@ -32,6 +36,313 @@ Autolemetry provides all the building blocks needed for comprehensive AI/LLM obs
 - **Multi-destination analytics** via adapters (PostHog, Mixpanel, etc.)
 
 **Key Insight**: Autolemetry's functional API patterns work perfectly for AI workflows - no special "AI-specific" APIs needed!
+
+## When to Use OpenLLMetry
+
+[OpenLLMetry](https://github.com/traceloop/openllmetry-js) provides automatic instrumentation for LLM API calls, while autolemetry's `trace()` function handles workflow orchestration and business metrics. Understanding when to use each - or both together - helps you build comprehensive AI observability.
+
+### Decision Criteria
+
+| Use Case | Recommendation | Why |
+|----------|---------------|-----|
+| **Using LLM SDKs** (OpenAI, Anthropic, Langchain, Vercel AI SDK, etc.) | ✅ **Enable OpenLLMetry** | Automatic capture of prompts, completions, tokens, model params without manual instrumentation |
+| **Custom LLM integrations** (direct HTTP calls, custom models) | ⚠️ **Manual `trace()` only** | OpenLLMetry won't detect custom integrations - use `trace()` with AI semantic conventions |
+| **Workflow orchestration** (multi-agent, RAG pipelines, evaluation loops) | ✅ **Always use `trace()`** | Critical for tracking workflow steps, handoffs, business logic - OpenLLMetry doesn't capture this |
+| **Business metrics** (user engagement, escalations, feedback loops) | ✅ **Always use `trace()` + `track()`** | Domain events require explicit instrumentation regardless of LLM library |
+| **Production applications** | ✅ **Use both together** | OpenLLMetry handles LLM internals, `trace()` handles everything else |
+
+### What Each Approach Provides
+
+#### OpenLLMetry Automatic Instrumentation
+
+When enabled via `init({ openllmetry: { enabled: true } })`, OpenLLMetry automatically captures:
+
+```typescript
+// Example: Using Vercel AI SDK
+import { generateText } from 'ai';
+
+// OpenLLMetry automatically instruments this call - zero code changes needed!
+const result = await generateText({
+  model: openai('gpt-4o'),
+  prompt: 'Explain quantum computing',
+});
+
+// Automatic span attributes captured:
+// - llm.request.model: "gpt-4o"
+// - llm.provider: "openai"
+// - llm.request.temperature: 0.7
+// - llm.usage.prompt_tokens: 45
+// - llm.usage.completion_tokens: 128
+// - llm.usage.total_tokens: 173
+// - llm.prompts.0.content: "Explain quantum computing"
+// - llm.completions.0.content: "[full response text]"
+```
+
+**What you get automatically:**
+
+- ✅ LLM API request/response details (prompts, completions, model parameters)
+- ✅ Token usage tracking (prompt, completion, total)
+- ✅ Timing and latency for each LLM call
+- ✅ Error capture for failed LLM requests
+- ✅ Support for streaming responses
+- ✅ Works with 20+ LLM providers/SDKs (OpenAI, Anthropic, Langchain, LlamaIndex, Vercel AI SDK, etc.)
+
+**What you DON'T get:**
+
+- ❌ Business workflow context (which agent? which step? why called?)
+- ❌ Business metrics (escalations, user satisfaction, custom events)
+- ❌ Correlation across workflow steps
+- ❌ Custom attributes for your domain logic
+
+#### Manual `trace()` Instrumentation
+
+Using autolemetry's `trace()` function provides full control over observability:
+
+```typescript
+import { trace } from 'autolemetry';
+
+const triageAgent = trace('agent.triage', ctx => async (input: string) => {
+  // Business context
+  ctx.setAttributes({
+    'agent.role': 'triage',
+    'agent.purpose': 'route_to_specialist',
+    'workflow.step': 1,
+  });
+
+  // Call LLM (OpenLLMetry will auto-instrument this call)
+  const result = await generateText({
+    model: openai('gpt-4o-mini'),
+    prompt: `Triage this request: ${input}`,
+  });
+
+  // Business metrics
+  const requiresEscalation = result.text.includes('ESCALATE');
+  ctx.setAttribute('triage.escalation_required', requiresEscalation);
+
+  return { decision: result.text, escalate: requiresEscalation };
+});
+```
+
+**What you get with `trace()`:**
+
+- ✅ Named workflow steps (clear span names like "agent.triage")
+- ✅ Business attributes (agent roles, workflow state, custom logic)
+- ✅ Correlation IDs automatically propagated
+- ✅ Parent-child span relationships for complex workflows
+- ✅ Integration with analytics via `track()` events
+- ✅ Works with ANY code (LLM or non-LLM)
+
+### Best Practice: Use Both Together
+
+The most powerful approach combines OpenLLMetry's automatic LLM instrumentation with autolemetry's workflow orchestration:
+
+```typescript
+import { init, trace, track } from 'autolemetry';
+
+// 1. Enable both at initialization
+init({
+  service: 'customer-support-ai',
+  endpoint: process.env.OTLP_ENDPOINT,
+  openllmetry: {
+    enabled: true, // ← Enables automatic LLM instrumentation
+    options: {
+      disableBatch: process.env.NODE_ENV !== 'production',
+    },
+  },
+});
+
+// 2. Use trace() for workflow orchestration
+const handleCustomerQuery = trace('workflow.customer_query', ctx => async (query: string, userId: string) => {
+  // Workflow-level context
+  ctx.setAttributes({
+    'workflow.type': 'customer_support',
+    'user.id': userId,
+  });
+
+  // Step 1: Triage (trace() creates span, OpenLLMetry instruments LLM call inside)
+  const triage = await trace('step.triage', async () => {
+    // OpenLLMetry automatically instruments this generateText() call
+    return await generateText({
+      model: openai('gpt-4o-mini'),
+      prompt: `Triage: ${query}`,
+    });
+  });
+
+  ctx.setAttribute('triage.category', triage.text);
+
+  // Business logic decides next step
+  const needsEscalation = triage.text.includes('ESCALATE');
+
+  if (needsEscalation) {
+    // Step 2: Specialist (another span with auto-instrumented LLM)
+    const specialist = await trace('step.specialist', async () => {
+      return await generateText({
+        model: openai('gpt-4o'), // More capable model
+        prompt: `Expert response needed: ${query}`,
+      });
+    });
+
+    // Track business event
+    track('escalation_occurred', {
+      category: triage.text,
+      userId,
+      correlationId: ctx.correlationId,
+    });
+
+    return { response: specialist.text, escalated: true };
+  }
+
+  return { response: triage.text, escalated: false };
+});
+```
+
+**What you get with both:**
+
+```text
+Trace Tree:
+workflow.customer_query (trace)
+├─ user.id: "user123"
+├─ workflow.type: "customer_support"
+├─ correlation.id: "abc-123-def"
+│
+├─ step.triage (trace)
+│  ├─ llm.chat (OpenLLMetry auto-span) ← Automatic!
+│  │  ├─ llm.request.model: "gpt-4o-mini"
+│  │  ├─ llm.usage.prompt_tokens: 23
+│  │  ├─ llm.usage.completion_tokens: 45
+│  │  └─ llm.prompts.0.content: "Triage: ..."
+│  └─ triage.category: "billing_issue"
+│
+└─ step.specialist (trace)
+   ├─ llm.chat (OpenLLMetry auto-span) ← Automatic!
+   │  ├─ llm.request.model: "gpt-4o"
+   │  ├─ llm.usage.prompt_tokens: 78
+   │  ├─ llm.usage.completion_tokens: 234
+   │  └─ llm.prompts.0.content: "Expert response needed: ..."
+   └─ escalated: true
+
+Analytics Event:
+escalation_occurred
+├─ category: "billing_issue"
+├─ userId: "user123"
+└─ correlationId: "abc-123-def" ← Automatic correlation!
+```
+
+**Key benefits of combining both:**
+
+1. **Zero-effort LLM telemetry**: OpenLLMetry captures all SDK calls automatically
+2. **Business context**: `trace()` adds workflow meaning and business logic
+3. **Perfect correlation**: All spans and events share the same correlation ID
+4. **Complete picture**: See both "what the LLM did" (OpenLLMetry) and "why it did it" (your trace spans)
+5. **Analytics integration**: Business events automatically correlated with technical traces
+
+### Setup Guide
+
+#### Option 1: OpenLLMetry Only (Not Recommended)
+
+If you only enable OpenLLMetry without using `trace()`, you'll get LLM call details but miss business context:
+
+```typescript
+import { init } from 'autolemetry';
+
+init({
+  service: 'my-ai-app',
+  openllmetry: { enabled: true },
+});
+
+// You'll see LLM spans but no workflow context
+const result = await generateText({ model: openai('gpt-4o'), prompt: 'test' });
+// ❌ No way to know: which agent? which step? which user? why called?
+```
+
+#### Option 2: Manual trace() Only (Good for Custom Models)
+
+If you're using custom LLM integrations or direct HTTP calls:
+
+```typescript
+import { trace } from 'autolemetry';
+
+const callCustomLLM = trace('llm.custom_model', ctx => async (prompt: string) => {
+  ctx.setAttributes({
+    'llm.model': 'my-custom-model-v2',
+    'llm.provider': 'self-hosted',
+    'llm.prompt': prompt,
+  });
+
+  const response = await fetch('https://my-llm-api.com/generate', {
+    method: 'POST',
+    body: JSON.stringify({ prompt }),
+  });
+
+  const data = await response.json();
+  ctx.setAttributes({
+    'llm.completion': data.text,
+    'llm.tokens': data.usage.totalTokens,
+  });
+
+  return data.text;
+});
+```
+
+#### Option 3: Both Together (Recommended)
+
+For production applications using LLM SDKs:
+
+```typescript
+import { init, trace } from 'autolemetry';
+
+init({
+  service: 'production-ai-app',
+  openllmetry: { enabled: true }, // ← Auto-instrument LLM SDKs
+});
+
+// Your workflow code uses trace() for business logic
+const workflow = trace('workflow.main', ctx => async (input: string) => {
+  // OpenLLMetry will auto-instrument any LLM calls inside
+  // trace() provides workflow context and business metrics
+  // Both appear as child spans in the same trace tree
+});
+```
+
+### Quick Decision Tree
+
+```text
+Are you using LLM SDKs (OpenAI, Anthropic, Vercel AI SDK, Langchain)?
+├─ Yes
+│  └─ Enable OpenLLMetry ✅
+│     └─ Do you need business context/metrics?
+│        ├─ Yes → Also use trace() ✅ (RECOMMENDED)
+│        └─ No → OpenLLMetry only (you'll regret this later)
+│
+└─ No (custom models, direct HTTP)
+   └─ Use trace() only ✅
+      └─ Add AI semantic conventions manually
+```
+
+### Real-World Examples
+
+#### Multi-Agent Workflow with OpenLLMetry
+
+See `apps/example-ai-agent/src/multi-agent-workflow-with-openllmetry.ts` for a complete example showing:
+
+- OpenLLMetry enabled in `init()` - single configuration point
+- Multi-agent workflow using `trace()` for business context
+- @openai/agents framework for agent orchestration
+- Real OpenAI SDK calls (via Ollama) auto-instrumented by OpenLLMetry
+- Business metrics and analytics integration
+- Full correlation across all spans and events
+
+Compare with `apps/example-ai-agent/src/multi-agent-workflow.ts` which uses simulated LLM calls (no OpenLLMetry needed).
+
+#### RAG Pipeline
+
+See `apps/example-ai-agent/src/rag-pipeline.ts` for a complete RAG pipeline example showing:
+
+- Embeddings generation tracking
+- Vector search observability
+- Context assembly monitoring
+- LLM generation with retrieved context
+- End-to-end pipeline metrics
 
 ## Quick Reference
 

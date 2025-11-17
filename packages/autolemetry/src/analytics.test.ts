@@ -1,12 +1,12 @@
 import { describe, it, expect, beforeEach, vi, afterEach } from 'vitest';
 import { Analytics, getAnalytics, resetAnalytics } from './analytics';
-import { type ILogger } from './logger';
+import { type Logger } from './logger';
 import { init } from './init';
 import { shutdown } from './shutdown';
 import { trace } from './functional';
 
 describe('Analytics', () => {
-  let mockLogger: ILogger;
+  let mockLogger: Logger;
 
   beforeEach(() => {
     resetAnalytics();
@@ -482,6 +482,53 @@ describe('Analytics', () => {
           }),
         }),
       );
+    });
+
+    it('should reliably infer function names in both factory and non-factory patterns', async () => {
+      init({ service: 'test-service' });
+
+      const analytics = new Analytics('test-service', { logger: mockLogger });
+
+      // Test 1: Named function declaration (non-factory pattern)
+      // Should infer name from function declaration
+      const updateUser = trace(async function updateUser(userId: string) {
+        analytics.trackEvent('user.updated', { userId });
+      });
+      await updateUser('user-123');
+
+      // Test 2: Named function with factory pattern (ctx parameter)
+      // Explicit name should take precedence
+      const deleteUser = trace(
+        'user.delete',
+        (ctx) =>
+          async function deleteUser(userId: string) {
+            ctx.setAttribute('user.id', userId);
+            analytics.trackEvent('user.deleted', { userId });
+          },
+      );
+      await deleteUser('user-456');
+
+      // Test 3: Named function in factory pattern (should infer inner function name)
+      const createOrder = trace(
+        (ctx) =>
+          async function createOrder(orderId: string) {
+            ctx.setAttribute('order.id', orderId);
+            analytics.trackEvent('order.created', { orderId });
+          },
+      );
+      await createOrder('order-789');
+
+      // Verify all operations captured correct names
+      const calls = (mockLogger.info as ReturnType<typeof vi.fn>).mock.calls;
+
+      // First call: updateUser - should infer from named function declaration
+      expect(calls[0][1].attributes['operation.name']).toMatch(/updateUser/);
+
+      // Second call: user.delete - explicit name takes precedence
+      expect(calls[1][1].attributes['operation.name']).toBe('user.delete');
+
+      // Third call: createOrder - should infer from inner named function in factory pattern
+      expect(calls[2][1].attributes['operation.name']).toMatch(/createOrder/);
     });
 
     it('should auto-capture operation.name in nested spans', async () => {

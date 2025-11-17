@@ -62,6 +62,22 @@ export interface TraceContext {
   correlationId: string;
   /** Function/operation name (OpenTelemetry semantic convention: code.function) */
   'code.function'?: string;
+  /** Datadog trace ID in decimal format (lower 64 bits) for log-trace correlation */
+  'dd.trace_id'?: string;
+  /** Datadog span ID in decimal format for log-trace correlation */
+  'dd.span_id'?: string;
+}
+
+/**
+ * Convert hex string to decimal string representation
+ * Handles 64-bit unsigned integers for Datadog correlation
+ *
+ * @param hex - Hex string (up to 16 characters for 64-bit)
+ * @returns Decimal string representation
+ */
+function hexToDecimal(hex: string): string {
+  // For 64-bit values, use BigInt to avoid precision loss
+  return BigInt('0x' + hex).toString(10);
 }
 
 /**
@@ -69,7 +85,10 @@ export interface TraceContext {
  *
  * Returns null if no span is active (e.g., outside of trace operation)
  *
- * @returns Trace context with traceId, spanId, correlationId, or null
+ * Includes both OpenTelemetry standard fields (hex) and Datadog-specific
+ * fields (decimal) for maximum compatibility.
+ *
+ * @returns Trace context with traceId, spanId, correlationId, and Datadog decimal IDs, or null
  *
  * @example
  * ```typescript
@@ -79,6 +98,8 @@ export interface TraceContext {
  * if (context) {
  *   console.log('Current trace:', context.traceId);
  *   // Current trace: 4bf92f3577b34da6a3ce929d0e0e4736
+ *   console.log('Datadog trace ID:', context['dd.trace_id']);
+ *   // Datadog trace ID: 12007117331170166582 (decimal for log correlation)
  * }
  * ```
  */
@@ -88,24 +109,37 @@ export function getTraceContext(): TraceContext | null {
 
   const spanContext = span.spanContext();
   const traceId = spanContext.traceId;
+  const spanId = spanContext.spanId;
 
   // Get span name from WeakMap (set when span is created)
   // Map to OpenTelemetry semantic convention: code.function
   const spanName = spanNameMap.get(span);
 
+  // Datadog uses the lower 64 bits of the 128-bit OpenTelemetry trace ID
+  // Convert from hex to decimal for Datadog's log-trace correlation
+  const traceIdLower64 = traceId.slice(-16); // Last 16 hex chars = lower 64 bits
+  const ddTraceId = hexToDecimal(traceIdLower64);
+  const ddSpanId = hexToDecimal(spanId);
+
   return {
     traceId,
-    spanId: spanContext.spanId,
+    spanId,
     correlationId: traceId.slice(0, 16),
     ...(spanName && { 'code.function': spanName }),
+    // Datadog-specific fields for log-trace correlation
+    'dd.trace_id': ddTraceId,
+    'dd.span_id': ddSpanId,
   };
 }
 
 /**
- * Enrich object with trace context (traceId, spanId, correlationId)
+ * Enrich object with trace context (traceId, spanId, correlationId, and Datadog fields)
  *
  * If no span is active, returns the object unchanged.
  * This prevents "undefined" or "null" values in logs.
+ *
+ * Automatically adds both OpenTelemetry standard fields (hex) and Datadog-specific
+ * fields (decimal) for maximum compatibility with observability backends.
  *
  * @param obj - Object to enrich (e.g., log metadata)
  * @returns Object with trace context merged in, or unchanged if no active span
@@ -116,7 +150,14 @@ export function getTraceContext(): TraceContext | null {
  *
  * // Inside a trace operation:
  * const enriched = enrichWithTraceContext({ userId: '123' });
- * // { userId: '123', traceId: '4bf...', spanId: '00f...', correlationId: '4bf...' }
+ * // {
+ * //   userId: '123',
+ * //   traceId: '4bf92f3577b34da6a3ce929d0e0e4736',
+ * //   spanId: '00f067aa0ba902b7',
+ * //   correlationId: '4bf92f3577b34da6',
+ * //   'dd.trace_id': '12007117331170166582',  // Datadog decimal format
+ * //   'dd.span_id': '67667974448284583'       // Datadog decimal format
+ * // }
  *
  * // Outside trace operation:
  * const unchanged = enrichWithTraceContext({ userId: '123' });

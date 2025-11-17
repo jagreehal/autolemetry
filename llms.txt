@@ -1,4 +1,4 @@
-# Autolemetry
+# Autolemetry (https://github.com/jagreehal/autolemetry)
 
 > OpenTelemetry instrumentation wrapper for Node.js and edge runtimes. Instrument code once and export to any OTLP-compatible backend.
 
@@ -20,11 +20,12 @@ Functional API wrapper around OpenTelemetry with automatic span lifecycle manage
 - **LLM**: OpenLLMetry integration (OpenAI/Anthropic/LangChain/LlamaIndex)
 - **Serverless**: `flush()` for Lambda/Vercel, `autoFlush` for edge runtimes
 - **Runtime**: Adaptive sampling (10% baseline, 100% errors), rate limiting, circuit breakers, PII redaction
+- **Debug**: `debug: boolean` for local development and production debugging
 - **Custom**: Helpers for instrumenting queues, cron jobs, custom libraries
 
 ## Getting Started
 
-- [Main README](README.md): Project overview, installation, quick start examples
+- [Main README](https://github.com/jagreehal/autolemetry/blob/main/README.md): Project overview, installation, quick start examples
 - [Migration Guide](docs/MIGRATION.md): 5-minute migration from vanilla OpenTelemetry with pattern-by-pattern transformations
 
 ### Quick Init
@@ -40,6 +41,34 @@ init({
   adapters: [], // add PostHog/Mixpanel/Amplitude from autolemetry-adapters
 });
 ```
+
+### Quick Debug Mode (Local Development)
+
+```ts
+import { init } from 'autolemetry';
+
+// Console-only mode - no backend setup required
+init({
+  service: 'my-app',
+  debug: true  // Prints spans to console
+});
+
+// Or for production debugging (console + backend)
+init({
+  service: 'my-app',
+  debug: true,  // See spans locally while still sending to backend
+  endpoint: 'https://otlp.datadoghq.com'
+});
+
+// Or via environment variable
+// AUTOLEMETRY_DEBUG=true node server.js
+```
+
+**Debug options:**
+- `debug: true`: Print spans to console AND send to backend (if endpoint configured)
+  - No endpoint = console-only (perfect for local development)
+  - With endpoint = console + backend (verify before choosing provider)
+- No debug flag: Send to backend only (default)
 
 ### Migrating a Manual Span (from MIGRATION.md → Pattern 3)
 
@@ -57,7 +86,7 @@ export const createUser = trace((ctx) => async (data: CreateUserInput) => {
 });
 ```
 
-### Tail Sampling (MIGRATION.md → Pattern 5)
+### Tail Sampling (https://github.com/jagreehal/autolemetry/blob/main/docs/MIGRATION.md → Pattern 5)
 
 ```ts
 import { AdaptiveSampler, init } from 'autolemetry';
@@ -88,16 +117,16 @@ export const handler = trace(async (event) => {
 
 ## Core Documentation
 
-- [Core Package (autolemetry)](packages/autolemetry/README.md): Complete API reference (1350 lines) covering functional API (trace, span, withTracing, instrument, decorators), analytics & metrics, logger integration, custom instrumentation (queues, cron, database, low-level spans), serverless & edge support, OpenLLMetry integration, runtime controls (sampling, rate limiting, circuit breakers, PII redaction), and configuration options.
-- [Edge Runtime (autolemetry-edge)](packages/autolemetry-edge/README.md): Edge-optimized OpenTelemetry for Cloudflare Workers, bundle size constraints (~43KB vs 700KB), automatic flush behavior
-- [Analytics Adapters](packages/autolemetry-adapters/README.md): Product analytics integration with PostHog, Mixpanel, Amplitude, Segment, webhook adapters
+- [Core Package (autolemetry)](https://github.com/jagreehal/autolemetry/blob/main/packages/autolemetry/README.md): Complete API reference (1350 lines) covering functional API (trace, span, withTracing, instrument, decorators), analytics & metrics, logger integration, custom instrumentation (queues, cron, database, low-level spans), serverless & edge support, OpenLLMetry integration, runtime controls (sampling, rate limiting, circuit breakers, PII redaction), and configuration options.
+- [Edge Runtime (autolemetry-edge)](https://github.com/jagreehal/autolemetry/blob/main/packages/autolemetry-edge/README.md): Edge-optimized OpenTelemetry for Cloudflare Workers, bundle size constraints (~43KB vs 700KB), automatic flush behavior
+- [Analytics Adapters](https://github.com/jagreehal/autolemetry/blob/main/  packages/autolemetry-adapters/README.md): Product analytics integration with PostHog, Mixpanel, Amplitude, Segment, webhook adapters
 
 ## Examples
 
-- [Basic Example](apps/example-basic/README.md): Simple trace() usage, demonstrates functional API patterns
-- [HTTP Server Example](apps/example-http/README.md): Express/HTTP instrumentation with auto-instrumentations
-- [Cloudflare Workers Example](apps/cloudflare-example/README.md): Edge runtime deployment with autolemetry-edge
-- [AI Agent Example](apps/example-ai-agent/README.md): Tracing AI agent workflows with LLM calls
+- [Basic Example](https://github.com/jagreehal/autolemetry/blob/main/apps/example-basic/README.md): Simple trace() usage, demonstrates functional API patterns
+- [HTTP Server Example](https://github.com/jagreehal/autolemetry/blob/main/apps/example-http/README.md): Express/HTTP instrumentation with auto-instrumentations
+- [Cloudflare Workers Example](https://github.com/jagreehal/autolemetry/blob/main/apps/cloudflare-example/README.md): Edge runtime deployment with autolemetry-edge
+- [AI Agent Example](https://github.com/jagreehal/autolemetry/blob/main/apps/example-ai-agent/README.md): Tracing AI agent workflows with LLM calls
 
 ## Usage Recipes
 
@@ -187,4 +216,5 @@ init({
 - **No spans showing up?** Confirm `OTLP_ENDPOINT`/`endpoint` is reachable and check exporter logs.
 - **Need to disable metrics?** Set `metrics: false` or use `AUTOTELEMETRY_METRICS=off`.
 - **Serverless exports missing?** Call `await flush()` before returning or enable `autoFlush: true`.
-- **Have questions?** See `docs/MIGRATION.md` for pattern-by-pattern guides or open an issue in the repo.
+- **Debugging locally?** Use `ConsoleSpanExporter` to print spans to console, or `InMemorySpanExporter` for test assertions. See [Troubleshooting & Debugging](packages/autolemetry/README.md#troubleshooting--debugging) section.
+- **Have questions?** See `https://github.com/jagreehal/autolemetry/blob/main/docs/MIGRATION.md` for pattern-by-pattern guides or open an issue in the repo.

@@ -10,8 +10,15 @@ import type { NodeSDKConfiguration } from '@opentelemetry/sdk-node';
 import {
   BatchSpanProcessor,
   type SpanProcessor,
+  SimpleSpanProcessor,
+  ConsoleSpanExporter,
 } from '@opentelemetry/sdk-trace-base';
-import type { SpanExporter } from '@opentelemetry/sdk-trace-base';
+import type {
+  SpanExporter,
+  ReadableSpan,
+  Span,
+} from '@opentelemetry/sdk-trace-base';
+import type { Context } from '@opentelemetry/api';
 import {
   resourceFromAttributes,
   type Resource,
@@ -30,10 +37,55 @@ import {
   PeriodicExportingMetricReader,
   type MetricReader,
 } from '@opentelemetry/sdk-metrics';
-import { OTLPMetricExporter } from '@opentelemetry/exporter-metrics-otlp-http';
-import { OTLPTraceExporter } from '@opentelemetry/exporter-trace-otlp-http';
+import { OTLPMetricExporter as OTLPMetricExporterHTTP } from '@opentelemetry/exporter-metrics-otlp-http';
+import { OTLPTraceExporter as OTLPTraceExporterHTTP } from '@opentelemetry/exporter-trace-otlp-http';
+import type { PushMetricExporter } from '@opentelemetry/sdk-metrics';
 import type { LogRecordProcessor } from '@opentelemetry/sdk-logs';
 import { TailSamplingSpanProcessor } from './tail-sampling-processor';
+
+/**
+ * CompositeSpanProcessor combines multiple span processors
+ * All operations are delegated to all processors
+ */
+class CompositeSpanProcessor implements SpanProcessor {
+  constructor(private readonly processors: SpanProcessor[]) {}
+
+  onStart(span: Span, parentContext: Context): void {
+    for (const processor of this.processors) {
+      processor.onStart(span, parentContext);
+    }
+  }
+
+  onEnd(span: ReadableSpan): void {
+    for (const processor of this.processors) {
+      processor.onEnd(span);
+    }
+  }
+
+  async shutdown(): Promise<void> {
+    await Promise.all(this.processors.map((p) => p.shutdown()));
+  }
+
+  async forceFlush(): Promise<void> {
+    await Promise.all(this.processors.map((p) => p.forceFlush()));
+  }
+}
+
+// Type imports for exporters
+type OTLPExporterConfig = {
+  url?: string;
+  headers?: Record<string, string>;
+  timeoutMillis?: number;
+  concurrencyLimit?: number;
+};
+
+// Lazy-load gRPC exporters (optional peer dependencies)
+let OTLPTraceExporterGRPC:
+  | (new (config: OTLPExporterConfig) => SpanExporter)
+  | undefined;
+let OTLPMetricExporterGRPC:
+  | (new (config: OTLPExporterConfig) => PushMetricExporter)
+  | undefined;
 
 // Lazy-load getNodeAutoInstrumentations to preserve optional peer dependency
 // This will be loaded at runtime when integrations option is used (not at module load time)
@@ -47,6 +99,125 @@ const AUTO_INSTRUMENTATIONS_NOT_FOUND = 'AUTO_INSTRUMENTATIONS_NOT_FOUND';
 class AutoInstrumentationsNotFoundError extends Error {
   readonly code: typeof AUTO_INSTRUMENTATIONS_NOT_FOUND =
     AUTO_INSTRUMENTATIONS_NOT_FOUND;
+}
+
+/**
+ * Helper: Lazy-load gRPC trace exporter
+ */
+function loadGRPCTraceExporter(): new (
+  config: OTLPExporterConfig,
+) => SpanExporter {
+  if (OTLPTraceExporterGRPC) return OTLPTraceExporterGRPC;
+
+  try {
+    // Dynamic import for optional peer dependency
+    // eslint-disable-next-line @typescript-eslint/no-require-imports
+    const grpcModule = require('@opentelemetry/exporter-trace-otlp-grpc');
+    OTLPTraceExporterGRPC = grpcModule.OTLPTraceExporter as new (
+      config: OTLPExporterConfig,
+    ) => SpanExporter;
+    return OTLPTraceExporterGRPC;
+  } catch {
+    throw new Error(
+      'gRPC trace exporter not found. Install with: pnpm add @opentelemetry/exporter-trace-otlp-grpc',
+    );
+  }
+}
+
+/**
+ * Helper: Lazy-load gRPC metric exporter
+ */
+function loadGRPCMetricExporter(): new (
+  config: OTLPExporterConfig,
+) => PushMetricExporter {
+  if (OTLPMetricExporterGRPC) return OTLPMetricExporterGRPC;
+
+  try {
+    // Dynamic import for optional peer dependency
+    // eslint-disable-next-line @typescript-eslint/no-require-imports
+    const grpcModule = require('@opentelemetry/exporter-metrics-otlp-grpc');
+    OTLPMetricExporterGRPC = grpcModule.OTLPMetricExporter as new (
+      config: OTLPExporterConfig,
+    ) => PushMetricExporter;
+    return OTLPMetricExporterGRPC;
+  } catch {
+    throw new Error(
+      'gRPC metric exporter not found. Install with: pnpm add @opentelemetry/exporter-metrics-otlp-grpc',
+    );
+  }
+}
+
+/**
+ * Helper: Create trace exporter based on protocol
+ */
+function createTraceExporter(
+  protocol: 'http' | 'grpc',
+  config: OTLPExporterConfig,
+): SpanExporter {
+  if (protocol === 'grpc') {
+    const Exporter = loadGRPCTraceExporter();
+    return new Exporter(config);
+  }
+
+  // Default: HTTP
+  return new OTLPTraceExporterHTTP(config);
+}
+
+/**
+ * Helper: Create metric exporter based on protocol
+ */
+function createMetricExporter(
+  protocol: 'http' | 'grpc',
+  config: OTLPExporterConfig,
+): PushMetricExporter {
+  if (protocol === 'grpc') {
+    const Exporter = loadGRPCMetricExporter();
+    return new Exporter(config);
+  }
+
+  // Default: HTTP
+  return new OTLPMetricExporterHTTP(config);
+}
+
+/**
+ * Helper: Resolve protocol from config and environment
+ */
+function resolveProtocol(configProtocol?: 'http' | 'grpc'): 'http' | 'grpc' {
+  // 1. Check config parameter (highest priority)
+  if (configProtocol === 'grpc' || configProtocol === 'http') {
+    return configProtocol;
+  }
+
+  // 2. Check OTEL_EXPORTER_OTLP_PROTOCOL env var
+  const envProtocol = process.env.OTEL_EXPORTER_OTLP_PROTOCOL;
+  if (envProtocol === 'grpc') return 'grpc';
+  if (envProtocol === 'http/protobuf' || envProtocol === 'http') return 'http';
+
+  // 3. Default to HTTP
+  return 'http';
+}
+
+/**
+ * Helper: Adjust endpoint URL for protocol
+ * gRPC exporters don't need the /v1/traces or /v1/metrics path
+ * HTTP exporters need the full path
+ */
+function formatEndpointUrl(
+  endpoint: string,
+  signal: 'traces' | 'metrics',
+  protocol: 'http' | 'grpc',
+): string {
+  if (protocol === 'grpc') {
+    // gRPC: strip any paths, return base endpoint
+    return endpoint.replace(/\/(v1\/)?(traces|metrics|logs)$/, '');
+  }
+
+  // HTTP: append signal path if not present
+  if (!endpoint.endsWith(`/v1/${signal}`)) {
+    return `${endpoint}/v1/${signal}`;
+  }
+
+  return endpoint;
 }
 
 /**
@@ -181,6 +352,40 @@ export interface AutolemetryConfig {
    * a "key=value" comma separated string.
    */
   otlpHeaders?: Record<string, string> | string;
+
+  /**
+   * OTLP protocol to use for traces, metrics, and logs
+   * - 'http': HTTP/protobuf (default, uses port 4318)
+   * - 'grpc': gRPC (uses port 4317)
+   *
+   * Can be overridden with OTEL_EXPORTER_OTLP_PROTOCOL env var.
+   *
+   * Note: gRPC exporters are optional peer dependencies. Install them with:
+   * ```bash
+   * pnpm add @opentelemetry/exporter-trace-otlp-grpc @opentelemetry/exporter-metrics-otlp-grpc
+   * ```
+   *
+   * @example HTTP (default)
+   * ```typescript
+   * init({
+   *   service: 'my-app',
+   *   protocol: 'http',  // or omit (defaults to http)
+   *   endpoint: 'http://localhost:4318'
+   * })
+   * ```
+   *
+   * @example gRPC
+   * ```typescript
+   * init({
+   *   service: 'my-app',
+   *   protocol: 'grpc',
+   *   endpoint: 'grpc://localhost:4317'
+   * })
+   * ```
+   *
+   * @default 'http'
+   */
+  protocol?: 'http' | 'grpc';
 
   /**
    * Optional factory to build a customised NodeSDK instance from our defaults.
@@ -323,6 +528,53 @@ export interface AutolemetryConfig {
   validation?: Partial<ValidationConfig>;
 
   /**
+   * Debug mode for local span inspection.
+   * Enables console output to help you see spans as they're created.
+   *
+   * When true: Outputs spans to console AND sends to backend (if endpoint/exporter configured)
+   * When false/undefined: Sends to backend only (default behavior)
+   *
+   * Perfect for progressive development:
+   * - Start with debug: true (no endpoint) → console-only, see traces immediately
+   * - Add endpoint later → console + backend, verify before choosing provider
+   * - Remove debug in production → backend only, clean production config
+   *
+   * Can be overridden with AUTOLEMETRY_DEBUG environment variable.
+   *
+   * @example Getting started - see spans immediately
+   * ```typescript
+   * init({
+   *   service: 'my-app',
+   *   debug: true  // No endpoint yet - console only!
+   * })
+   * ```
+   *
+   * @example Testing with local collector
+   * ```typescript
+   * init({
+   *   service: 'my-app',
+   *   debug: true,
+   *   endpoint: 'http://localhost:4318'  // Console + OTLP
+   * })
+   * ```
+   *
+   * @example Production debugging
+   * ```typescript
+   * init({
+   *   service: 'my-app',
+   *   debug: true,  // See what's being sent
+   *   endpoint: 'https://api.honeycomb.io'
+   * })
+   * ```
+   *
+   * @example Environment variable
+   * ```bash
+   * AUTOLEMETRY_DEBUG=true node server.js
+   * ```
+   */
+  debug?: boolean;
+
+  /**
    * OpenLLMetry integration for LLM observability.
    * Requires @traceloop/node-server-sdk as an optional peer dependency.
    *
@@ -379,6 +631,19 @@ export function resolveMetricsFlag(
 
   // 3. Default: enabled in all environments (simpler)
   return true;
+}
+
+/**
+ * Resolve debug flag with env var override support
+ */
+export function resolveDebugFlag(configFlag?: boolean): boolean {
+  // 1. Check env var override (highest priority)
+  const envFlag = process.env.AUTOLEMETRY_DEBUG;
+  if (envFlag === 'true' || envFlag === '1') return true;
+  if (envFlag === 'false' || envFlag === '0') return false;
+
+  // 2. Return config flag (defaults to false)
+  return configFlag ?? false;
 }
 
 function normalizeOtlpHeaders(
@@ -470,18 +735,37 @@ export function init(cfg: AutolemetryConfig): void {
   validationConfig = cfg.validation || null;
 
   // Initialize OpenTelemetry
-  const endpoint =
-    cfg.endpoint || process.env.OTLP_ENDPOINT || 'http://localhost:4318';
+  // Only use endpoint if explicitly configured (no default fallback)
+  const endpoint = cfg.endpoint || process.env.OTLP_ENDPOINT;
   const otlpHeaders = normalizeOtlpHeaders(cfg.otlpHeaders);
-  const version = cfg.version || detectVersion();
-  const environment = cfg.environment || process.env.NODE_ENV || 'development';
+  const version = cfg.version || process.env.DD_VERSION || detectVersion();
+  const environment =
+    cfg.environment ||
+    process.env.DD_ENV ||
+    process.env.NODE_ENV ||
+    'development';
   const metricsEnabled = resolveMetricsFlag(cfg.metrics);
+
+  // Detect hostname for proper Datadog correlation and Service Catalog discovery
+  const hostname = detectHostname();
 
   let resource = resourceFromAttributes({
     [ATTR_SERVICE_NAME]: cfg.service,
     [ATTR_SERVICE_VERSION]: version,
-    'deployment.environment': environment,
+    // Support both old and new OpenTelemetry semantic conventions for environment
+    'deployment.environment': environment, // Deprecated but widely supported
+    'deployment.environment.name': environment, // OTel v1.27.0+ standard
   });
+
+  // Add hostname attributes for Datadog Service Catalog and infrastructure correlation
+  if (hostname) {
+    resource = resource.merge(
+      resourceFromAttributes({
+        'host.name': hostname, // OpenTelemetry standard
+        'datadog.host.name': hostname, // Datadog-specific, highest priority for Datadog
+      }),
+    );
+  }
 
   if (cfg.resource) {
     resource = resource.merge(cfg.resource);
@@ -491,8 +775,11 @@ export function init(cfg: AutolemetryConfig): void {
     resource = resource.merge(resourceFromAttributes(cfg.resourceAttributes));
   }
 
+  // Resolve OTLP protocol (http or grpc)
+  const protocol = resolveProtocol(cfg.protocol);
+
   // Determine span processor: custom > custom exporter > default OTLP
-  let spanProcessor: SpanProcessor;
+  let spanProcessor: SpanProcessor | undefined;
 
   if (cfg.spanProcessor) {
     // User provided custom processor (full control)
@@ -502,10 +789,10 @@ export function init(cfg: AutolemetryConfig): void {
     spanProcessor = new TailSamplingSpanProcessor(
       new BatchSpanProcessor(cfg.spanExporter),
     );
-  } else {
-    // Default: OTLP with tail sampling (opinionated but flexible)
-    const traceExporter = new OTLPTraceExporter({
-      url: `${endpoint}/v1/traces`,
+  } else if (endpoint) {
+    // Default: OTLP with tail sampling (only if endpoint is configured)
+    const traceExporter = createTraceExporter(protocol, {
+      url: formatEndpointUrl(endpoint, 'traces', protocol),
       headers: otlpHeaders,
     });
 
@@ -513,14 +800,39 @@ export function init(cfg: AutolemetryConfig): void {
       new BatchSpanProcessor(traceExporter),
     );
   }
+  // If no endpoint and no custom processor/exporter, spanProcessor remains undefined
+  // SDK will still work but won't export traces
+
+  // Apply debug mode configuration
+  const debugMode = resolveDebugFlag(cfg.debug);
+
+  if (debugMode) {
+    // Debug enabled: console + backend (if configured)
+    const consoleProcessor = new SimpleSpanProcessor(new ConsoleSpanExporter());
+
+    if (spanProcessor) {
+      // Combine existing backend processor with console processor
+      spanProcessor = new CompositeSpanProcessor([
+        spanProcessor,
+        consoleProcessor,
+      ]);
+    } else {
+      // No backend configured, just use console (progressive development)
+      spanProcessor = consoleProcessor;
+    }
+  }
+  // If debug is false/undefined, use whatever spanProcessor was configured above (backend only)
 
   let metricReader: MetricReader | undefined = cfg.metricReader;
-  if (!metricReader && metricsEnabled) {
+  if (!metricReader && metricsEnabled && endpoint) {
+    // Only create OTLP metrics exporter if endpoint is configured
+    const metricExporter = createMetricExporter(protocol, {
+      url: formatEndpointUrl(endpoint, 'metrics', protocol),
+      headers: otlpHeaders,
+    });
+
     metricReader = new PeriodicExportingMetricReader({
-      exporter: new OTLPMetricExporter({
-        url: `${endpoint}/v1/metrics`,
-        headers: otlpHeaders,
-      }),
+      exporter: metricExporter,
     });
   }
 
@@ -562,9 +874,12 @@ export function init(cfg: AutolemetryConfig): void {
 
   const sdkOptions: Partial<NodeSDKConfiguration> = {
     resource,
-    spanProcessor,
     instrumentations: finalInstrumentations,
   };
+
+  if (spanProcessor) {
+    sdkOptions.spanProcessor = spanProcessor;
+  }
 
   if (metricReader) {
     sdkOptions.metricReader = metricReader;
@@ -614,10 +929,15 @@ export function init(cfg: AutolemetryConfig): void {
         error instanceof Error &&
         (error.message.includes('Cannot find module') ||
           error.message.includes('Module not found') ||
-          error.message.includes('Cannot resolve module'))
+          error.message.includes('Cannot resolve module') ||
+          error.message.includes('Dynamic require'))
       ) {
-        // Try async import as fallback - this will work with mocks in tests
-        initializeOpenLLMetry(cfg.openllmetry.options, sdk).catch((error_) => {
+        // Try async import as fallback - this will work with ESM/tsx and mocks in tests
+        initializeOpenLLMetry(
+          cfg.openllmetry.options,
+          sdk,
+          cfg.spanExporter,
+        ).catch((error_) => {
           logger.warn(
             `[autolemetry] OpenLLMetry initialization error: ${error_ instanceof Error ? error_.message : String(error_)}`,
           );
@@ -641,6 +961,7 @@ export function init(cfg: AutolemetryConfig): void {
 async function initializeOpenLLMetry(
   options?: Record<string, unknown>,
   sdkInstance?: NodeSDK,
+  spanExporter?: SpanExporter,
 ): Promise<void> {
   try {
     // Try synchronous require first (for testing/mocking), then fall back to dynamic import
@@ -663,6 +984,12 @@ async function initializeOpenLLMetry(
     const initOptions: Record<string, unknown> = {
       ...options,
     };
+
+    // Pass span exporter to OpenLLMetry if provided
+    // This ensures OpenLLMetry uses the same exporter as autolemetry
+    if (spanExporter) {
+      initOptions.exporter = spanExporter;
+    }
 
     // Reuse autolemetry's tracer provider if SDK is available
     if (sdkInstance) {
@@ -832,6 +1159,39 @@ function detectVersion(): string {
     return pkg.version || '1.0.0';
   } catch {
     return '1.0.0';
+  }
+}
+
+/**
+ * Detect hostname for resource attributes.
+ * Supports Datadog conventions (DD_HOSTNAME) and falls back to system hostname.
+ *
+ * Priority order:
+ * 1. DD_HOSTNAME environment variable (Datadog convention)
+ * 2. HOSTNAME environment variable (common Unix convention)
+ * 3. os.hostname() (system hostname)
+ *
+ * @returns hostname string or undefined if detection fails
+ */
+function detectHostname(): string | undefined {
+  // Priority 1: DD_HOSTNAME (Datadog convention)
+  if (process.env.DD_HOSTNAME) {
+    return process.env.DD_HOSTNAME;
+  }
+
+  // Priority 2: HOSTNAME (common in containers and Unix systems)
+  if (process.env.HOSTNAME) {
+    return process.env.HOSTNAME;
+  }
+
+  // Priority 3: System hostname
+  try {
+    // eslint-disable-next-line @typescript-eslint/no-require-imports
+    const os = require('node:os') as typeof import('node:os');
+    return os.hostname();
+  } catch {
+    // os module not available (edge runtime, browser, etc.)
+    return undefined;
   }
 }
 

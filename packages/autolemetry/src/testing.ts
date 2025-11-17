@@ -118,8 +118,8 @@ export function createTraceCollector(): TraceCollector {
     };
 
     const spanContextData: SpanContext = {
-      traceId: 'test-trace-id-1234567890abcdef',
-      spanId: 'test-span-id-12345678',
+      traceId: '1234567890abcdef1234567890abcdef', // 128-bit trace ID (32 hex chars)
+      spanId: '1234567890abcdef', // 64-bit span ID (16 hex chars)
       traceFlags: 1,
       isRemote: false,
     };

@@ -118,6 +118,36 @@ export const getUser = trace(async (id) => {
 
 The implementation auto-detects the pattern by analyzing the function signature and checking the first parameter name against known hints (`ctx`, `context`, `tracecontext`, etc.).
 
+#### Trace Name Inference
+
+Trace names are inferred automatically with the following priority:
+1. **Explicit name** (from `trace('customName', ...)` or `instrument()` key)
+2. **Named function expressions** (e.g., `trace((ctx) => async function createUser() {})`)
+3. **Variable name from assignment** (e.g., `const processDocuments = trace(...)` → "processDocuments")
+4. **Factory function name** (if the outer function is named)
+
+The variable name inference (priority #3) works by analyzing the call stack to find the source line where `trace()` is called, then parsing it to extract the variable name from const/let/var assignments. This is especially useful for arrow functions in the factory pattern:
+
+```typescript
+// Arrow function with inferred name from const assignment
+export const processDocuments = trace((ctx) => async (data: string) => {
+  ctx.setAttribute('document.count', data.length)
+  return data.toUpperCase()
+})
+// Trace name: "processDocuments" (inferred from const)
+
+// Named function expression (takes precedence)
+export const processDocuments = trace((ctx) => async function processData(data: string) => {
+  return data.toUpperCase()
+})
+// Trace name: "processData" (from named function, not "processDocuments")
+```
+
+**Limitations:**
+- Minified/obfuscated code may prevent name inference
+- Edge runtimes without file system access will fall back to unnamed spans
+- Results are cached per source location for performance
+
 ### Analytics Queue Pattern (`packages/autolemetry/src/analytics-queue.ts`)
 Analytics events use an async queue to prevent blocking the main execution path:
 - Events are queued immediately and returned
