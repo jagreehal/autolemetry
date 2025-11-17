@@ -13,10 +13,19 @@
 
 > Raw OpenTelemetry is verbose, and vendor SDKs create lock-in. Autolemetry gives you the best parts of both: clean ergonomics **and** total ownership of your telemetry.
 
+## Migrating from OpenTelemetry?
+
+**[Migration Guide](../../docs/MIGRATION.md)** - Pattern-by-pattern migration walkthrough with side-by-side comparisons and deployment checklist.
+
+Replace `NODE_OPTIONS` and 30+ lines of SDK boilerplate with `init()`, wrap functions with `trace()` instead of manual `span.start()`/`span.end()`.
+
+---
+
 ## Table of Contents
 
 - [🔭 autolemetry](#-autolemetry)
   - [Table of Contents](#table-of-contents)
+  - [Migrating from OpenTelemetry?](#migrating-from-opentelemetry)
   - [Why Autolemetry](#why-autolemetry)
   - [Quick Start](#quick-start)
     - [1. Install](#1-install)
@@ -409,7 +418,7 @@ Decorators are optional, everything also works in plain functions.
 Turn on query tracing in one line.
 
 ```typescript
-import { instrumentDatabase } from 'autolemetry';
+import { instrumentDatabase } from 'autolemetry/db';
 
 const db = drizzle(pool);
 

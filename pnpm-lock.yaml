@@ -46,14 +46,14 @@ importers:
     dependencies:
       alchemy:
         specifier: ^0.77.5
-        version: 0.77.5(drizzle-orm@0.44.7(@cloudflare/workers-types@4.20251115.0)(@opentelemetry/api@1.9.0)(@prisma/client@6.19.0(typescript@5.9.3))(@types/pg@8.15.6)(bun-types@1.3.2(@types/react@19.2.3)))(vite@7.2.2(@types/node@24.10.1)(jiti@2.6.1)(lightningcss@1.30.2)(tsx@4.20.6)(yaml@2.8.1))(workerd@1.20251105.0)(wrangler@4.46.0(@cloudflare/workers-types@4.20251115.0))
+        version: 0.77.5(drizzle-orm@0.44.7(@cloudflare/workers-types@4.20251117.0)(@opentelemetry/api@1.9.0)(@prisma/client@6.19.0(typescript@5.9.3))(@types/pg@8.15.6)(bun-types@1.3.2(@types/react@19.2.3)))(vite@7.2.2(@types/node@24.10.1)(jiti@2.6.1)(lightningcss@1.30.2)(tsx@4.20.6)(yaml@2.8.1))(workerd@1.20251105.0)(wrangler@4.46.0(@cloudflare/workers-types@4.20251117.0))
       autolemetry-edge:
         specifier: workspace:*
         version: link:../../packages/autolemetry-edge
     devDependencies:
       '@cloudflare/workers-types':
-        specifier: ^4.20251115.0
-        version: 4.20251115.0
+        specifier: ^4.20251117.0
+        version: 4.20251117.0
       typescript:
         specifier: ^5.9.3
         version: 5.9.3
@@ -178,8 +178,8 @@ importers:
         specifier: ^1.38.0
         version: 1.38.0
       '@traceloop/node-server-sdk':
-        specifier: '*'
-        version: 0.20.0(@opentelemetry/api@1.9.0)(@opentelemetry/exporter-trace-otlp-proto@0.208.0(@opentelemetry/api@1.9.0))(@opentelemetry/resources@2.2.0(@opentelemetry/api@1.9.0))(@opentelemetry/sdk-trace-base@2.2.0(@opentelemetry/api@1.9.0))(chokidar@3.6.0)
+        specifier: ^0.20.1
+        version: 0.20.1(@opentelemetry/api@1.9.0)(@opentelemetry/exporter-trace-otlp-proto@0.208.0(@opentelemetry/api@1.9.0))(@opentelemetry/resources@2.2.0(@opentelemetry/api@1.9.0))(@opentelemetry/sdk-trace-base@2.2.0(@opentelemetry/api@1.9.0))(chokidar@3.6.0)
       pino-pretty:
         specifier: ^13.1.2
         version: 13.1.2
@@ -278,8 +278,8 @@ importers:
         specifier: ^0.18.2
         version: 0.18.2
       '@cloudflare/workers-types':
-        specifier: ^4.20251115.0
-        version: 4.20251115.0
+        specifier: ^4.20251117.0
+        version: 4.20251117.0
       '@prisma/client':
         specifier: ^6.19.0
         version: 6.19.0(typescript@5.9.3)
@@ -300,7 +300,7 @@ importers:
         version: link:../autolemetry
       drizzle-orm:
         specifier: ^0.44.7
-        version: 0.44.7(@cloudflare/workers-types@4.20251115.0)(@opentelemetry/api@1.9.0)(@prisma/client@6.19.0(typescript@5.9.3))(@types/pg@8.15.6)(bun-types@1.3.2(@types/react@19.2.3))
+        version: 0.44.7(@cloudflare/workers-types@4.20251117.0)(@opentelemetry/api@1.9.0)(@prisma/client@6.19.0(typescript@5.9.3))(@types/pg@8.15.6)(bun-types@1.3.2(@types/react@19.2.3))
       eslint-config-prettier:
         specifier: ^10.1.8
         version: 10.1.8(eslint@9.39.1(jiti@2.6.1))
@@ -360,8 +360,8 @@ importers:
         version: 1.38.0
     devDependencies:
       '@cloudflare/workers-types':
-        specifier: ^4.20251115.0
-        version: 4.20251115.0
+        specifier: ^4.20251117.0
+        version: 4.20251117.0
       '@opentelemetry/context-async-hooks':
         specifier: ^2.2.0
         version: 2.2.0(@opentelemetry/api@1.9.0)
@@ -407,7 +407,7 @@ importers:
         version: 8.46.4(eslint@9.39.1(jiti@2.6.1))(typescript@5.9.3)
       drizzle-orm:
         specifier: ^0.44.7
-        version: 0.44.7(@cloudflare/workers-types@4.20251115.0)(@opentelemetry/api@1.9.0)(@prisma/client@6.19.0(typescript@5.9.3))(@types/pg@8.15.6)(bun-types@1.3.2(@types/react@19.2.3))
+        version: 0.44.7(@cloudflare/workers-types@4.20251117.0)(@opentelemetry/api@1.9.0)(@prisma/client@6.19.0(typescript@5.9.3))(@types/pg@8.15.6)(bun-types@1.3.2(@types/react@19.2.3))
       eslint-config-prettier:
         specifier: ^10.1.8
         version: 10.1.8(eslint@9.39.1(jiti@2.6.1))
@@ -689,8 +689,8 @@ packages:
     cpu: [x64]
     os: [win32]
 
-  '@cloudflare/workers-types@4.20251115.0':
-    resolution: {integrity: sha512-aM7jp7IfKhqKvfSaK1IhVTbSzxB6KQ4gX8e/W29tOuZk+YHlYXuRd/bMm4hWkfd7B1HWNWdsx1GTaEUoZIuVsw==}
+  '@cloudflare/workers-types@4.20251117.0':
+    resolution: {integrity: sha512-4U6phQE/qbmWuJX/0cTk3iOx9KyhWmo34okKb2BSS09UMRWLCwML+P3dnHxCHnSQij8c0orvdzMr9hyqgJGNgw==}
 
   '@colors/colors@1.5.0':
     resolution: {integrity: sha512-ooWCrlZP11i8GImSjTHYHLkvFDP48nS4+204nGb1RiX/WXYHmJA2III9/e2DWVabCESdW7hBAEzHRqUn9OUVvQ==}
@@ -1226,21 +1226,21 @@ packages:
     resolution: {integrity: sha512-43/qtrDUokr7LJqoF2c3+RInu/t4zfrpYdoSDfYyhg52rwLV6TnOvdG4fXm7IkSB3wErkcmJS9iEhjVtOSEjjA==}
     engines: {node: ^18.18.0 || ^20.9.0 || >=21.1.0}
 
-  '@google-cloud/opentelemetry-cloud-trace-exporter@1.2.0':
-    resolution: {integrity: sha512-73rikv8RTZmQvLwCREPceFVG/H2KyWMF3ggj7nBLR4RJwn+ZBQTaZ2A4d+hVU4M8+d7A9LApqG33ZfGk7lnQDQ==}
-    engines: {node: '>=10'}
+  '@google-cloud/opentelemetry-cloud-trace-exporter@3.0.0':
+    resolution: {integrity: sha512-mUfLJBFo+ESbO0dAGboErx2VyZ7rbrHcQvTP99yH/J72dGaPbH2IzS+04TFbTbEd1VW5R9uK3xq2CqawQaG+1Q==}
+    engines: {node: '>=18'}
     peerDependencies:
       '@opentelemetry/api': ^1.0.0
-      '@opentelemetry/core': ^1.0.0
-      '@opentelemetry/resources': ^1.0.0
-      '@opentelemetry/sdk-trace-base': ^1.0.0
+      '@opentelemetry/core': ^2.0.0
+      '@opentelemetry/resources': ^2.0.0
+      '@opentelemetry/sdk-trace-base': ^2.0.0
 
-  '@google-cloud/opentelemetry-resource-util@1.2.0':
-    resolution: {integrity: sha512-1NCk5o4mJEMgeJaCjffwAsbdrfRepFJ0ZbfSQ3eS4IyqnUZn5wyX027xtk7lNy0RBJF7lyhQwxtN7sSbtvp+YA==}
-    engines: {node: '>=10'}
+  '@google-cloud/opentelemetry-resource-util@3.0.0':
+    resolution: {integrity: sha512-CGR/lNzIfTKlZoZFfS6CkVzx+nsC9gzy6S8VcyaLegfEJbiPjxbMLP7csyhJTvZe/iRRcQJxSk0q8gfrGqD3/Q==}
+    engines: {node: '>=18'}
     peerDependencies:
-      '@opentelemetry/resources': ^1.0.0
-      '@opentelemetry/semantic-conventions': ^1.0.0
+      '@opentelemetry/core': ^2.0.0
+      '@opentelemetry/resources': ^2.0.0
 
   '@grpc/grpc-js@1.14.0':
     resolution: {integrity: sha512-N8Jx6PaYzcTRNzirReJCtADVoq4z7+1KQ4E70jTg/koQiMoUSN1kbNjPOqpPbhMFhfU1/l7ixspPl8dNY+FoUg==}
@@ -2558,8 +2558,8 @@ packages:
     resolution: {integrity: sha512-z7b0JlyFXC+RMrj78OyKiO0WAe2hKPRJ36KNz8IarzYYMPOv02PWo0itqQO17ZFXK9XcbaxcllAati0u6Ekolg==}
     engines: {node: '>=14'}
 
-  '@traceloop/node-server-sdk@0.20.0':
-    resolution: {integrity: sha512-Kv2r2khSseBTpJ2kWw3DGl0hr4InPR+LVdO0EVs/bNYlK7bwvHJH46m8DmuL+4QBcrgRfAxn7ErgjpD9CI0VzQ==}
+  '@traceloop/node-server-sdk@0.20.1':
+    resolution: {integrity: sha512-vIxoE3Mzisd+q45bNPVcD8E7Z3rQNp1vF2Y+vpSpqUzWiXcE0zTOWjzZ4uj3n6h6hFUX3GbqNpoLU8eDk7RO5A==}
     engines: {node: '>=18.0.0'}
     peerDependencies:
       '@opentelemetry/api': ^1.9.0
@@ -2922,10 +2922,6 @@ packages:
 
   array-union@2.1.0:
     resolution: {integrity: sha512-HGyxoOTYUyCM6stUe6EJgnd4EoewAI7zMdfqO+kGjnlZmBDz/cR5pf8r/cR4Wq60sL/p0IkcjUEEPwS3GFrIyw==}
-    engines: {node: '>=8'}
-
-  arrify@2.0.1:
-    resolution: {integrity: sha512-3duEwti880xqi4eAMN8AyR4a0ByT90zoYdLlevfrvU43vb0YZwZVfxOgxWrLXXXpyugL0hNZc9G6BiB5B3nUug==}
     engines: {node: '>=8'}
 
   asap@2.0.6:
@@ -3599,9 +3595,6 @@ packages:
   fast-safe-stringify@2.1.1:
     resolution: {integrity: sha512-W+KJc2dmILlPplD/H4K9l9LcAHAfPtP6BY84uVLXQ6Evcz9Lcg33Y2z1IVblT6xdY54PXYVHEv+0Wpq8Io6zkA==}
 
-  fast-text-encoding@1.0.6:
-    resolution: {integrity: sha512-VhXlQgj9ioXCqGstD37E/HBeqEGV/qOD/kmbVG8h5xKBYvM1L3lR1Zn4555cQ8GkYbJa8aJSipLPndE1k6zK2w==}
-
   fast-xml-parser@5.2.5:
     resolution: {integrity: sha512-pfX9uG9Ki0yekDHx2SiuRIyFdyAr1kMIMitPvb0YBo8SUfKvia7w7FIyd/l6av85pFYRhZscS75MwMnbvY+hcQ==}
     hasBin: true
@@ -3711,17 +3704,9 @@ packages:
   function-bind@1.1.2:
     resolution: {integrity: sha512-7XHNxH7qX9xG5mIwxkhumTox/MIRNcOgDrxWsMt2pAr23WHp6MrRlN7FBSFpCpr+oVO0F744iUgR82nJMfG2SA==}
 
-  gaxios@4.3.3:
-    resolution: {integrity: sha512-gSaYYIO1Y3wUtdfHmjDUZ8LWaxJQpiavzbF5Kq53akSzvmVg0RfyOcFDbO1KJ/KCGRFz2qG+lS81F0nkr7cRJA==}
-    engines: {node: '>=10'}
-
   gaxios@6.7.1:
     resolution: {integrity: sha512-LDODD4TMYx7XXdpwxAVRAIAuB0bzv0s+ywFonY46k126qzQHT9ygyoa9tncmOiQmmDrik65UYsEkv3lbfqQ3yQ==}
     engines: {node: '>=14'}
-
-  gcp-metadata@4.3.1:
-    resolution: {integrity: sha512-x850LS5N7V1F3UcV7PoupzGsyD6iVwTVvsh3tbXfkctZnBnjW5yu5z1/3k3SehF7TyoTIe78rJs02GMMy+LF+A==}
-    engines: {node: '>=10'}
 
   gcp-metadata@6.1.1:
     resolution: {integrity: sha512-a4tiq7E0/5fTjxPAaH4jpjkSv/uCaU2p5KC6HVGrvl0cDjA8iBZv4vv1gyzlmK0ZUKqwpOyQMKzZQe3lTit77A==}
@@ -3781,10 +3766,6 @@ packages:
   globrex@0.1.2:
     resolution: {integrity: sha512-uHJgbwAMwNFf5mLst7IWLNg14x1CkeqglJb/K3doi4dw6q2IvAAmM/Y81kevy83wP+Sst+nutFTYOGg3d1lsxg==}
 
-  google-auth-library@7.14.1:
-    resolution: {integrity: sha512-5Rk7iLNDFhFeBYc3s8l1CqzbEBcdhwR193RlD4vSNFajIcINKI8W8P0JLmBpwymHqqWbX34pJDQu39cSy/6RsA==}
-    engines: {node: '>=10'}
-
   google-auth-library@9.15.1:
     resolution: {integrity: sha512-Jb6Z0+nvECVz+2lzSMt9u98UsoakXxA2HGHMCxh+so3n90XgYWkq5dur19JAJV7ONiJY22yBTyJB1TSkvPq9Ng==}
     engines: {node: '>=14'}
@@ -3797,16 +3778,6 @@ packages:
     resolution: {integrity: sha512-NEgUnEcBiP5HrPzufUkBzJOD/Sxsco3rLNo1F1TNf7ieU8ryUzBhqba8r756CjLX7rn3fHl6iLEwPYuqpoKgQQ==}
     engines: {node: '>=14'}
 
-  google-p12-pem@3.1.4:
-    resolution: {integrity: sha512-HHuHmkLgwjdmVRngf5+gSmpkyaRI6QmOg77J8tkNBHhNEI62sGHyw4/+UkgyZEI7h84NbWprXDJ+sa3xOYFvTg==}
-    engines: {node: '>=10'}
-    deprecated: Package is no longer maintained
-    hasBin: true
-
-  google-proto-files@2.5.2:
-    resolution: {integrity: sha512-++IfDghgAWRk2Hz3KJ8qMtLkXxrY8QlhyBjMYoNieGlYKcGyWZ5J26S9Zk8dCnVRt9NBcYSYg6GfQCrpmfNeJg==}
-    engines: {node: '>=10'}
-
   gopd@1.2.0:
     resolution: {integrity: sha512-ZUKRh6/kUFoAiTAtTYPZJ3hw9wNxx+BIBOijnlG9PnrJsCcSjs1wyyD6vJpaYtgnzDrKYRSqf3OO6Rfa93xsRg==}
     engines: {node: '>= 0.4'}
@@ -3816,10 +3787,6 @@ packages:
 
   graphemer@1.4.0:
     resolution: {integrity: sha512-EtKwoO6kxCL9WO5xipiHTZlSzBm7WLT627TqC/uVRd0HKmq8NXyebnNYxDoBi7wt8eTWrUrKXCOVaFq9x1kgag==}
-
-  gtoken@5.3.2:
-    resolution: {integrity: sha512-gkvEKREW7dXWF8NV8pVrKfW7WqReAmjjkMBh6lNCCGOM4ucS0r0YyXXl0r/9Yj8wcW/32ISkfc8h5mPTDbtifQ==}
-    engines: {node: '>=10'}
 
   gtoken@7.1.0:
     resolution: {integrity: sha512-pCcEwRi+TKpMlxAQObHDQ56KawURgyAf6jtIY046fJ5tIv3zDe/LEIubckAO8fj6JnAxLdmWkUfNyulQ2iKdEw==}
@@ -4207,9 +4174,6 @@ packages:
     resolution: {integrity: sha512-HgMmCqIJSAKqo68l0rS2AanEWfkxaZ5wNiEFb5ggm08lDs9Xl2KxBlX3PTcaD2chBM1gXAYf491/M2Rv8Jwayg==}
     engines: {node: '>= 0.6.0'}
 
-  long@4.0.0:
-    resolution: {integrity: sha512-XsP+KhQif4bjX1kbuSiySJFNAehNxgLb6hPRGJ9QsUr8ajHkuXGdrHmFUTUUXhDwVX2R5bY4JNZEwbUiMhV+MA==}
-
   long@5.3.2:
     resolution: {integrity: sha512-mNAgZ1GmyNhD7AuqnTG3/VQ26o760+ZYBPKjPvugO8+nLbYfX6TVpJPseBvopbdY+qpZ/lKUnmEc1LeZYS3QAA==}
 
@@ -4219,10 +4183,6 @@ packages:
   lru-cache@11.2.2:
     resolution: {integrity: sha512-F9ODfyqML2coTIsQpSkRHnLSZMtkU8Q+mSfcaIyKwy58u+8k5nvAYeiNhsyMARvzNcXJ9QfWVrcPsC9e9rAxtg==}
     engines: {node: 20 || >=22}
-
-  lru-cache@6.0.0:
-    resolution: {integrity: sha512-Jo6dJ04CmSjuznwJSS3pUeWmd/H0ffTlkXXgwZi+eq1UCmqQwCh+eLsYOYCwY991i2Fah4h1BEMCx4qThGbsiA==}
-    engines: {node: '>=10'}
 
   magic-string@0.30.21:
     resolution: {integrity: sha512-vd2F4YUyEXKGcLHoq+TEyCjxueSeHnFxyyjNp80yg0XV4vUhnDer/lvvlqM/arB5bXQN5K2/3oinyCRyx8T2CQ==}
@@ -4399,10 +4359,6 @@ packages:
     peerDependenciesMeta:
       encoding:
         optional: true
-
-  node-forge@1.3.1:
-    resolution: {integrity: sha512-dPEtOeMvF9VMcYV/1Wb8CPoVAXtp6MKMlcbAt4ddqmGqUJ6fQZFXkNZNkNlfevtNkGtaSoXf/vNNNSvgrdXwtA==}
-    engines: {node: '>= 6.13.0'}
 
   node-releases@2.0.23:
     resolution: {integrity: sha512-cCmFDMSm26S6tQSDpBCg/NR8NENrVPhAJSf+XbxBG4rPFaaonlEoE9wHQmun+cls499TQGSb7ZyPBRlzgKfpeg==}
@@ -4704,10 +4660,6 @@ packages:
   proto3-json-serializer@2.0.2:
     resolution: {integrity: sha512-SAzp/O4Yh02jGdRc+uIrGoe87dkN/XtwxfZ4ZyafJHymd79ozp5VG5nyZ7ygqPM5+cpLDjjGnYFUkngonyDPOQ==}
     engines: {node: '>=14.0.0'}
-
-  protobufjs@6.11.4:
-    resolution: {integrity: sha512-5kQWPaJHi1WoCpjTGszzQ32PG2F4+wRY6BmAT4Vfw56Q2FZ4YZzK20xUYQH4YkfehY1e6QSICrJquM6xXZNcrw==}
-    hasBin: true
 
   protobufjs@7.5.4:
     resolution: {integrity: sha512-CvexbZtbov6jW2eXAvLukXjXUW1TzFaivC46BpWc/3BpcCysb5Vffu+B3XHMm8lVEuy2Mm4XGex8hBSg1yapPg==}
@@ -5373,10 +5325,6 @@ packages:
       jsdom:
         optional: true
 
-  walkdir@0.4.1:
-    resolution: {integrity: sha512-3eBwRyEln6E1MSzcxcVpQIhRG8Q1jLvEqRmCZqS3dsfXEDR/AhOF4d+jHg1qvDCpYaVRZjENPQyrVxAkQqxPgQ==}
-    engines: {node: '>=6.0.0'}
-
   webidl-conversions@3.0.1:
     resolution: {integrity: sha512-2JAn3z8AR6rjK8Sm8orRC0h/bcl/DqL7tRPdGZ4I1CjdF+EaMLmYxBHyXuKL849eucPFhvBoxMsflfOb8kxaeQ==}
 
@@ -5474,9 +5422,6 @@ packages:
   y18n@5.0.8:
     resolution: {integrity: sha512-0pfFzegeDWJHJIAmTLRP2DwHjdF5s7jo9tuztdQxAhINCdvS+3nGINqPd00AphqJR/0LhANUS6/+7SCb98YOfA==}
     engines: {node: '>=10'}
-
-  yallist@4.0.0:
-    resolution: {integrity: sha512-3wdGidZyq5PB084XLES5TpOSRA3wjXAlIWMhum2kRcv/41Sn2emQ0dycQW4uZXLejwKvg6EsvbdlVL+FYEct7A==}
 
   yaml@2.8.1:
     resolution: {integrity: sha512-lcYcMxX2PO9XMGvAJkJ3OsNMw+/7FKes7/hgerGUYWIoWu5j/+YQqcZr5JnPZWzOsEBgMbSbiSTn/dv/69Mkpw==}
@@ -6131,7 +6076,7 @@ snapshots:
   '@cloudflare/workerd-windows-64@1.20251105.0':
     optional: true
 
-  '@cloudflare/workers-types@4.20251115.0': {}
+  '@cloudflare/workers-types@4.20251117.0': {}
 
   '@colors/colors@1.5.0':
     optional: true
@@ -6445,26 +6390,29 @@ snapshots:
       '@eslint/core': 0.17.0
       levn: 0.4.1
 
-  '@google-cloud/opentelemetry-cloud-trace-exporter@1.2.0(@opentelemetry/api@1.9.0)(@opentelemetry/core@2.2.0(@opentelemetry/api@1.9.0))(@opentelemetry/resources@2.2.0(@opentelemetry/api@1.9.0))(@opentelemetry/sdk-trace-base@2.2.0(@opentelemetry/api@1.9.0))(@opentelemetry/semantic-conventions@1.38.0)(supports-color@10.2.2)':
+  '@google-cloud/opentelemetry-cloud-trace-exporter@3.0.0(@opentelemetry/api@1.9.0)(@opentelemetry/core@2.2.0(@opentelemetry/api@1.9.0))(@opentelemetry/resources@2.2.0(@opentelemetry/api@1.9.0))(@opentelemetry/sdk-trace-base@2.2.0(@opentelemetry/api@1.9.0))(supports-color@10.2.2)':
     dependencies:
-      '@google-cloud/opentelemetry-resource-util': 1.2.0(@opentelemetry/resources@2.2.0(@opentelemetry/api@1.9.0))(@opentelemetry/semantic-conventions@1.38.0)
+      '@google-cloud/opentelemetry-resource-util': 3.0.0(@opentelemetry/core@2.2.0(@opentelemetry/api@1.9.0))(@opentelemetry/resources@2.2.0(@opentelemetry/api@1.9.0))(supports-color@10.2.2)
       '@grpc/grpc-js': 1.14.0
-      '@grpc/proto-loader': 0.7.15
+      '@grpc/proto-loader': 0.8.0
       '@opentelemetry/api': 1.9.0
       '@opentelemetry/core': 2.2.0(@opentelemetry/api@1.9.0)
       '@opentelemetry/resources': 2.2.0(@opentelemetry/api@1.9.0)
       '@opentelemetry/sdk-trace-base': 2.2.0(@opentelemetry/api@1.9.0)
-      google-auth-library: 7.14.1(supports-color@10.2.2)
-      google-proto-files: 2.5.2
+      google-auth-library: 9.15.1(supports-color@10.2.2)
     transitivePeerDependencies:
-      - '@opentelemetry/semantic-conventions'
       - encoding
       - supports-color
 
-  '@google-cloud/opentelemetry-resource-util@1.2.0(@opentelemetry/resources@2.2.0(@opentelemetry/api@1.9.0))(@opentelemetry/semantic-conventions@1.38.0)':
+  '@google-cloud/opentelemetry-resource-util@3.0.0(@opentelemetry/core@2.2.0(@opentelemetry/api@1.9.0))(@opentelemetry/resources@2.2.0(@opentelemetry/api@1.9.0))(supports-color@10.2.2)':
     dependencies:
+      '@opentelemetry/core': 2.2.0(@opentelemetry/api@1.9.0)
       '@opentelemetry/resources': 2.2.0(@opentelemetry/api@1.9.0)
       '@opentelemetry/semantic-conventions': 1.38.0
+      gcp-metadata: 6.1.1(supports-color@10.2.2)
+    transitivePeerDependencies:
+      - encoding
+      - supports-color
 
   '@grpc/grpc-js@1.14.0':
     dependencies:
@@ -8204,9 +8152,9 @@ snapshots:
       - encoding
       - supports-color
 
-  '@traceloop/node-server-sdk@0.20.0(@opentelemetry/api@1.9.0)(@opentelemetry/exporter-trace-otlp-proto@0.208.0(@opentelemetry/api@1.9.0))(@opentelemetry/resources@2.2.0(@opentelemetry/api@1.9.0))(@opentelemetry/sdk-trace-base@2.2.0(@opentelemetry/api@1.9.0))(chokidar@3.6.0)':
+  '@traceloop/node-server-sdk@0.20.1(@opentelemetry/api@1.9.0)(@opentelemetry/exporter-trace-otlp-proto@0.208.0(@opentelemetry/api@1.9.0))(@opentelemetry/resources@2.2.0(@opentelemetry/api@1.9.0))(@opentelemetry/sdk-trace-base@2.2.0(@opentelemetry/api@1.9.0))(chokidar@3.6.0)':
     dependencies:
-      '@google-cloud/opentelemetry-cloud-trace-exporter': 1.2.0(@opentelemetry/api@1.9.0)(@opentelemetry/core@2.2.0(@opentelemetry/api@1.9.0))(@opentelemetry/resources@2.2.0(@opentelemetry/api@1.9.0))(@opentelemetry/sdk-trace-base@2.2.0(@opentelemetry/api@1.9.0))(@opentelemetry/semantic-conventions@1.38.0)(supports-color@10.2.2)
+      '@google-cloud/opentelemetry-cloud-trace-exporter': 3.0.0(@opentelemetry/api@1.9.0)(@opentelemetry/core@2.2.0(@opentelemetry/api@1.9.0))(@opentelemetry/resources@2.2.0(@opentelemetry/api@1.9.0))(@opentelemetry/sdk-trace-base@2.2.0(@opentelemetry/api@1.9.0))(supports-color@10.2.2)
       '@opentelemetry/api': 1.9.0
       '@opentelemetry/core': 2.2.0(@opentelemetry/api@1.9.0)
       '@opentelemetry/exporter-trace-otlp-proto': 0.208.0(@opentelemetry/api@1.9.0)
@@ -8550,11 +8498,11 @@ snapshots:
       json-schema-traverse: 0.4.1
       uri-js: 4.4.1
 
-  alchemy@0.77.5(drizzle-orm@0.44.7(@cloudflare/workers-types@4.20251115.0)(@opentelemetry/api@1.9.0)(@prisma/client@6.19.0(typescript@5.9.3))(@types/pg@8.15.6)(bun-types@1.3.2(@types/react@19.2.3)))(vite@7.2.2(@types/node@24.10.1)(jiti@2.6.1)(lightningcss@1.30.2)(tsx@4.20.6)(yaml@2.8.1))(workerd@1.20251105.0)(wrangler@4.46.0(@cloudflare/workers-types@4.20251115.0)):
+  alchemy@0.77.5(drizzle-orm@0.44.7(@cloudflare/workers-types@4.20251117.0)(@opentelemetry/api@1.9.0)(@prisma/client@6.19.0(typescript@5.9.3))(@types/pg@8.15.6)(bun-types@1.3.2(@types/react@19.2.3)))(vite@7.2.2(@types/node@24.10.1)(jiti@2.6.1)(lightningcss@1.30.2)(tsx@4.20.6)(yaml@2.8.1))(workerd@1.20251105.0)(wrangler@4.46.0(@cloudflare/workers-types@4.20251117.0)):
     dependencies:
       '@aws-sdk/credential-providers': 3.926.0
       '@cloudflare/unenv-preset': 2.7.7(unenv@2.0.0-rc.21)(workerd@1.20251105.0)
-      '@cloudflare/workers-types': 4.20251115.0
+      '@cloudflare/workers-types': 4.20251117.0
       '@iarna/toml': 2.2.5
       '@octokit/rest': 21.1.1
       '@smithy/node-config-provider': 4.3.4
@@ -8578,11 +8526,11 @@ snapshots:
       proper-lockfile: 4.1.2
       signal-exit: 4.1.0
       unenv: 2.0.0-rc.21
-      wrangler: 4.46.0(@cloudflare/workers-types@4.20251115.0)
+      wrangler: 4.46.0(@cloudflare/workers-types@4.20251117.0)
       ws: 8.18.3
       yaml: 2.8.1
     optionalDependencies:
-      drizzle-orm: 0.44.7(@cloudflare/workers-types@4.20251115.0)(@opentelemetry/api@1.9.0)(@prisma/client@6.19.0(typescript@5.9.3))(@types/pg@8.15.6)(bun-types@1.3.2(@types/react@19.2.3))
+      drizzle-orm: 0.44.7(@cloudflare/workers-types@4.20251117.0)(@opentelemetry/api@1.9.0)(@prisma/client@6.19.0(typescript@5.9.3))(@types/pg@8.15.6)(bun-types@1.3.2(@types/react@19.2.3))
       vite: 7.2.2(@types/node@24.10.1)(jiti@2.6.1)(lightningcss@1.30.2)(tsx@4.20.6)(yaml@2.8.1)
     transitivePeerDependencies:
       - aws-crt
@@ -8623,8 +8571,6 @@ snapshots:
   argparse@2.0.1: {}
 
   array-union@2.1.0: {}
-
-  arrify@2.0.1: {}
 
   asap@2.0.6: {}
 
@@ -8932,9 +8878,9 @@ snapshots:
 
   dotenv@17.2.3: {}
 
-  drizzle-orm@0.44.7(@cloudflare/workers-types@4.20251115.0)(@opentelemetry/api@1.9.0)(@prisma/client@6.19.0(typescript@5.9.3))(@types/pg@8.15.6)(bun-types@1.3.2(@types/react@19.2.3)):
+  drizzle-orm@0.44.7(@cloudflare/workers-types@4.20251117.0)(@opentelemetry/api@1.9.0)(@prisma/client@6.19.0(typescript@5.9.3))(@types/pg@8.15.6)(bun-types@1.3.2(@types/react@19.2.3)):
     optionalDependencies:
-      '@cloudflare/workers-types': 4.20251115.0
+      '@cloudflare/workers-types': 4.20251117.0
       '@opentelemetry/api': 1.9.0
       '@prisma/client': 6.19.0(typescript@5.9.3)
       '@types/pg': 8.15.6
@@ -9292,8 +9238,6 @@ snapshots:
 
   fast-safe-stringify@2.1.1: {}
 
-  fast-text-encoding@1.0.6: {}
-
   fast-xml-parser@5.2.5:
     dependencies:
       strnum: 2.1.1
@@ -9409,17 +9353,6 @@ snapshots:
 
   function-bind@1.1.2: {}
 
-  gaxios@4.3.3(supports-color@10.2.2):
-    dependencies:
-      abort-controller: 3.0.0
-      extend: 3.0.2
-      https-proxy-agent: 5.0.0(supports-color@10.2.2)
-      is-stream: 2.0.1
-      node-fetch: 2.7.0
-    transitivePeerDependencies:
-      - encoding
-      - supports-color
-
   gaxios@6.7.1(supports-color@10.2.2):
     dependencies:
       extend: 3.0.2
@@ -9427,14 +9360,6 @@ snapshots:
       is-stream: 2.0.1
       node-fetch: 2.7.0
       uuid: 9.0.1
-    transitivePeerDependencies:
-      - encoding
-      - supports-color
-
-  gcp-metadata@4.3.1(supports-color@10.2.2):
-    dependencies:
-      gaxios: 4.3.3(supports-color@10.2.2)
-      json-bigint: 1.0.0
     transitivePeerDependencies:
       - encoding
       - supports-color
@@ -9520,21 +9445,6 @@ snapshots:
 
   globrex@0.1.2: {}
 
-  google-auth-library@7.14.1(supports-color@10.2.2):
-    dependencies:
-      arrify: 2.0.1
-      base64-js: 1.5.1
-      ecdsa-sig-formatter: 1.0.11
-      fast-text-encoding: 1.0.6
-      gaxios: 4.3.3(supports-color@10.2.2)
-      gcp-metadata: 4.3.1(supports-color@10.2.2)
-      gtoken: 5.3.2(supports-color@10.2.2)
-      jws: 4.0.0
-      lru-cache: 6.0.0
-    transitivePeerDependencies:
-      - encoding
-      - supports-color
-
   google-auth-library@9.15.1(supports-color@10.2.2):
     dependencies:
       base64-js: 1.5.1
@@ -9567,29 +9477,11 @@ snapshots:
 
   google-logging-utils@0.0.2: {}
 
-  google-p12-pem@3.1.4:
-    dependencies:
-      node-forge: 1.3.1
-
-  google-proto-files@2.5.2:
-    dependencies:
-      protobufjs: 6.11.4
-      walkdir: 0.4.1
-
   gopd@1.2.0: {}
 
   graceful-fs@4.2.11: {}
 
   graphemer@1.4.0: {}
-
-  gtoken@5.3.2(supports-color@10.2.2):
-    dependencies:
-      gaxios: 4.3.3(supports-color@10.2.2)
-      google-p12-pem: 3.1.4
-      jws: 4.0.0
-    transitivePeerDependencies:
-      - encoding
-      - supports-color
 
   gtoken@7.1.0(supports-color@10.2.2):
     dependencies:
@@ -9933,17 +9825,11 @@ snapshots:
 
   loglevel@1.9.2: {}
 
-  long@4.0.0: {}
-
   long@5.3.2: {}
 
   lru-cache@10.4.3: {}
 
   lru-cache@11.2.2: {}
-
-  lru-cache@6.0.0:
-    dependencies:
-      yallist: 4.0.0
 
   magic-string@0.30.21:
     dependencies:
@@ -10112,8 +9998,6 @@ snapshots:
   node-fetch@2.7.0:
     dependencies:
       whatwg-url: 5.0.0
-
-  node-forge@1.3.1: {}
 
   node-releases@2.0.23: {}
 
@@ -10385,22 +10269,6 @@ snapshots:
   proto3-json-serializer@2.0.2:
     dependencies:
       protobufjs: 7.5.4
-
-  protobufjs@6.11.4:
-    dependencies:
-      '@protobufjs/aspromise': 1.1.2
-      '@protobufjs/base64': 1.1.2
-      '@protobufjs/codegen': 2.0.4
-      '@protobufjs/eventemitter': 1.1.0
-      '@protobufjs/fetch': 1.1.0
-      '@protobufjs/float': 1.0.2
-      '@protobufjs/inquire': 1.1.0
-      '@protobufjs/path': 1.1.2
-      '@protobufjs/pool': 1.1.0
-      '@protobufjs/utf8': 1.1.0
-      '@types/long': 4.0.2
-      '@types/node': 24.10.1
-      long: 4.0.0
 
   protobufjs@7.5.4:
     dependencies:
@@ -11082,8 +10950,6 @@ snapshots:
       - tsx
       - yaml
 
-  walkdir@0.4.1: {}
-
   webidl-conversions@3.0.1: {}
 
   webidl-conversions@7.0.0: {}
@@ -11137,7 +11003,7 @@ snapshots:
       '@cloudflare/workerd-linux-arm64': 1.20251105.0
       '@cloudflare/workerd-windows-64': 1.20251105.0
 
-  wrangler@4.46.0(@cloudflare/workers-types@4.20251115.0):
+  wrangler@4.46.0(@cloudflare/workers-types@4.20251117.0):
     dependencies:
       '@cloudflare/kv-asset-handler': 0.4.0
       '@cloudflare/unenv-preset': 2.7.9(unenv@2.0.0-rc.24)(workerd@1.20251105.0)
@@ -11148,7 +11014,7 @@ snapshots:
       unenv: 2.0.0-rc.24
       workerd: 1.20251105.0
     optionalDependencies:
-      '@cloudflare/workers-types': 4.20251115.0
+      '@cloudflare/workers-types': 4.20251117.0
       fsevents: 2.3.3
     transitivePeerDependencies:
       - bufferutil
@@ -11179,8 +11045,6 @@ snapshots:
   xtend@4.0.2: {}
 
   y18n@5.0.8: {}
-
-  yallist@4.0.0: {}
 
   yaml@2.8.1: {}
 
