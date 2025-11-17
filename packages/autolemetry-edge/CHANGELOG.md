@@ -1,5 +1,11 @@
 # autolemetry-edge
 
+## 0.1.2
+
+### Patch Changes
+
+- 856a69e: Refresh LLM quickstart docs with user-focused recipes, migration notes, and troubleshooting tips.
+
 ## 0.1.1
 
 ### Patch Changes
