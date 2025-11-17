@@ -1,6 +1,6 @@
 {
   "name": "autolemetry-adapters",
-  "version": "1.0.3",
+  "version": "1.1.0",
   "description": "Write Once, Observe Anywhere - Analytics adapters for autolemetry (PostHog, Mixpanel, Amplitude, Segment)",
   "main": "./dist/index.js",
   "types": "./dist/index.d.ts",
