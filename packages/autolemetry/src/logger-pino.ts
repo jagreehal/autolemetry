@@ -1,7 +1,10 @@
 import { trace, SpanStatusCode } from '@opentelemetry/api';
+import { createRequire } from 'node:module';
+import path from 'node:path';
 import { getConfig } from './config';
 import { enrichWithTraceContext } from './trace-helpers';
-import type { Logger, LoggerConfig } from './logger-types';
+import { LOG_LEVEL } from './logger-types';
+import type { LogLevel, Logger, LoggerConfig } from './logger-types';
 import type { Logger as PinoLogger } from 'pino';
 
 /**
@@ -45,6 +48,30 @@ import type { Logger as PinoLogger } from 'pino';
  * init({ service: 'my-app', logger })
  * ```
  */
+function loadPino(): typeof import('pino') {
+  const loaders = [
+    () => {
+      // eslint-disable-next-line @typescript-eslint/no-require-imports
+      const pinoModule = require('pino');
+      return pinoModule;
+    },
+    () => createRequire(path.join(process.cwd(), 'package.json'))('pino'),
+  ];
+
+  for (const loader of loaders) {
+    try {
+      const mod = loader();
+      return mod.default || mod;
+    } catch {
+      // Try next loader
+    }
+  }
+
+  throw new Error(
+    'pino is required for createLogger(). Install it: npm install pino',
+  );
+}
+
 export function createLogger(
   service: string,
   options?: Partial<Omit<LoggerConfig, 'service'>>,
@@ -53,22 +80,11 @@ export function createLogger(
   // This ensures Winston-only users don't get "Cannot find module 'pino'" errors
   // Uses require() which works in CJS and ESM (via createRequire or bundler handling)
   type PinoModule = typeof import('pino');
-  let pino: PinoModule;
-  try {
-    // eslint-disable-next-line @typescript-eslint/no-require-imports
-    const pinoModule = require('pino');
-    pino = pinoModule.default || pinoModule;
-  } catch {
-    throw new Error(
-      'pino is required for createLogger(). Install it: npm install pino',
-    );
-  }
+  const pino: PinoModule = loadPino();
 
   // Priority: explicit option > env var > default 'info'
-  const level =
-    options?.level ||
-    (process.env.LOG_LEVEL as 'debug' | 'info' | 'warn' | 'error') ||
-    'info';
+  const envLevel = process.env.LOG_LEVEL as LogLevel | undefined;
+  const level = options?.level ?? envLevel ?? LOG_LEVEL.INFO;
 
   // Import feature flags to respect global redaction setting
   const { featureFlags } = getConfig();

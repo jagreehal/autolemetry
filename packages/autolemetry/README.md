@@ -152,8 +152,8 @@ init({
 init({
   service: 'my-app',
   // Datadog (traces + metrics + logs via OTLP)
-  endpoint: 'https://http-intake.logs.datadoghq.com/api/v2/otlp',
-  otlpHeaders: 'DD-API-KEY=...',
+  endpoint: 'https://otlp.datadoghq.com',
+  otlpHeaders: 'dd-api-key=...',
 });
 
 init({

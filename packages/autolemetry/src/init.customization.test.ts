@@ -132,7 +132,7 @@ describe('init() customization', () => {
     const { init, metricReaderOptions, metricExporterOptions } =
       await loadInitWithMocks();
 
-    init({ service: 'metrics-app' });
+    init({ service: 'metrics-app', endpoint: 'http://localhost:4318' });
 
     expect(metricReaderOptions).toHaveLength(1);
     expect(metricExporterOptions).toHaveLength(1);
@@ -162,7 +162,11 @@ describe('init() customization', () => {
     const { init, traceExporterOptions, metricExporterOptions } =
       await loadInitWithMocks();
 
-    init({ service: 'headers-app', otlpHeaders: 'Authorization=Basic abc123' });
+    init({
+      service: 'headers-app',
+      endpoint: 'http://localhost:4318',
+      otlpHeaders: 'Authorization=Basic abc123',
+    });
 
     expect(traceExporterOptions[0]).toMatchObject({
       headers: { Authorization: 'Basic abc123' },
@@ -181,6 +185,7 @@ describe('init() customization', () => {
 
     init({
       service: 'custom-sdk',
+      endpoint: 'http://localhost:4318',
       sdkFactory: (defaults) => {
         expect(defaults.spanProcessor).toBeDefined();
         return customSdk;

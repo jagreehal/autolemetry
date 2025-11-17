@@ -160,7 +160,7 @@ View traces at: http://localhost:3000
 export OTLP_ENDPOINT=https://otlp-gateway-prod.grafana.net/otlp
 
 # Datadog
-export OTLP_ENDPOINT=https://http-intake.logs.datadoghq.com/api/v2/otlp
+export OTLP_ENDPOINT=https://otlp.datadoghq.com
 
 # Honeycomb
 export OTLP_ENDPOINT=https://api.honeycomb.io/v1/traces

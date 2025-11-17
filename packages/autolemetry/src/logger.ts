@@ -14,7 +14,14 @@ import { SpanStatusCode } from '@opentelemetry/api';
 import { getConfig } from './config';
 
 // Tree-shakeable: types have no runtime cost
-export type { Logger, LoggerConfig, ILogger, PinoLogger } from './logger-types';
+export type {
+  Logger,
+  LoggerConfig,
+  ILogger,
+  PinoLogger,
+  LogLevel,
+} from './logger-types';
+export { LOG_LEVEL } from './logger-types';
 
 // Tree-shakeable: unused implementations are eliminated from bundles
 export { createLogger } from './logger-pino';

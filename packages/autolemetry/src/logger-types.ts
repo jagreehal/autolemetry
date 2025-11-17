@@ -4,7 +4,7 @@
 
 export interface LoggerConfig {
   service: string;
-  level?: 'debug' | 'info' | 'warn' | 'error';
+  level?: LogLevel;
   pretty?: boolean;
   /**
    * Paths to redact in logs
@@ -71,3 +71,12 @@ export type ILogger = Logger;
  */
 // Type-only import - no runtime dependency on pino
 export type { Logger as PinoLogger } from 'pino';
+
+export const LOG_LEVEL = {
+  DEBUG: 'debug',
+  INFO: 'info',
+  WARN: 'warn',
+  ERROR: 'error',
+} as const;
+
+export type LogLevel = (typeof LOG_LEVEL)[keyof typeof LOG_LEVEL];

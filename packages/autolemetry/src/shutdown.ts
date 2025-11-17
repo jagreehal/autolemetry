@@ -149,11 +149,19 @@ export async function shutdown(): Promise<void> {
     }
   } catch (error) {
     const err = error instanceof Error ? error : new Error(String(error));
-    // Only store first error - flush error takes precedence
-    if (!shutdownError) {
-      shutdownError = err;
+
+    // Ignore ECONNREFUSED errors - this happens when no OTLP endpoint was configured
+    // The SDK tries to flush exporters that don't exist, which is harmless
+    const isConnectionRefused =
+      'code' in (error as any) && (error as any).code === 'ECONNREFUSED';
+
+    if (!isConnectionRefused) {
+      // Only store/log non-connection errors
+      if (!shutdownError) {
+        shutdownError = err;
+      }
+      logger.error('[autolemetry] SDK shutdown failed', err);
     }
-    logger.error('[autolemetry] SDK shutdown failed', err);
   } finally {
     // Clean up singleton Maps and queues to prevent memory leaks
     // This runs even if SDK shutdown fails

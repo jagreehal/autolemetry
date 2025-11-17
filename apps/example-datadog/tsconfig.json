@@ -1,23 +1,18 @@
 {
   "compilerOptions": {
-    "target": "ES2022",
-    "module": "ESNext",
-    "lib": ["ES2022"],
+    "outDir": "./dist",
+    "rootDir": "./src",
+    "module": "ES2022",
     "moduleResolution": "bundler",
-    "types": ["@cloudflare/workers-types"],
+    "target": "ES2022",
+    "lib": ["ES2022"],
+    "types": ["node"],
     "strict": true,
     "esModuleInterop": true,
     "skipLibCheck": true,
     "forceConsistentCasingInFileNames": true,
-    "resolveJsonModule": true,
-    "isolatedModules": true,
-    "noEmit": true
+    "resolveJsonModule": true
   },
-  "include": ["src/**/*", "alchemy.run.ts"],
+  "include": ["src/**/*"],
   "exclude": ["node_modules", "dist"]
 }
-
-
-
-
-

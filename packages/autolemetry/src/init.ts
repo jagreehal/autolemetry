@@ -470,18 +470,37 @@ export function init(cfg: AutolemetryConfig): void {
   validationConfig = cfg.validation || null;
 
   // Initialize OpenTelemetry
-  const endpoint =
-    cfg.endpoint || process.env.OTLP_ENDPOINT || 'http://localhost:4318';
+  // Only use endpoint if explicitly configured (no default fallback)
+  const endpoint = cfg.endpoint || process.env.OTLP_ENDPOINT;
   const otlpHeaders = normalizeOtlpHeaders(cfg.otlpHeaders);
-  const version = cfg.version || detectVersion();
-  const environment = cfg.environment || process.env.NODE_ENV || 'development';
+  const version = cfg.version || process.env.DD_VERSION || detectVersion();
+  const environment =
+    cfg.environment ||
+    process.env.DD_ENV ||
+    process.env.NODE_ENV ||
+    'development';
   const metricsEnabled = resolveMetricsFlag(cfg.metrics);
+
+  // Detect hostname for proper Datadog correlation and Service Catalog discovery
+  const hostname = detectHostname();
 
   let resource = resourceFromAttributes({
     [ATTR_SERVICE_NAME]: cfg.service,
     [ATTR_SERVICE_VERSION]: version,
-    'deployment.environment': environment,
+    // Support both old and new OpenTelemetry semantic conventions for environment
+    'deployment.environment': environment, // Deprecated but widely supported
+    'deployment.environment.name': environment, // OTel v1.27.0+ standard
   });
+
+  // Add hostname attributes for Datadog Service Catalog and infrastructure correlation
+  if (hostname) {
+    resource = resource.merge(
+      resourceFromAttributes({
+        'host.name': hostname, // OpenTelemetry standard
+        'datadog.host.name': hostname, // Datadog-specific, highest priority for Datadog
+      }),
+    );
+  }
 
   if (cfg.resource) {
     resource = resource.merge(cfg.resource);
@@ -492,7 +511,7 @@ export function init(cfg: AutolemetryConfig): void {
   }
 
   // Determine span processor: custom > custom exporter > default OTLP
-  let spanProcessor: SpanProcessor;
+  let spanProcessor: SpanProcessor | undefined;
 
   if (cfg.spanProcessor) {
     // User provided custom processor (full control)
@@ -502,8 +521,8 @@ export function init(cfg: AutolemetryConfig): void {
     spanProcessor = new TailSamplingSpanProcessor(
       new BatchSpanProcessor(cfg.spanExporter),
     );
-  } else {
-    // Default: OTLP with tail sampling (opinionated but flexible)
+  } else if (endpoint) {
+    // Default: OTLP with tail sampling (only if endpoint is configured)
     const traceExporter = new OTLPTraceExporter({
       url: `${endpoint}/v1/traces`,
       headers: otlpHeaders,
@@ -513,9 +532,12 @@ export function init(cfg: AutolemetryConfig): void {
       new BatchSpanProcessor(traceExporter),
     );
   }
+  // If no endpoint and no custom processor/exporter, spanProcessor remains undefined
+  // SDK will still work but won't export traces
 
   let metricReader: MetricReader | undefined = cfg.metricReader;
-  if (!metricReader && metricsEnabled) {
+  if (!metricReader && metricsEnabled && endpoint) {
+    // Only create OTLP metrics exporter if endpoint is configured
     metricReader = new PeriodicExportingMetricReader({
       exporter: new OTLPMetricExporter({
         url: `${endpoint}/v1/metrics`,
@@ -562,9 +584,12 @@ export function init(cfg: AutolemetryConfig): void {
 
   const sdkOptions: Partial<NodeSDKConfiguration> = {
     resource,
-    spanProcessor,
     instrumentations: finalInstrumentations,
   };
+
+  if (spanProcessor) {
+    sdkOptions.spanProcessor = spanProcessor;
+  }
 
   if (metricReader) {
     sdkOptions.metricReader = metricReader;
@@ -832,6 +857,39 @@ function detectVersion(): string {
     return pkg.version || '1.0.0';
   } catch {
     return '1.0.0';
+  }
+}
+
+/**
+ * Detect hostname for resource attributes.
+ * Supports Datadog conventions (DD_HOSTNAME) and falls back to system hostname.
+ *
+ * Priority order:
+ * 1. DD_HOSTNAME environment variable (Datadog convention)
+ * 2. HOSTNAME environment variable (common Unix convention)
+ * 3. os.hostname() (system hostname)
+ *
+ * @returns hostname string or undefined if detection fails
+ */
+function detectHostname(): string | undefined {
+  // Priority 1: DD_HOSTNAME (Datadog convention)
+  if (process.env.DD_HOSTNAME) {
+    return process.env.DD_HOSTNAME;
+  }
+
+  // Priority 2: HOSTNAME (common in containers and Unix systems)
+  if (process.env.HOSTNAME) {
+    return process.env.HOSTNAME;
+  }
+
+  // Priority 3: System hostname
+  try {
+    // eslint-disable-next-line @typescript-eslint/no-require-imports
+    const os = require('node:os') as typeof import('node:os');
+    return os.hostname();
+  } catch {
+    // os module not available (edge runtime, browser, etc.)
+    return undefined;
   }
 }
 

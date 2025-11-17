@@ -637,6 +637,318 @@ function handleRequest(req) {
 
 ---
 
+### Pattern 7: Prisma ORM Integration
+
+**Before** (Vanilla Prisma OpenTelemetry - ~50 lines):
+
+```typescript
+import { ATTR_SERVICE_NAME, ATTR_SERVICE_VERSION } from '@opentelemetry/semantic-conventions'
+import { OTLPTraceExporter } from '@opentelemetry/exporter-trace-otlp-http'
+import { SimpleSpanProcessor } from '@opentelemetry/sdk-trace-base'
+import { NodeTracerProvider } from '@opentelemetry/sdk-trace-node'
+import { PrismaInstrumentation, registerInstrumentations } from '@prisma/instrumentation'
+import { resourceFromAttributes } from '@opentelemetry/resources'
+
+// Configure the trace provider
+const provider = new NodeTracerProvider({
+  resource: resourceFromAttributes({
+    [ATTR_SERVICE_NAME]: 'my-app',
+    [ATTR_SERVICE_VERSION]: '1.0.0',
+  }),
+  spanProcessors: [
+    new SimpleSpanProcessor(new OTLPTraceExporter()),
+  ],
+});
+
+// Register Prisma instrumentations
+registerInstrumentations({
+  tracerProvider: provider,
+  instrumentations: [new PrismaInstrumentation()],
+})
+
+// Register the provider globally
+provider.register()
+
+// Import Prisma AFTER instrumentation setup
+import { PrismaClient } from '@prisma/client'
+const prisma = new PrismaClient()
+
+// Manual span management for business logic
+import { trace } from '@opentelemetry/api';
+const tracer = trace.getTracer('my-app');
+
+async function createUser(email: string) {
+  const span = tracer.startSpan('createUser');
+  try {
+    span.setAttribute('user.email', email);
+    const user = await prisma.user.create({ data: { email } });
+    span.end();
+    return user;
+  } catch (error) {
+    span.recordException(error);
+    span.end();
+    throw error;
+  }
+}
+```
+
+**After** (Autolemetry - ~10 lines):
+
+```typescript
+import { init, trace } from 'autolemetry';
+import { PrismaInstrumentation } from '@prisma/instrumentation';
+import { PrismaClient } from '@prisma/client';
+
+// Single init call with PrismaInstrumentation
+init({
+  service: 'my-app',
+  instrumentations: [new PrismaInstrumentation()],
+});
+
+const prisma = new PrismaClient();
+
+// Functional API - automatic span lifecycle
+const createUser = trace(ctx => async (email: string) => {
+  ctx.setAttribute('user.email', email);
+  return await prisma.user.create({ data: { email } });
+});
+```
+
+**What You Get:**
+
+Autolemetry automatically captures detailed Prisma spans:
+- `prisma:client:operation` - Full Prisma operation (e.g., `User.create`)
+- `prisma:client:serialize` - Query serialization time
+- `prisma:engine:query` - Query engine execution
+- `prisma:engine:connection` - Database connection time
+- `prisma:engine:db_query` - Actual SQL query with details
+- `prisma:engine:serialize` - Response serialization
+
+**Example Trace Tree:**
+
+```
+createUser                           (your function)
+  └─ prisma:client:operation         (User.create)
+      ├─ prisma:client:serialize
+      └─ prisma:engine:query
+          ├─ prisma:engine:connection
+          ├─ prisma:engine:db_query  (INSERT INTO User ...)
+          └─ prisma:engine:serialize
+```
+
+**What Changed:**
+
+- Reduced from ~50 lines to ~10 lines
+- No manual `NodeTracerProvider` or `SimpleSpanProcessor` setup
+- No manual `registerInstrumentations()` call
+- Automatic span lifecycle (no try/catch for telemetry)
+- Built-in tail sampling (10% baseline, 100% errors)
+- Built-in rate limiting and circuit breakers
+- Functional `trace()` API instead of manual span management
+
+**Full Working Example:**
+
+See [apps/example-prisma](../apps/example-prisma) for a complete example with:
+- SQLite database setup
+- User and Post models
+- Nested queries and transactions
+- Multiple database operations
+
+**Run the example:**
+
+```bash
+cd apps/example-prisma
+pnpm install
+pnpm db:generate
+pnpm db:push
+pnpm start
+```
+
+---
+
+### Pattern 8: Drizzle ORM Integration
+
+**Before** (Manual OpenTelemetry Setup - ~60 lines):
+
+```typescript
+import { trace, SpanKind } from '@opentelemetry/api';
+import { ATTR_SERVICE_NAME } from '@opentelemetry/semantic-conventions';
+import { OTLPTraceExporter } from '@opentelemetry/exporter-trace-otlp-http';
+import { NodeTracerProvider } from '@opentelemetry/sdk-trace-node';
+import { SimpleSpanProcessor } from '@opentelemetry/sdk-trace-base';
+import { resourceFromAttributes } from '@opentelemetry/resources';
+import { drizzle } from 'drizzle-orm/libsql';
+import { createClient } from '@libsql/client';
+
+// Configure tracing
+const provider = new NodeTracerProvider({
+  resource: resourceFromAttributes({
+    [ATTR_SERVICE_NAME]: 'my-app',
+  }),
+  spanProcessors: [new SimpleSpanProcessor(new OTLPTraceExporter())],
+});
+provider.register();
+
+const tracer = trace.getTracer('my-app');
+
+// Create database client
+const client = createClient({ url: 'file:./dev.db' });
+const db = drizzle({ client });
+
+// Manually instrument every database operation
+async function createUser(email: string) {
+  const span = tracer.startSpan('db.insert', {
+    kind: SpanKind.CLIENT,
+    attributes: {
+      'db.system': 'sqlite',
+      'db.operation': 'INSERT',
+    },
+  });
+
+  try {
+    // Extract SQL for logging
+    const query = db.insert(users).values({ email });
+    // Note: Getting the actual SQL is difficult in Drizzle
+
+    const result = await query.returning();
+
+    span.setStatus({ code: 1 }); // OK
+    return result;
+  } catch (error) {
+    span.setStatus({ code: 2, message: error.message }); // ERROR
+    span.recordException(error);
+    throw error;
+  } finally {
+    span.end();
+  }
+}
+```
+
+**After** (Autolemetry + Drizzle Plugin - ~10 lines):
+
+```typescript
+import { init, trace } from 'autolemetry';
+import { instrumentDrizzleClient } from 'autolemetry-plugins/drizzle';
+import { drizzle } from 'drizzle-orm/libsql';
+import { createClient } from '@libsql/client';
+
+// Single init call
+init({ service: 'my-app' });
+
+// Create and instrument database client (one line!)
+const client = createClient({ url: 'file:./dev.db' });
+const db = instrumentDrizzleClient(drizzle({ client }), { dbSystem: 'sqlite' });
+
+// Automatic tracing - SQL queries captured automatically!
+const createUser = trace(ctx => async (email: string) => {
+  ctx.setAttribute('user.email', email);
+  return await db.insert(users).values({ email }).returning();
+});
+```
+
+**What You Get:**
+
+Autolemetry's Drizzle plugin automatically captures:
+- `drizzle.insert` - INSERT operations
+- `drizzle.select` - SELECT operations
+- `drizzle.update` - UPDATE operations
+- `drizzle.delete` - DELETE operations
+
+Each span includes:
+- **SQL statement** (the actual SQL query executed)
+- **Database system** (sqlite, postgresql, mysql)
+- **Operation type** (INSERT, SELECT, UPDATE, DELETE)
+- **Database name** (if configured)
+- **Connection details** (peer name, port)
+- **Transaction markers** (for queries within transactions)
+
+**Example Trace Tree:**
+
+```
+createUserWithPosts                  (your function)
+  └─ createUser                      (your function)
+      └─ drizzle.insert              (INSERT INTO users ...)
+  └─ createPost                      (your function)
+      └─ drizzle.insert              (INSERT INTO posts ...)
+  └─ createPost                      (your function)
+      └─ drizzle.insert              (INSERT INTO posts ...)
+```
+
+**Transaction Support:**
+
+```typescript
+// Transactions are automatically traced
+const result = await db.transaction(async (tx) => {
+  const [user] = await tx.insert(users).values({ email }).returning();
+  // ↑ Span includes db.transaction: true
+
+  const [post] = await tx.insert(posts).values({
+    title: 'Hello',
+    authorId: user.id
+  }).returning();
+  // ↑ Also marked with db.transaction: true
+
+  return { user, post };
+});
+```
+
+**What Changed:**
+
+- Reduced from ~60 lines to ~10 lines (83% reduction!)
+- No manual `NodeTracerProvider` or `SimpleSpanProcessor` setup
+- No manual span management (no `startSpan()` / `end()`)
+- **SQL queries automatically captured** (hard to do manually in Drizzle)
+- Automatic error handling and status codes
+- Built-in tail sampling (10% baseline, 100% errors)
+- Transaction queries automatically marked
+- Works with all Drizzle adapters (PostgreSQL, MySQL, SQLite, LibSQL)
+
+**Supported Databases:**
+
+The plugin works with all Drizzle-supported databases:
+
+```typescript
+// PostgreSQL
+import { drizzle } from 'drizzle-orm/postgres-js';
+const db = instrumentDrizzleClient(drizzle({ client }), {
+  dbSystem: 'postgresql',
+  peerName: 'db.example.com',
+  peerPort: 5432,
+});
+
+// MySQL
+import { drizzle } from 'drizzle-orm/mysql2';
+const db = instrumentDrizzleClient(drizzle({ client }), {
+  dbSystem: 'mysql',
+});
+
+// SQLite / LibSQL
+import { drizzle } from 'drizzle-orm/libsql';
+const db = instrumentDrizzleClient(drizzle({ client }), {
+  dbSystem: 'sqlite',
+});
+```
+
+**Full Working Example:**
+
+See [apps/example-drizzle](../apps/example-drizzle) for a complete example with:
+- SQLite database setup
+- User and Post models
+- Nested queries
+- Transactions
+- Multiple database operations
+
+**Run the example:**
+
+```bash
+cd apps/example-drizzle
+pnpm install
+pnpm db:push
+pnpm start
+```
+
+---
+
 ## Feature Mapping Reference
 
 | OpenTelemetry API/SDK               | Autolemetry Equivalent  | Notes                       |
