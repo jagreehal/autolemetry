@@ -42,6 +42,7 @@ import { OTLPTraceExporter as OTLPTraceExporterHTTP } from '@opentelemetry/expor
 import type { PushMetricExporter } from '@opentelemetry/sdk-metrics';
 import type { LogRecordProcessor } from '@opentelemetry/sdk-logs';
 import { TailSamplingSpanProcessor } from './tail-sampling-processor';
+import { resolveConfigFromEnv } from './env-config';
 
 /**
  * CompositeSpanProcessor combines multiple span processors
@@ -721,8 +722,30 @@ function normalizeOtlpHeaders(
  * ```
  */
 export function init(cfg: AutolemetryConfig): void {
+  // Resolve environment variables (standard OTEL env vars)
+  const envConfig = resolveConfigFromEnv();
+
+  // Merge configs: explicit config > env vars > defaults
+  // Note: We merge envConfig first, then cfg overrides it
+  const mergedConfig: AutolemetryConfig = {
+    ...envConfig,
+    ...cfg,
+    // Deep merge for resourceAttributes
+    resourceAttributes: {
+      ...envConfig.resourceAttributes,
+      ...cfg.resourceAttributes,
+    },
+    // Handle otlpHeaders merge (can be string or object)
+    otlpHeaders:
+      cfg.otlpHeaders !== undefined
+        ? cfg.otlpHeaders
+        : envConfig.otlpHeaders !== undefined
+          ? envConfig.otlpHeaders
+          : undefined,
+  } as AutolemetryConfig;
+
   // Set logger (use provided or default to silent)
-  logger = cfg.logger || silentLogger;
+  logger = mergedConfig.logger || silentLogger;
 
   // Warn if re-initializing (same behavior in all environments)
   if (initialized) {
@@ -731,20 +754,17 @@ export function init(cfg: AutolemetryConfig): void {
     );
   }
 
-  config = cfg;
-  validationConfig = cfg.validation || null;
+  config = mergedConfig;
+  validationConfig = mergedConfig.validation || null;
 
   // Initialize OpenTelemetry
   // Only use endpoint if explicitly configured (no default fallback)
-  const endpoint = cfg.endpoint || process.env.OTLP_ENDPOINT;
-  const otlpHeaders = normalizeOtlpHeaders(cfg.otlpHeaders);
-  const version = cfg.version || process.env.DD_VERSION || detectVersion();
+  const endpoint = mergedConfig.endpoint;
+  const otlpHeaders = normalizeOtlpHeaders(mergedConfig.otlpHeaders);
+  const version = mergedConfig.version || detectVersion();
   const environment =
-    cfg.environment ||
-    process.env.DD_ENV ||
-    process.env.NODE_ENV ||
-    'development';
-  const metricsEnabled = resolveMetricsFlag(cfg.metrics);
+    mergedConfig.environment || process.env.NODE_ENV || 'development';
+  const metricsEnabled = resolveMetricsFlag(mergedConfig.metrics);
 
   // Detect hostname for proper Datadog correlation and Service Catalog discovery
   const hostname = detectHostname();

@@ -15,10 +15,11 @@
   "packageManager": "pnpm@10.22.0",
   "dependencies": {
     "alchemy": "^0.77.5",
-    "autolemetry-edge": "workspace:*"
+    "autolemetry-edge": "workspace:*",
+    "@opentelemetry/api": "^1.9.0"
   },
   "devDependencies": {
-    "@cloudflare/workers-types": "^4.20251117.0",
+    "@cloudflare/workers-types": "^4.20251118.0",
     "typescript": "^5.9.3"
   }
 }

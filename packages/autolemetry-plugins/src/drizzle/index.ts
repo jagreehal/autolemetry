@@ -9,7 +9,7 @@ import {
   SEMATTRS_DB_NAME,
   SEMATTRS_NET_PEER_NAME,
   SEMATTRS_NET_PEER_PORT,
-} from '../common/constants.js';
+} from '../common/constants';
 import { runWithSpan, finalizeSpan } from 'autolemetry/trace-helpers';
 
 const DEFAULT_TRACER_NAME = 'autolemetry-plugins/drizzle';

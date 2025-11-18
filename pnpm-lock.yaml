@@ -44,16 +44,19 @@ importers:
 
   apps/cloudflare-example:
     dependencies:
+      '@opentelemetry/api':
+        specifier: ^1.9.0
+        version: 1.9.0
       alchemy:
         specifier: ^0.77.5
-        version: 0.77.5(@libsql/client@0.15.15)(drizzle-orm@0.44.7(@cloudflare/workers-types@4.20251117.0)(@libsql/client@0.15.15)(@opentelemetry/api@1.9.0)(@prisma/client@6.19.0(prisma@6.19.0(typescript@5.9.3))(typescript@5.9.3))(@types/pg@8.15.6)(bun-types@1.3.2(@types/react@19.2.3))(prisma@6.19.0(typescript@5.9.3)))(vite@7.2.2(@types/node@24.10.1)(jiti@2.6.1)(lightningcss@1.30.2)(tsx@4.20.6)(yaml@2.8.1))(workerd@1.20251105.0)(wrangler@4.46.0(@cloudflare/workers-types@4.20251117.0))
+        version: 0.77.5(@libsql/client@0.15.15)(drizzle-orm@0.44.7(@cloudflare/workers-types@4.20251118.0)(@libsql/client@0.15.15)(@opentelemetry/api@1.9.0)(@prisma/client@6.19.0(prisma@6.19.0(typescript@5.9.3))(typescript@5.9.3))(@types/pg@8.15.6)(bun-types@1.3.2(@types/react@19.2.3))(prisma@6.19.0(typescript@5.9.3)))(vite@7.2.2(@types/node@24.10.1)(jiti@2.6.1)(lightningcss@1.30.2)(tsx@4.20.6)(yaml@2.8.1))(workerd@1.20251105.0)(wrangler@4.46.0(@cloudflare/workers-types@4.20251118.0))
       autolemetry-edge:
         specifier: workspace:*
         version: link:../../packages/autolemetry-edge
     devDependencies:
       '@cloudflare/workers-types':
-        specifier: ^4.20251117.0
-        version: 4.20251117.0
+        specifier: ^4.20251118.0
+        version: 4.20251118.0
       typescript:
         specifier: ^5.9.3
         version: 5.9.3
@@ -102,7 +105,7 @@ importers:
         version: 0.67.0(@opentelemetry/api@1.9.0)(@opentelemetry/core@2.2.0(@opentelemetry/api@1.9.0))
       '@traceloop/node-server-sdk':
         specifier: ^0.20.1
-        version: 0.20.1(@opentelemetry/api@1.9.0)(@opentelemetry/exporter-trace-otlp-proto@0.208.0(@opentelemetry/api@1.9.0))(@opentelemetry/resources@2.2.0(@opentelemetry/api@1.9.0))(@opentelemetry/sdk-trace-base@2.2.0(@opentelemetry/api@1.9.0))(chokidar@3.6.0)(openai@6.9.0(ws@8.18.3)(zod@3.25.76))
+        version: 0.20.1(@opentelemetry/api@1.9.0)(@opentelemetry/exporter-trace-otlp-proto@0.208.0(@opentelemetry/api@1.9.0))(@opentelemetry/resources@2.2.0(@opentelemetry/api@1.9.0))(@opentelemetry/sdk-trace-base@2.2.0(@opentelemetry/api@1.9.0))(chokidar@3.6.0)(openai@6.9.1(ws@8.18.3)(zod@3.25.76))
       autolemetry:
         specifier: workspace:*
         version: link:../../packages/autolemetry
@@ -113,8 +116,8 @@ importers:
         specifier: ^17.2.3
         version: 17.2.3
       openai:
-        specifier: ^6.9.0
-        version: 6.9.0(ws@8.18.3)(zod@3.25.76)
+        specifier: ^6.9.1
+        version: 6.9.1(ws@8.18.3)(zod@3.25.76)
       pino:
         specifier: ^10.1.0
         version: 10.1.0
@@ -207,7 +210,7 @@ importers:
         version: 17.2.3
       drizzle-orm:
         specifier: ^0.44.7
-        version: 0.44.7(@cloudflare/workers-types@4.20251117.0)(@libsql/client@0.15.15)(@opentelemetry/api@1.9.0)(@prisma/client@6.19.0(prisma@6.19.0(typescript@5.9.3))(typescript@5.9.3))(@types/pg@8.15.6)(bun-types@1.3.2(@types/react@19.2.3))(prisma@6.19.0(typescript@5.9.3))
+        version: 0.44.7(@cloudflare/workers-types@4.20251118.0)(@libsql/client@0.15.15)(@opentelemetry/api@1.9.0)(@prisma/client@6.19.0(prisma@6.19.0(typescript@5.9.3))(typescript@5.9.3))(@types/pg@8.15.6)(bun-types@1.3.2(@types/react@19.2.3))(prisma@6.19.0(typescript@5.9.3))
     devDependencies:
       '@types/node':
         specifier: ^24.10.1
@@ -340,7 +343,10 @@ importers:
         version: 1.38.0
       '@traceloop/node-server-sdk':
         specifier: ^0.20.1
-        version: 0.20.1(@opentelemetry/api@1.9.0)(@opentelemetry/exporter-trace-otlp-proto@0.208.0(@opentelemetry/api@1.9.0))(@opentelemetry/resources@2.2.0(@opentelemetry/api@1.9.0))(@opentelemetry/sdk-trace-base@2.2.0(@opentelemetry/api@1.9.0))(chokidar@3.6.0)(openai@6.9.0(ws@8.18.3)(zod@3.25.76))
+        version: 0.20.1(@opentelemetry/api@1.9.0)(@opentelemetry/exporter-trace-otlp-proto@0.208.0(@opentelemetry/api@1.9.0))(@opentelemetry/resources@2.2.0(@opentelemetry/api@1.9.0))(@opentelemetry/sdk-trace-base@2.2.0(@opentelemetry/api@1.9.0))(chokidar@3.6.0)(openai@6.9.1(ws@8.18.3)(zod@3.25.76))
+      node-env-resolver:
+        specifier: ^6.1.0
+        version: 6.1.0
       pino-pretty:
         specifier: ^13.1.2
         version: 13.1.2
@@ -442,14 +448,14 @@ importers:
   packages/autolemetry-adapters:
     devDependencies:
       '@amplitude/analytics-node':
-        specifier: ^1.5.23
-        version: 1.5.23
+        specifier: ^1.5.24
+        version: 1.5.24
       '@arethetypeswrong/cli':
         specifier: ^0.18.2
         version: 0.18.2
       '@cloudflare/workers-types':
-        specifier: ^4.20251117.0
-        version: 4.20251117.0
+        specifier: ^4.20251118.0
+        version: 4.20251118.0
       '@prisma/client':
         specifier: ^6.19.0
         version: 6.19.0(prisma@6.19.0(typescript@5.9.3))(typescript@5.9.3)
@@ -470,7 +476,7 @@ importers:
         version: link:../autolemetry
       drizzle-orm:
         specifier: ^0.44.7
-        version: 0.44.7(@cloudflare/workers-types@4.20251117.0)(@libsql/client@0.15.15)(@opentelemetry/api@1.9.0)(@prisma/client@6.19.0(prisma@6.19.0(typescript@5.9.3))(typescript@5.9.3))(@types/pg@8.15.6)(bun-types@1.3.2(@types/react@19.2.3))(prisma@6.19.0(typescript@5.9.3))
+        version: 0.44.7(@cloudflare/workers-types@4.20251118.0)(@libsql/client@0.15.15)(@opentelemetry/api@1.9.0)(@prisma/client@6.19.0(prisma@6.19.0(typescript@5.9.3))(typescript@5.9.3))(@types/pg@8.15.6)(bun-types@1.3.2(@types/react@19.2.3))(prisma@6.19.0(typescript@5.9.3))
       eslint-config-prettier:
         specifier: ^10.1.8
         version: 10.1.8(eslint@9.39.1(jiti@2.6.1))
@@ -530,8 +536,8 @@ importers:
         version: 1.38.0
     devDependencies:
       '@cloudflare/workers-types':
-        specifier: ^4.20251117.0
-        version: 4.20251117.0
+        specifier: ^4.20251118.0
+        version: 4.20251118.0
       '@opentelemetry/context-async-hooks':
         specifier: ^2.2.0
         version: 2.2.0(@opentelemetry/api@1.9.0)
@@ -577,7 +583,7 @@ importers:
         version: 8.47.0(eslint@9.39.1(jiti@2.6.1))(typescript@5.9.3)
       drizzle-orm:
         specifier: ^0.44.7
-        version: 0.44.7(@cloudflare/workers-types@4.20251117.0)(@libsql/client@0.15.15)(@opentelemetry/api@1.9.0)(@prisma/client@6.19.0(prisma@6.19.0(typescript@5.9.3))(typescript@5.9.3))(@types/pg@8.15.6)(bun-types@1.3.2(@types/react@19.2.3))(prisma@6.19.0(typescript@5.9.3))
+        version: 0.44.7(@cloudflare/workers-types@4.20251118.0)(@libsql/client@0.15.15)(@opentelemetry/api@1.9.0)(@prisma/client@6.19.0(prisma@6.19.0(typescript@5.9.3))(typescript@5.9.3))(@types/pg@8.15.6)(bun-types@1.3.2(@types/react@19.2.3))(prisma@6.19.0(typescript@5.9.3))
       eslint-config-prettier:
         specifier: ^10.1.8
         version: 10.1.8(eslint@9.39.1(jiti@2.6.1))
@@ -599,11 +605,11 @@ packages:
   '@amplitude/analytics-connector@1.6.4':
     resolution: {integrity: sha512-SpIv0IQMNIq6SH3UqFGiaZyGSc7PBZwRdq7lvP0pBxW8i4Ny+8zwI0pV+VMfMHQwWY3wdIbWw5WQphNjpdq1/Q==}
 
-  '@amplitude/analytics-core@2.32.0':
-    resolution: {integrity: sha512-rNVKE40lUEXEFlYgYbpjSp6x4q5xlmbe5Ta/juzLnB6ZuMpO1Zfc+fTrjGSs84oHDG8ARr0d7dA1mkbeICcdtw==}
+  '@amplitude/analytics-core@2.32.1':
+    resolution: {integrity: sha512-epFYYEMGpor/zJnyviQhWCrbq994XADEMcuE+OgRXV894NhB9qsjLXDw2sSxD04WGUxna6bpzIuZIql6PmuYAA==}
 
-  '@amplitude/analytics-node@1.5.23':
-    resolution: {integrity: sha512-lMqIbrk6mhfPsydORwhtPa3PQmUD8461p2W/Ly/T3NvuYcz5bxyp+FwRTCEjvKbmUoQSue0AKLUzdsQXyGfOPQ==}
+  '@amplitude/analytics-node@1.5.24':
+    resolution: {integrity: sha512-hcHegb859KSCIksa9MRWl7ovLfJQq71eHyWLZ5c1/bIVWrKJOag6P2XxmrOf7tB6bVPx/QeLN1v/5Vmp8dc6cw==}
 
   '@andrewbranch/untar.js@1.0.3':
     resolution: {integrity: sha512-Jh15/qVmrLGhkKJBdXlK1+9tY4lZruYjsgkDFj08ZmDiWVBLJcqkok7Z0/R0In+i1rScBpJlSvrTS2Lm41Pbnw==}
@@ -859,8 +865,8 @@ packages:
     cpu: [x64]
     os: [win32]
 
-  '@cloudflare/workers-types@4.20251117.0':
-    resolution: {integrity: sha512-4U6phQE/qbmWuJX/0cTk3iOx9KyhWmo34okKb2BSS09UMRWLCwML+P3dnHxCHnSQij8c0orvdzMr9hyqgJGNgw==}
+  '@cloudflare/workers-types@4.20251118.0':
+    resolution: {integrity: sha512-O1BlPjaQlM5rsxf8rc8NwNrXduzXMCWZDsSelI1SEyt0zYuBYMzn0kNrrD2bXAtXeYCk6LrX98037AlVdGXBUw==}
 
   '@colors/colors@1.5.0':
     resolution: {integrity: sha512-ooWCrlZP11i8GImSjTHYHLkvFDP48nS4+204nGb1RiX/WXYHmJA2III9/e2DWVabCESdW7hBAEzHRqUn9OUVvQ==}
@@ -4899,6 +4905,10 @@ packages:
     resolution: {integrity: sha512-Z3lTE9pLaJF47NyMhd4ww1yFTAP8YhYI8SleJiHzM46Fgpm5cnNzSl9XfzFNqbaz+VlJrIj3fXQ4DeN1Rjm6cw==}
     engines: {node: '>=18'}
 
+  node-env-resolver@6.1.0:
+    resolution: {integrity: sha512-fjHekPOgE++acSm0bfCe4u24EPMq3tgKjfHOOiTfZtGC+rp2bpuhSHKbi9eVS69cDw//YoVbWh4jtTprVgAz3Q==}
+    engines: {node: '>=18'}
+
   node-fetch-native@1.6.7:
     resolution: {integrity: sha512-g9yhqoedzIUm0nTnTqAQvueMPVOuIY16bqgAJJC8XOOubYFNwz6IER9qs0Gq2Xd0+CecCKFjtdDTMA4u4xG06Q==}
 
@@ -4974,8 +4984,8 @@ packages:
     resolution: {integrity: sha512-YgBpdJHPyQ2UE5x+hlSXcnejzAvD0b22U2OuAP+8OnlJT+PjWPxtgmGqKKc+RgTM63U9gN0YzrYc71R2WT/hTA==}
     engines: {node: '>=18'}
 
-  openai@6.9.0:
-    resolution: {integrity: sha512-n2sJRYmM+xfJ0l3OfH8eNnIyv3nQY7L08gZQu3dw6wSdfPtKAk92L83M2NIP5SS8Cl/bsBBG3yKzEOjkx0O+7A==}
+  openai@6.9.1:
+    resolution: {integrity: sha512-vQ5Rlt0ZgB3/BNmTa7bIijYFhz3YBceAA3Z4JuoMSBftBF9YqFHIEhZakSs+O/Ad7EaoEimZvHxD5ylRjN11Lg==}
     hasBin: true
     peerDependencies:
       ws: ^8.18.0
@@ -6093,14 +6103,14 @@ snapshots:
 
   '@amplitude/analytics-connector@1.6.4': {}
 
-  '@amplitude/analytics-core@2.32.0':
+  '@amplitude/analytics-core@2.32.1':
     dependencies:
       '@amplitude/analytics-connector': 1.6.4
       tslib: 2.8.1
 
-  '@amplitude/analytics-node@1.5.23':
+  '@amplitude/analytics-node@1.5.24':
     dependencies:
-      '@amplitude/analytics-core': 2.32.0
+      '@amplitude/analytics-core': 2.32.1
       tslib: 2.8.1
 
   '@andrewbranch/untar.js@1.0.3': {}
@@ -6696,7 +6706,7 @@ snapshots:
   '@cloudflare/workerd-windows-64@1.20251105.0':
     optional: true
 
-  '@cloudflare/workers-types@4.20251117.0': {}
+  '@cloudflare/workers-types@4.20251118.0': {}
 
   '@colors/colors@1.5.0':
     optional: true
@@ -7262,14 +7272,14 @@ snapshots:
 
   '@js-sdsl/ordered-map@4.4.2': {}
 
-  '@langchain/core@0.3.79(@opentelemetry/api@1.9.0)(@opentelemetry/exporter-trace-otlp-proto@0.208.0(@opentelemetry/api@1.9.0))(@opentelemetry/sdk-trace-base@2.2.0(@opentelemetry/api@1.9.0))(openai@6.9.0(ws@8.18.3)(zod@3.25.76))':
+  '@langchain/core@0.3.79(@opentelemetry/api@1.9.0)(@opentelemetry/exporter-trace-otlp-proto@0.208.0(@opentelemetry/api@1.9.0))(@opentelemetry/sdk-trace-base@2.2.0(@opentelemetry/api@1.9.0))(openai@6.9.1(ws@8.18.3)(zod@3.25.76))':
     dependencies:
       '@cfworker/json-schema': 4.1.1
       ansi-styles: 5.2.0
       camelcase: 6.3.0
       decamelize: 1.2.0
       js-tiktoken: 1.0.21
-      langsmith: 0.3.79(@opentelemetry/api@1.9.0)(@opentelemetry/exporter-trace-otlp-proto@0.208.0(@opentelemetry/api@1.9.0))(@opentelemetry/sdk-trace-base@2.2.0(@opentelemetry/api@1.9.0))(openai@6.9.0(ws@8.18.3)(zod@3.25.76))
+      langsmith: 0.3.79(@opentelemetry/api@1.9.0)(@opentelemetry/exporter-trace-otlp-proto@0.208.0(@opentelemetry/api@1.9.0))(@opentelemetry/sdk-trace-base@2.2.0(@opentelemetry/api@1.9.0))(openai@6.9.1(ws@8.18.3)(zod@3.25.76))
       mustache: 4.2.0
       p-queue: 6.6.2
       p-retry: 4.6.2
@@ -7480,7 +7490,7 @@ snapshots:
   '@openai/agents-core@0.3.2(@cfworker/json-schema@4.1.1)(ws@8.18.3)(zod@3.25.76)':
     dependencies:
       debug: 4.4.3(supports-color@10.2.2)
-      openai: 6.9.0(ws@8.18.3)(zod@3.25.76)
+      openai: 6.9.1(ws@8.18.3)(zod@3.25.76)
     optionalDependencies:
       '@modelcontextprotocol/sdk': 1.22.0(@cfworker/json-schema@4.1.1)
       zod: 3.25.76
@@ -7493,7 +7503,7 @@ snapshots:
     dependencies:
       '@openai/agents-core': 0.3.2(@cfworker/json-schema@4.1.1)(ws@8.18.3)(zod@3.25.76)
       debug: 4.4.3(supports-color@10.2.2)
-      openai: 6.9.0(ws@8.18.3)(zod@3.25.76)
+      openai: 6.9.1(ws@8.18.3)(zod@3.25.76)
       zod: 3.25.76
     transitivePeerDependencies:
       - '@cfworker/json-schema'
@@ -7519,7 +7529,7 @@ snapshots:
       '@openai/agents-openai': 0.3.2(@cfworker/json-schema@4.1.1)(ws@8.18.3)(zod@3.25.76)
       '@openai/agents-realtime': 0.3.2(@cfworker/json-schema@4.1.1)(zod@3.25.76)
       debug: 4.4.3(supports-color@10.2.2)
-      openai: 6.9.0(ws@8.18.3)(zod@3.25.76)
+      openai: 6.9.1(ws@8.18.3)(zod@3.25.76)
       zod: 3.25.76
     transitivePeerDependencies:
       - '@cfworker/json-schema'
@@ -8939,9 +8949,9 @@ snapshots:
     transitivePeerDependencies:
       - supports-color
 
-  '@traceloop/instrumentation-langchain@0.20.0(@opentelemetry/exporter-trace-otlp-proto@0.208.0(@opentelemetry/api@1.9.0))(@opentelemetry/sdk-trace-base@2.2.0(@opentelemetry/api@1.9.0))(openai@6.9.0(ws@8.18.3)(zod@3.25.76))(supports-color@10.2.2)':
+  '@traceloop/instrumentation-langchain@0.20.0(@opentelemetry/exporter-trace-otlp-proto@0.208.0(@opentelemetry/api@1.9.0))(@opentelemetry/sdk-trace-base@2.2.0(@opentelemetry/api@1.9.0))(openai@6.9.1(ws@8.18.3)(zod@3.25.76))(supports-color@10.2.2)':
     dependencies:
-      '@langchain/core': 0.3.79(@opentelemetry/api@1.9.0)(@opentelemetry/exporter-trace-otlp-proto@0.208.0(@opentelemetry/api@1.9.0))(@opentelemetry/sdk-trace-base@2.2.0(@opentelemetry/api@1.9.0))(openai@6.9.0(ws@8.18.3)(zod@3.25.76))
+      '@langchain/core': 0.3.79(@opentelemetry/api@1.9.0)(@opentelemetry/exporter-trace-otlp-proto@0.208.0(@opentelemetry/api@1.9.0))(@opentelemetry/sdk-trace-base@2.2.0(@opentelemetry/api@1.9.0))(openai@6.9.1(ws@8.18.3)(zod@3.25.76))
       '@opentelemetry/api': 1.9.0
       '@opentelemetry/core': 2.2.0(@opentelemetry/api@1.9.0)
       '@opentelemetry/instrumentation': 0.203.0(@opentelemetry/api@1.9.0)(supports-color@10.2.2)
@@ -9024,7 +9034,7 @@ snapshots:
       - encoding
       - supports-color
 
-  '@traceloop/node-server-sdk@0.20.1(@opentelemetry/api@1.9.0)(@opentelemetry/exporter-trace-otlp-proto@0.208.0(@opentelemetry/api@1.9.0))(@opentelemetry/resources@2.2.0(@opentelemetry/api@1.9.0))(@opentelemetry/sdk-trace-base@2.2.0(@opentelemetry/api@1.9.0))(chokidar@3.6.0)(openai@6.9.0(ws@8.18.3)(zod@3.25.76))':
+  '@traceloop/node-server-sdk@0.20.1(@opentelemetry/api@1.9.0)(@opentelemetry/exporter-trace-otlp-proto@0.208.0(@opentelemetry/api@1.9.0))(@opentelemetry/resources@2.2.0(@opentelemetry/api@1.9.0))(@opentelemetry/sdk-trace-base@2.2.0(@opentelemetry/api@1.9.0))(chokidar@3.6.0)(openai@6.9.1(ws@8.18.3)(zod@3.25.76))':
     dependencies:
       '@google-cloud/opentelemetry-cloud-trace-exporter': 3.0.0(@opentelemetry/api@1.9.0)(@opentelemetry/core@2.2.0(@opentelemetry/api@1.9.0))(@opentelemetry/resources@2.2.0(@opentelemetry/api@1.9.0))(@opentelemetry/sdk-trace-base@2.2.0(@opentelemetry/api@1.9.0))(supports-color@10.2.2)
       '@opentelemetry/api': 1.9.0
@@ -9041,7 +9051,7 @@ snapshots:
       '@traceloop/instrumentation-bedrock': 0.20.0(supports-color@10.2.2)
       '@traceloop/instrumentation-chromadb': 0.20.0(supports-color@10.2.2)
       '@traceloop/instrumentation-cohere': 0.20.0(supports-color@10.2.2)
-      '@traceloop/instrumentation-langchain': 0.20.0(@opentelemetry/exporter-trace-otlp-proto@0.208.0(@opentelemetry/api@1.9.0))(@opentelemetry/sdk-trace-base@2.2.0(@opentelemetry/api@1.9.0))(openai@6.9.0(ws@8.18.3)(zod@3.25.76))(supports-color@10.2.2)
+      '@traceloop/instrumentation-langchain': 0.20.0(@opentelemetry/exporter-trace-otlp-proto@0.208.0(@opentelemetry/api@1.9.0))(@opentelemetry/sdk-trace-base@2.2.0(@opentelemetry/api@1.9.0))(openai@6.9.1(ws@8.18.3)(zod@3.25.76))(supports-color@10.2.2)
       '@traceloop/instrumentation-llamaindex': 0.20.0(supports-color@10.2.2)
       '@traceloop/instrumentation-openai': 0.20.0(supports-color@10.2.2)
       '@traceloop/instrumentation-pinecone': 0.20.0(supports-color@10.2.2)
@@ -9387,11 +9397,11 @@ snapshots:
       require-from-string: 2.0.2
     optional: true
 
-  alchemy@0.77.5(@libsql/client@0.15.15)(drizzle-orm@0.44.7(@cloudflare/workers-types@4.20251117.0)(@libsql/client@0.15.15)(@opentelemetry/api@1.9.0)(@prisma/client@6.19.0(prisma@6.19.0(typescript@5.9.3))(typescript@5.9.3))(@types/pg@8.15.6)(bun-types@1.3.2(@types/react@19.2.3))(prisma@6.19.0(typescript@5.9.3)))(vite@7.2.2(@types/node@24.10.1)(jiti@2.6.1)(lightningcss@1.30.2)(tsx@4.20.6)(yaml@2.8.1))(workerd@1.20251105.0)(wrangler@4.46.0(@cloudflare/workers-types@4.20251117.0)):
+  alchemy@0.77.5(@libsql/client@0.15.15)(drizzle-orm@0.44.7(@cloudflare/workers-types@4.20251118.0)(@libsql/client@0.15.15)(@opentelemetry/api@1.9.0)(@prisma/client@6.19.0(prisma@6.19.0(typescript@5.9.3))(typescript@5.9.3))(@types/pg@8.15.6)(bun-types@1.3.2(@types/react@19.2.3))(prisma@6.19.0(typescript@5.9.3)))(vite@7.2.2(@types/node@24.10.1)(jiti@2.6.1)(lightningcss@1.30.2)(tsx@4.20.6)(yaml@2.8.1))(workerd@1.20251105.0)(wrangler@4.46.0(@cloudflare/workers-types@4.20251118.0)):
     dependencies:
       '@aws-sdk/credential-providers': 3.926.0
       '@cloudflare/unenv-preset': 2.7.7(unenv@2.0.0-rc.21)(workerd@1.20251105.0)
-      '@cloudflare/workers-types': 4.20251117.0
+      '@cloudflare/workers-types': 4.20251118.0
       '@iarna/toml': 2.2.5
       '@octokit/rest': 21.1.1
       '@smithy/node-config-provider': 4.3.4
@@ -9415,12 +9425,12 @@ snapshots:
       proper-lockfile: 4.1.2
       signal-exit: 4.1.0
       unenv: 2.0.0-rc.21
-      wrangler: 4.46.0(@cloudflare/workers-types@4.20251117.0)
+      wrangler: 4.46.0(@cloudflare/workers-types@4.20251118.0)
       ws: 8.18.3
       yaml: 2.8.1
     optionalDependencies:
       '@libsql/client': 0.15.15
-      drizzle-orm: 0.44.7(@cloudflare/workers-types@4.20251117.0)(@libsql/client@0.15.15)(@opentelemetry/api@1.9.0)(@prisma/client@6.19.0(prisma@6.19.0(typescript@5.9.3))(typescript@5.9.3))(@types/pg@8.15.6)(bun-types@1.3.2(@types/react@19.2.3))(prisma@6.19.0(typescript@5.9.3))
+      drizzle-orm: 0.44.7(@cloudflare/workers-types@4.20251118.0)(@libsql/client@0.15.15)(@opentelemetry/api@1.9.0)(@prisma/client@6.19.0(prisma@6.19.0(typescript@5.9.3))(typescript@5.9.3))(@types/pg@8.15.6)(bun-types@1.3.2(@types/react@19.2.3))(prisma@6.19.0(typescript@5.9.3))
       vite: 7.2.2(@types/node@24.10.1)(jiti@2.6.1)(lightningcss@1.30.2)(tsx@4.20.6)(yaml@2.8.1)
     transitivePeerDependencies:
       - aws-crt
@@ -9816,9 +9826,9 @@ snapshots:
     transitivePeerDependencies:
       - supports-color
 
-  drizzle-orm@0.44.7(@cloudflare/workers-types@4.20251117.0)(@libsql/client@0.15.15)(@opentelemetry/api@1.9.0)(@prisma/client@6.19.0(prisma@6.19.0(typescript@5.9.3))(typescript@5.9.3))(@types/pg@8.15.6)(bun-types@1.3.2(@types/react@19.2.3))(prisma@6.19.0(typescript@5.9.3)):
+  drizzle-orm@0.44.7(@cloudflare/workers-types@4.20251118.0)(@libsql/client@0.15.15)(@opentelemetry/api@1.9.0)(@prisma/client@6.19.0(prisma@6.19.0(typescript@5.9.3))(typescript@5.9.3))(@types/pg@8.15.6)(bun-types@1.3.2(@types/react@19.2.3))(prisma@6.19.0(typescript@5.9.3)):
     optionalDependencies:
-      '@cloudflare/workers-types': 4.20251117.0
+      '@cloudflare/workers-types': 4.20251118.0
       '@libsql/client': 0.15.15
       '@opentelemetry/api': 1.9.0
       '@prisma/client': 6.19.0(prisma@6.19.0(typescript@5.9.3))(typescript@5.9.3)
@@ -10726,7 +10736,7 @@ snapshots:
 
   kuler@2.0.0: {}
 
-  langsmith@0.3.79(@opentelemetry/api@1.9.0)(@opentelemetry/exporter-trace-otlp-proto@0.208.0(@opentelemetry/api@1.9.0))(@opentelemetry/sdk-trace-base@2.2.0(@opentelemetry/api@1.9.0))(openai@6.9.0(ws@8.18.3)(zod@3.25.76)):
+  langsmith@0.3.79(@opentelemetry/api@1.9.0)(@opentelemetry/exporter-trace-otlp-proto@0.208.0(@opentelemetry/api@1.9.0))(@opentelemetry/sdk-trace-base@2.2.0(@opentelemetry/api@1.9.0))(openai@6.9.1(ws@8.18.3)(zod@3.25.76)):
     dependencies:
       '@types/uuid': 10.0.0
       chalk: 4.1.2
@@ -10739,7 +10749,7 @@ snapshots:
       '@opentelemetry/api': 1.9.0
       '@opentelemetry/exporter-trace-otlp-proto': 0.208.0(@opentelemetry/api@1.9.0)
       '@opentelemetry/sdk-trace-base': 2.2.0(@opentelemetry/api@1.9.0)
-      openai: 6.9.0(ws@8.18.3)(zod@3.25.76)
+      openai: 6.9.1(ws@8.18.3)(zod@3.25.76)
 
   levn@0.4.1:
     dependencies:
@@ -11026,6 +11036,8 @@ snapshots:
       emojilib: 2.4.0
       skin-tone: 2.0.0
 
+  node-env-resolver@6.1.0: {}
+
   node-fetch-native@1.6.7: {}
 
   node-fetch@2.7.0:
@@ -11093,7 +11105,7 @@ snapshots:
       is-inside-container: 1.0.0
       wsl-utils: 0.1.0
 
-  openai@6.9.0(ws@8.18.3)(zod@3.25.76):
+  openai@6.9.1(ws@8.18.3)(zod@3.25.76):
     optionalDependencies:
       ws: 8.18.3
       zod: 3.25.76
@@ -12098,7 +12110,7 @@ snapshots:
       '@cloudflare/workerd-linux-arm64': 1.20251105.0
       '@cloudflare/workerd-windows-64': 1.20251105.0
 
-  wrangler@4.46.0(@cloudflare/workers-types@4.20251117.0):
+  wrangler@4.46.0(@cloudflare/workers-types@4.20251118.0):
     dependencies:
       '@cloudflare/kv-asset-handler': 0.4.0
       '@cloudflare/unenv-preset': 2.7.9(unenv@2.0.0-rc.24)(workerd@1.20251105.0)
@@ -12109,7 +12121,7 @@ snapshots:
       unenv: 2.0.0-rc.24
       workerd: 1.20251105.0
     optionalDependencies:
-      '@cloudflare/workers-types': 4.20251117.0
+      '@cloudflare/workers-types': 4.20251118.0
       fsevents: 2.3.3
     transitivePeerDependencies:
       - bufferutil

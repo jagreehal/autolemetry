@@ -52,6 +52,38 @@ export {
 } from './analytics-testing';
 
 /**
+ * Note: OpenTelemetry exporters and processors have moved to dedicated modules
+ * for better semantic clarity.
+ *
+ * For exporters (ConsoleSpanExporter, InMemorySpanExporter):
+ * @see {@link autolemetry/exporters}
+ *
+ * For processors (SimpleSpanProcessor, BatchSpanProcessor):
+ * @see {@link autolemetry/processors}
+ *
+ * This module focuses on high-level testing utilities with assertion helpers
+ * and trace collectors.
+ *
+ * @example High-level testing (recommended)
+ * ```typescript
+ * import { createTraceCollector, assertTraceCreated } from 'autolemetry/testing'
+ *
+ * const collector = createTraceCollector()
+ * await myService.doSomething()
+ * assertTraceCreated(collector, 'myService.doSomething')
+ * ```
+ *
+ * @example Low-level testing (when you need raw OTel spans)
+ * ```typescript
+ * import { InMemorySpanExporter } from 'autolemetry/exporters'
+ * import { SimpleSpanProcessor } from 'autolemetry/processors'
+ *
+ * const exporter = new InMemorySpanExporter()
+ * init({ service: 'test', spanProcessor: new SimpleSpanProcessor(exporter) })
+ * ```
+ */
+
+/**
  * Simplified span representation for testing
  */
 export interface TestSpan {

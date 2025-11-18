@@ -17,7 +17,7 @@ import { PostHogAdapter, SlackAdapter } from 'autolemetry-adapters';
 // Initialize once at startup
 init({
   service: 'checkout-api',
-  endpoint: process.env.OTLP_ENDPOINT, // Grafana, Datadog, Tempo, etc.
+  endpoint: process.env.OTEL_EXPORTER_OTLP_ENDPOINT, // Grafana, Datadog, Tempo, etc.
   adapters: [
     new PostHogAdapter({ apiKey: process.env.POSTHOG_KEY! }),
     new SlackAdapter({ webhookUrl: process.env.SLACK_WEBHOOK! }),
@@ -149,6 +149,25 @@ Or use environment variable:
 ```bash
 AUTOLEMETRY_DEBUG=true node server.js
 ```
+
+### Environment Variables
+
+Configure autolemetry using standard OpenTelemetry environment variables:
+
+```bash
+export OTEL_SERVICE_NAME=my-app
+export OTEL_EXPORTER_OTLP_ENDPOINT=http://localhost:4318
+export OTEL_EXPORTER_OTLP_HEADERS=x-honeycomb-team=YOUR_API_KEY
+export OTEL_RESOURCE_ATTRIBUTES=deployment.environment=production
+```
+
+Then call `init()` without any config - it picks up env vars automatically:
+
+```typescript
+init({ service: 'my-app' }); // Minimal config, env vars fill the rest
+```
+
+**[→ See complete environment variable documentation](./packages/autolemetry/README.md#configuration-reference)**
 
 **[→ Full API documentation](./packages/autolemetry/README.md)**
 

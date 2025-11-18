@@ -36,6 +36,74 @@ Analytics adapters for product analytics platforms (PostHog, Mixpanel, Amplitude
 ### `packages/autolemetry-edge`
 Lightweight OpenTelemetry implementation for edge runtimes (Cloudflare Workers, Vercel Edge, Deno Deploy). Bundle size optimized (~43KB vs 700KB for Node.js version). Implements a minimal OpenTelemetry SDK subset compatible with edge constraints.
 
+## Environment Variables
+
+Autolemetry supports standard OpenTelemetry environment variables for configuration. This enables zero-code configuration changes across environments and compatibility with the broader OTEL ecosystem.
+
+### Supported Environment Variables
+
+**Service Configuration:**
+- `OTEL_SERVICE_NAME` - Service name (maps to `service` in `init()`)
+
+**Exporter Configuration:**
+- `OTEL_EXPORTER_OTLP_ENDPOINT` - OTLP collector URL (maps to `endpoint`)
+  - Examples: `http://localhost:4318`, `https://api.honeycomb.io`
+- `OTEL_EXPORTER_OTLP_PROTOCOL` - Protocol to use: `http` or `grpc` (maps to `protocol`)
+- `OTEL_EXPORTER_OTLP_HEADERS` - Authentication headers as comma-separated key=value pairs
+  - Format: `key1=value1,key2=value2`
+  - Example: `x-honeycomb-team=YOUR_API_KEY`
+
+**Resource Attributes:**
+- `OTEL_RESOURCE_ATTRIBUTES` - Custom metadata tags as comma-separated key=value pairs
+  - Common attributes: `service.version`, `deployment.environment`, `team`, `region`
+  - Example: `service.version=1.0.0,deployment.environment=production`
+
+### Configuration Precedence
+
+Environment variables provide defaults that are overridden by explicit `init()` config:
+
+```typescript
+// Explicit config takes precedence over env vars
+init({
+  service: 'my-service',  // Overrides OTEL_SERVICE_NAME
+  endpoint: 'http://localhost:4318'  // Overrides OTEL_EXPORTER_OTLP_ENDPOINT
+})
+```
+
+### Example Usage
+
+**Development (local collector):**
+```bash
+export OTEL_SERVICE_NAME=my-app
+export OTEL_EXPORTER_OTLP_ENDPOINT=http://localhost:4318
+```
+
+**Production (Honeycomb):**
+```bash
+export OTEL_SERVICE_NAME=my-app
+export OTEL_EXPORTER_OTLP_ENDPOINT=https://api.honeycomb.io
+export OTEL_EXPORTER_OTLP_HEADERS=x-honeycomb-team=YOUR_API_KEY
+export OTEL_RESOURCE_ATTRIBUTES=service.version=1.2.3,deployment.environment=production
+```
+
+**Production (Datadog):**
+```bash
+export OTEL_SERVICE_NAME=my-app
+export OTEL_EXPORTER_OTLP_ENDPOINT=https://http-intake.logs.datadoghq.com
+export OTEL_EXPORTER_OTLP_HEADERS=DD-API-KEY=YOUR_API_KEY
+export OTEL_RESOURCE_ATTRIBUTES=deployment.environment=production,team=backend
+```
+
+See `packages/autolemetry/.env.example` for a complete template.
+
+### Implementation Details
+
+Environment variable resolution is handled by `node-env-resolver` in `packages/autolemetry/src/env-config.ts`. The resolver:
+- Validates env var formats (URLs, enum values)
+- Parses complex values (comma-separated key=value pairs)
+- Provides type-safe config objects
+- Merges with explicit config (explicit config wins)
+
 ## Development Commands
 
 ### Building
@@ -169,6 +237,58 @@ Implements deferred sampling decisions:
 
 ## Testing Patterns
 
+### OpenTelemetry Utilities - Semantic Module Organization
+
+Autolemetry re-exports commonly-needed OpenTelemetry utilities in semantically-organized modules. These are already included in autolemetry's dependencies, so **no additional installation is required**.
+
+**Module Organization:**
+
+**`autolemetry/exporters`** - Span exporters for development and testing:
+- `ConsoleSpanExporter` - Print spans to console (development debugging, examples)
+- `InMemorySpanExporter` - Collect spans in memory (testing, assertions)
+
+**`autolemetry/processors`** - Span processors for custom configurations:
+- `SimpleSpanProcessor` - Synchronous span processing (testing, immediate export)
+- `BatchSpanProcessor` - Async batching (production, custom configs)
+
+**`autolemetry/testing`** - High-level testing utilities with assertions:
+- `createTraceCollector()` - Auto-configured trace collector with helpers
+- `assertTraceCreated()`, `assertTraceSucceeded()`, `assertTraceFailed()`, etc.
+- Analytics and metrics testing utilities
+
+**Why re-export?** Achieves "one install is all you need" DX without bundle size impact (these are from `@opentelemetry/sdk-trace-base`, already a dependency).
+
+```typescript
+// Development debugging - see spans in console
+import { init } from 'autolemetry'
+import { ConsoleSpanExporter } from 'autolemetry/exporters'
+
+init({
+  service: 'my-app',
+  spanExporter: new ConsoleSpanExporter(),
+})
+
+// Low-level testing - collect raw OTel spans
+import { init } from 'autolemetry'
+import { InMemorySpanExporter } from 'autolemetry/exporters'
+import { SimpleSpanProcessor } from 'autolemetry/processors'
+
+const exporter = new InMemorySpanExporter()
+init({
+  service: 'test',
+  spanProcessor: new SimpleSpanProcessor(exporter),
+})
+
+// Run code under test
+await myFunction()
+
+// Assert on collected spans
+const spans = exporter.getFinishedSpans()
+expect(spans).toHaveLength(1)
+```
+
+**Note:** For most testing scenarios, prefer autolemetry's high-level `createTraceCollector()` utility from `autolemetry/testing` which provides assertion helpers and automatic tracer configuration.
+
 ### Test Harnesses
 Use provided test harnesses for consistent testing:
 
@@ -180,11 +300,19 @@ const harness = new AdapterTestHarness(new MyAdapter(config))
 await harness.testBasicEvent()
 await harness.testErrorHandling()
 
-// Core testing utilities
-import { InMemorySpanExporter } from 'autolemetry/testing'
+// High-level trace testing (recommended)
+import { createTraceCollector, assertTraceCreated } from 'autolemetry/testing'
+
+const collector = createTraceCollector()
+await myService.doSomething()
+assertTraceCreated(collector, 'myService.doSomething')
+
+// Low-level testing (when you need raw OTel spans)
+import { InMemorySpanExporter } from 'autolemetry/exporters'
+import { SimpleSpanProcessor } from 'autolemetry/processors'
 
 const exporter = new InMemorySpanExporter()
-// Use in tests to capture spans
+// Use in tests to capture raw spans
 ```
 
 ### Integration Tests

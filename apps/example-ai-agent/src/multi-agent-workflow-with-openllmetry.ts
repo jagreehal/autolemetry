@@ -20,8 +20,8 @@
  */
 
 import { init, trace, track, shutdown, type TraceContext } from 'autolemetry';
+import { ConsoleSpanExporter } from 'autolemetry/exporters';
 import { Agent, handoff, run, setDefaultOpenAIClient, setOpenAIAPI } from '@openai/agents';
-import { ConsoleSpanExporter } from '@opentelemetry/sdk-trace-base';
 import OpenAI from 'openai';
 import 'dotenv/config';
 
