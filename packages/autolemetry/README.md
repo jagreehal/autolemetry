@@ -667,12 +667,47 @@ init(
 
 **Environment Variables:**
 
-The protocol can also be configured via `OTEL_EXPORTER_OTLP_PROTOCOL`:
+Autolemetry supports standard OpenTelemetry environment variables for zero-code configuration across environments:
 
 ```bash
-export OTEL_EXPORTER_OTLP_PROTOCOL=grpc
-export OTLP_ENDPOINT=api.honeycomb.io:443
+# Service configuration
+export OTEL_SERVICE_NAME=my-app
+
+# OTLP collector endpoint
+export OTEL_EXPORTER_OTLP_ENDPOINT=http://localhost:4318
+
+# Protocol: 'http' or 'grpc' (default: 'http')
+export OTEL_EXPORTER_OTLP_PROTOCOL=http
+
+# Authentication headers (comma-separated key=value pairs)
+export OTEL_EXPORTER_OTLP_HEADERS=x-honeycomb-team=YOUR_API_KEY
+
+# Resource attributes (comma-separated key=value pairs)
+export OTEL_RESOURCE_ATTRIBUTES=service.version=1.2.3,deployment.environment=production,team=backend
 ```
+
+**Configuration Precedence:** Explicit `init()` config > env vars > defaults
+
+**Example: Honeycomb with env vars**
+
+```bash
+export OTEL_SERVICE_NAME=my-app
+export OTEL_EXPORTER_OTLP_ENDPOINT=https://api.honeycomb.io
+export OTEL_EXPORTER_OTLP_PROTOCOL=grpc
+export OTEL_EXPORTER_OTLP_HEADERS=x-honeycomb-team=YOUR_API_KEY
+export OTEL_RESOURCE_ATTRIBUTES=deployment.environment=production
+```
+
+**Example: Datadog with env vars**
+
+```bash
+export OTEL_SERVICE_NAME=my-app
+export OTEL_EXPORTER_OTLP_ENDPOINT=https://http-intake.logs.datadoghq.com
+export OTEL_EXPORTER_OTLP_HEADERS=DD-API-KEY=YOUR_API_KEY
+export OTEL_RESOURCE_ATTRIBUTES=deployment.environment=production
+```
+
+See `packages/autolemetry/.env.example` for a complete template.
 
 Validation tuning example:
 

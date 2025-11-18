@@ -16,6 +16,8 @@ export default defineConfig([
       metrics: 'src/metrics.ts',
       'metrics-testing': 'src/metrics-testing.ts',
       testing: 'src/testing.ts',
+      exporters: 'src/exporters.ts',
+      processors: 'src/processors.ts',
       config: 'src/config.ts',
       'tail-sampling-processor': 'src/tail-sampling-processor.ts',
       functional: 'src/functional.ts',

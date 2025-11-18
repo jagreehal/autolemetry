@@ -327,16 +327,19 @@ export function getActiveContext(): Context {
  * }
  * ```
  *
- * @example Testing with mock spans
+ * @example Testing with custom spans
  * ```typescript
- * import { runWithSpan } from 'autolemetry';
- * import { InMemorySpanExporter } from 'autolemetry/testing';
+ * import { runWithSpan, otelTrace } from 'autolemetry';
  *
- * const mockSpan = createMockSpan();
- * const result = runWithSpan(mockSpan, () => {
- *   // Code under test
+ * const tracer = otelTrace.getTracer('test');
+ * const span = tracer.startSpan('test.operation');
+ *
+ * const result = runWithSpan(span, () => {
+ *   // Code under test runs with this span as active
  *   return myFunction();
  * });
+ *
+ * span.end();
  * ```
  */
 export function runWithSpan<T>(span: Span, fn: () => T): T {

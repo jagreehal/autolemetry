@@ -35,12 +35,31 @@ import { init } from 'autolemetry';
 
 init({
   service: 'checkout-api',
-  endpoint: process.env.OTLP_ENDPOINT ?? 'http://localhost:4318',
+  endpoint: process.env.OTEL_EXPORTER_OTLP_ENDPOINT ?? 'http://localhost:4318',
   environment: process.env.NODE_ENV ?? 'local',
   integrations: true, // pulls in @opentelemetry/auto-instrumentations-node
   adapters: [], // add PostHog/Mixpanel/Amplitude from autolemetry-adapters
 });
 ```
+
+### Environment Variables (Zero-Code Config)
+
+Autolemetry supports standard OpenTelemetry environment variables:
+
+```bash
+export OTEL_SERVICE_NAME=my-app
+export OTEL_EXPORTER_OTLP_ENDPOINT=http://localhost:4318
+export OTEL_EXPORTER_OTLP_PROTOCOL=http  # or 'grpc'
+export OTEL_EXPORTER_OTLP_HEADERS=x-api-key=secret
+export OTEL_RESOURCE_ATTRIBUTES=deployment.environment=prod,team=backend
+```
+
+Then minimal init:
+```ts
+init({ service: 'my-app' }); // Picks up env vars automatically
+```
+
+Precedence: Explicit config > env vars > defaults
 
 ### Quick Debug Mode (Local Development)
 

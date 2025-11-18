@@ -43,7 +43,7 @@ export {
   SEMATTRS_DB_NAME,
   SEMATTRS_NET_PEER_NAME,
   SEMATTRS_NET_PEER_PORT,
-} from './common/constants.js';
+} from './common/constants';
 
 // Re-export Drizzle plugin
 export {

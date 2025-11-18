@@ -12,7 +12,7 @@
     "@openai/agents": "^0.3.2",
     "@opentelemetry/auto-instrumentations-node": "^0.67.0",
     "@traceloop/node-server-sdk": "^0.20.1",
-    "openai": "^6.9.0",
+    "openai": "^6.9.1",
     "autolemetry": "workspace:*",
     "autolemetry-adapters": "workspace:*",
     "dotenv": "^17.2.3",

@@ -21,7 +21,7 @@ import { instrumentDrizzleClient } from 'autolemetry-plugins/drizzle';
 import { drizzle } from 'drizzle-orm/libsql';
 import { createClient } from '@libsql/client';
 import { eq } from 'drizzle-orm';
-import * as schema from './schema.js';
+import * as schema from './schema';
 
 // Initialize autolemetry
 init({

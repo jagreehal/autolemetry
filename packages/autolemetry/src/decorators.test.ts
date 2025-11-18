@@ -2,10 +2,8 @@ import { describe, it, expect, beforeEach } from 'vitest';
 import { Trace } from './decorators';
 import { init } from './init';
 import { configure, resetConfig } from './config';
-import {
-  InMemorySpanExporter,
-  SimpleSpanProcessor,
-} from '@opentelemetry/sdk-trace-base';
+import { InMemorySpanExporter } from './exporters';
+import { SimpleSpanProcessor } from './processors';
 import { trace } from '@opentelemetry/api';
 
 // Note: Decorator tests are skipped because vitest/esbuild/tsx has limitations

@@ -52,6 +52,14 @@
       "types": "./dist/testing.d.ts",
       "import": "./dist/testing.js"
     },
+    "./exporters": {
+      "types": "./dist/exporters.d.ts",
+      "import": "./dist/exporters.js"
+    },
+    "./processors": {
+      "types": "./dist/processors.d.ts",
+      "import": "./dist/processors.js"
+    },
     "./config": {
       "types": "./dist/config.d.ts",
       "import": "./dist/config.js"
@@ -141,7 +149,8 @@
     "@opentelemetry/sdk-metrics": "^2.2.0",
     "@opentelemetry/sdk-node": "^0.208.0",
     "@opentelemetry/sdk-trace-base": "^2.2.0",
-    "@opentelemetry/semantic-conventions": "^1.38.0"
+    "@opentelemetry/semantic-conventions": "^1.38.0",
+    "node-env-resolver": "^6.1.0"
   },
   "peerDependencies": {
     "@opentelemetry/auto-instrumentations-node": "^0.67.0",
