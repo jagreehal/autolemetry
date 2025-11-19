@@ -1,7 +1,7 @@
 /**
- * BigQuery Adapter Example
+ * BigQuery Subscriber Example
  *
- * Sends analytics events to Google BigQuery data warehouse.
+ * Sends events events to Google BigQuery data warehouse.
  * This is a complete, production-ready implementation.
  *
  * Installation:
@@ -11,7 +11,7 @@
  *
  * Setup BigQuery table:
  * ```sql
- * CREATE TABLE `project.dataset.analytics_events` (
+ * CREATE TABLE `project.dataset.events_events` (
  *   event_id STRING NOT NULL,
  *   event_type STRING NOT NULL,
  *   event_name STRING NOT NULL,
@@ -36,30 +36,30 @@
  *
  * Usage:
  * ```typescript
- * import { Analytics } from 'autolemetry/analytics';
- * import { BigQueryAdapter } from './adapter-bigquery';
+ * import { Events } from 'autolemetry/events';
+ * import { BigQuerySubscriber } from './adapter-bigquery';
  *
- * const analytics = new Analytics('app', {
- *   adapters: [
- *     new BigQueryAdapter({
+ * const events = new Events('app', {
+ *   subscribers: [
+ *     new BigQuerySubscriber({
  *       projectId: 'my-gcp-project',
- *       dataset: 'analytics',
+ *       dataset: 'events',
  *       table: 'events'
  *     })
  *   ]
  * });
  *
- * analytics.trackEvent('order.completed', { orderId: 'ord_123', amount: 99.99 });
+ * events.trackEvent('order.completed', { orderId: 'ord_123', amount: 99.99 });
  * ```
  */
 
 import {
-  AnalyticsAdapter,
-  type AdapterPayload,
-} from '../src/analytics-adapter-base';
+  EventSubscriber,
+  type EventPayload,
+} from '../src/event-subscriber-base';
 import { BigQuery } from '@google-cloud/bigquery';
 
-export interface BigQueryAdapterConfig {
+export interface BigQuerySubscriberConfig {
   /** GCP Project ID */
   projectId: string;
   /** BigQuery dataset name */
@@ -68,7 +68,7 @@ export interface BigQueryAdapterConfig {
   table: string;
   /** Service account key file path (optional, uses GOOGLE_APPLICATION_CREDENTIALS if not set) */
   keyFilename?: string;
-  /** Enable/disable adapter */
+  /** Enable/disable subscriber */
   enabled?: boolean;
   /** Batch size (default: 500) */
   batchSize?: number;
@@ -76,17 +76,17 @@ export interface BigQueryAdapterConfig {
   flushInterval?: number;
 }
 
-export class BigQueryAdapter extends AnalyticsAdapter {
-  readonly name = 'BigQueryAdapter';
+export class BigQuerySubscriber extends EventSubscriber {
+  readonly name = 'BigQuerySubscriber';
   readonly version = '1.0.0';
 
   private client: BigQuery;
   private tableRef: any;
-  private config: Required<BigQueryAdapterConfig>;
-  private buffer: AdapterPayload[] = [];
+  private config: Required<BigQuerySubscriberConfig>;
+  private buffer: EventPayload[] = [];
   private flushIntervalHandle: NodeJS.Timeout | null = null;
 
-  constructor(config: BigQueryAdapterConfig) {
+  constructor(config: BigQuerySubscriberConfig) {
     super();
 
     // Set defaults
@@ -121,9 +121,9 @@ export class BigQueryAdapter extends AnalyticsAdapter {
       const dataset = this.client.dataset(this.config.dataset);
       this.tableRef = dataset.table(this.config.table);
 
-      console.log('[BigQueryAdapter] Initialized successfully');
+      console.log('[BigQuerySubscriber] Initialized successfully');
     } catch (error) {
-      console.error('[BigQueryAdapter] Failed to initialize:', error);
+      console.error('[BigQuerySubscriber] Failed to initialize:', error);
       this.enabled = false;
     }
   }
@@ -134,7 +134,7 @@ export class BigQueryAdapter extends AnalyticsAdapter {
     }, this.config.flushInterval);
   }
 
-  protected async sendToDestination(payload: AdapterPayload): Promise<void> {
+  protected async sendToDestination(payload: EventPayload): Promise<void> {
     this.buffer.push(payload);
 
     // Auto-flush at batch size
@@ -152,13 +152,13 @@ export class BigQueryAdapter extends AnalyticsAdapter {
     try {
       await this.insertBatch(batch);
     } catch (error) {
-      console.error('[BigQueryAdapter] Failed to flush batch:', error);
+      console.error('[BigQuerySubscriber] Failed to flush batch:', error);
       // Re-add to buffer for retry
       this.buffer.unshift(...batch);
     }
   }
 
-  private async insertBatch(events: AdapterPayload[]): Promise<void> {
+  private async insertBatch(events: EventPayload[]): Promise<void> {
     const rows = events.map((event) => ({
       event_id: crypto.randomUUID(),
       event_type: event.type,
@@ -181,9 +181,9 @@ export class BigQueryAdapter extends AnalyticsAdapter {
     });
   }
 
-  protected handleError(error: Error, payload: AdapterPayload): void {
+  protected handleError(error: Error, payload: EventPayload): void {
     console.error(
-      `[BigQueryAdapter] Failed to send ${payload.type}:`,
+      `[BigQuerySubscriber] Failed to send ${payload.type}:`,
       error,
       {
         eventName: payload.name,
@@ -193,11 +193,11 @@ export class BigQueryAdapter extends AnalyticsAdapter {
 
     // BigQuery-specific error handling
     if (error.message.includes('quota')) {
-      console.error('[BigQueryAdapter] Quota exceeded - consider increasing batchSize or flushInterval');
+      console.error('[BigQuerySubscriber] Quota exceeded - consider increasing batchSize or flushInterval');
     }
 
     if (error.message.includes('schema')) {
-      console.error('[BigQueryAdapter] Schema mismatch - check table schema');
+      console.error('[BigQuerySubscriber] Schema mismatch - check table schema');
     }
   }
 
@@ -214,6 +214,6 @@ export class BigQueryAdapter extends AnalyticsAdapter {
     // Wait for pending requests
     await super.shutdown();
 
-    console.log('[BigQueryAdapter] Shutdown complete');
+    console.log('[BigQuerySubscriber] Shutdown complete');
   }
 }

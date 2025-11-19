@@ -11,7 +11,7 @@
  */
 
 import 'dotenv/config';
-import { init, trace, shutdown, Metrics, type TraceContext } from 'autolemetry';
+import { init, trace, shutdown, Metric, type TraceContext } from 'autolemetry';
 import { createLogger, LOG_LEVEL, type LogLevel } from 'autolemetry/logger';
 import { type DatadogSite } from 'autolemetry/presets/datadog';
 
@@ -112,7 +112,7 @@ logger.info('✅ Autolemetry initialized with DEBUG PROXY');
 logger.info('   All telemetry will be logged by the proxy before forwarding to Datadog');
 
 // Create metrics instance for tracking business metrics
-const metrics = new Metrics('datadog-debug', { logger });
+const metrics = new Metric('datadog-debug', { logger });
 
 // ============================================================================
 // Example Functions with Tracing

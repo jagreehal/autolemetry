@@ -1,41 +1,41 @@
 /**
- * Amplitude Adapter for autolemetry
+ * Amplitude Subscriber for autolemetry
  *
- * Send analytics to Amplitude for product analytics.
+ * Send events to Amplitude for product events.
  *
  * @example
  * ```typescript
- * import { Analytics } from 'autolemetry/analytics';
- * import { AmplitudeAdapter } from 'autolemetry-adapters/amplitude';
+ * import { Events } from 'autolemetry/events';
+ * import { AmplitudeSubscriber } from 'autolemetry-subscribers/amplitude';
  *
- * const analytics = new Analytics('checkout', {
- *   adapters: [
- *     new AmplitudeAdapter({
+ * const events = new Events('checkout', {
+ *   subscribers: [
+ *     new AmplitudeSubscriber({
  *       apiKey: process.env.AMPLITUDE_API_KEY!
  *     })
  *   ]
  * });
  *
- * analytics.trackEvent('order.completed', { userId: '123', amount: 99.99 });
+ * events.trackEvent('order.completed', { userId: '123', amount: 99.99 });
  * ```
  */
 
 import type {
-  AnalyticsAdapter,
+  EventSubscriber,
   EventAttributes,
   FunnelStatus,
   OutcomeStatus,
-} from 'autolemetry/analytics-adapter';
+} from 'autolemetry/event-subscriber';
 
 export interface AmplitudeConfig {
   /** Amplitude API key */
   apiKey: string;
-  /** Enable/disable the adapter */
+  /** Enable/disable the subscriber */
   enabled?: boolean;
 }
 
-export class AmplitudeAdapter implements AnalyticsAdapter {
-  readonly name = 'AmplitudeAdapter';
+export class AmplitudeSubscriber implements EventSubscriber {
+  readonly name = 'AmplitudeSubscriber';
   readonly version = '1.0.0';
 
   private amplitude: any;
@@ -55,12 +55,12 @@ export class AmplitudeAdapter implements AnalyticsAdapter {
 
   private async initialize(): Promise<void> {
     try {
-      // Dynamic import to avoid adding @amplitude/analytics-node as a hard dependency
+      // Dynamic import to avoid adding @amplitude/events-node as a hard dependency
       const { init } = await import('@amplitude/analytics-node');
       this.amplitude = init(this.config.apiKey);
     } catch (error) {
       console.error(
-        'Amplitude adapter failed to initialize. Install @amplitude/analytics-node: pnpm add @amplitude/analytics-node',
+        'Amplitude subscriber failed to initialize. Install @amplitude/events-node: pnpm add @amplitude/events-node',
         error,
       );
       this.enabled = false;
@@ -93,7 +93,7 @@ export class AmplitudeAdapter implements AnalyticsAdapter {
     if (!this.enabled) return;
 
     await this.ensureInitialized();
-    this.amplitude?.track({
+    this.amplitude?.trackEvent({
       event_type: `${funnelName}.${step}`,
       user_id: attributes?.userId || attributes?.user_id || 'anonymous',
       event_properties: {
@@ -112,7 +112,7 @@ export class AmplitudeAdapter implements AnalyticsAdapter {
     if (!this.enabled) return;
 
     await this.ensureInitialized();
-    this.amplitude?.track({
+    this.amplitude?.trackEvent({
       event_type: `${operationName}.${outcome}`,
       user_id: attributes?.userId || attributes?.user_id || 'anonymous',
       event_properties: {
@@ -127,7 +127,7 @@ export class AmplitudeAdapter implements AnalyticsAdapter {
     if (!this.enabled) return;
 
     await this.ensureInitialized();
-    this.amplitude?.track({
+    this.amplitude?.trackEvent({
       event_type: name,
       user_id: attributes?.userId || attributes?.user_id || 'anonymous',
       event_properties: {

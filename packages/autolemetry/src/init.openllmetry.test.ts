@@ -15,8 +15,11 @@ const mockedModules = [
   '@traceloop/node-server-sdk',
 ];
 
-// Track traceloop initialize calls globally for vi.mock
+// Track traceloop initialize calls globally
 const traceloopInitializeCalls: Array<Record<string, unknown>> = [];
+
+// Store mock initialize function globally
+let globalMockInitialize: ReturnType<typeof vi.fn> | null = null;
 
 async function loadInitWithMocks() {
   const sdkInstances: SdkRecord[] = [];
@@ -58,12 +61,31 @@ async function loadInitWithMocks() {
     }
   }
 
-  const mockInitialize = vi.fn((options?: Record<string, unknown>) => {
+  // Clear module cache first
+  vi.resetModules();
+
+  // Create mock function that captures calls and store it globally
+  globalMockInitialize = vi.fn((options?: Record<string, unknown>) => {
     traceloopInitializeCalls.push(options || {});
   });
 
-  // Clear module cache first
-  vi.resetModules();
+  // Re-setup the mock after resetModules
+  // Use virtual: true to make require() fail and fall back to async import
+  vi.doMock(
+    '@traceloop/node-server-sdk',
+    () => {
+      // This will be called for dynamic import() - return the mock
+      return {
+        initialize: globalMockInitialize!,
+        instrumentations: [{ name: 'openai' }, { name: 'langchain' }],
+        default: {
+          initialize: globalMockInitialize!,
+          instrumentations: [{ name: 'openai' }, { name: 'langchain' }],
+        },
+      };
+    },
+    { virtual: true },
+  );
 
   vi.doMock('@opentelemetry/sdk-node', () => ({
     NodeSDK: MockNodeSDK,
@@ -81,17 +103,6 @@ async function loadInitWithMocks() {
     PeriodicExportingMetricReader: MockPeriodicExportingMetricReader,
   }));
 
-  vi.doMock('@traceloop/node-server-sdk', () => {
-    return {
-      initialize: mockInitialize,
-      instrumentations: [{ name: 'openai' }, { name: 'langchain' }],
-      default: {
-        initialize: mockInitialize,
-        instrumentations: [{ name: 'openai' }, { name: 'langchain' }],
-      },
-    };
-  });
-
   const mod = await import('./init');
 
   return {
@@ -100,7 +111,7 @@ async function loadInitWithMocks() {
     sdkInstances,
     traceloopInitializeCalls,
     mockTraceloop: {
-      initialize: mockInitialize, // Return the same mock function reference
+      initialize: globalMockInitialize!, // Return the same mock function reference
       instrumentations: [{ name: 'openai' }, { name: 'langchain' }],
     },
   };
@@ -110,6 +121,7 @@ describe('init() OpenLLMetry integration', () => {
   beforeEach(() => {
     vi.resetModules();
     traceloopInitializeCalls.length = 0; // Clear calls array
+    globalMockInitialize = null; // Reset mock function
   });
 
   afterEach(() => {
@@ -130,6 +142,10 @@ describe('init() OpenLLMetry integration', () => {
     expect(traceloopInitializeCalls).toHaveLength(0);
   });
 
+  // Skipped: vi.doMock doesn't properly intercept require('@traceloop/node-server-sdk')
+  // when the real module is installed. The real module loads instead of the mock,
+  // so initialize() calls aren't captured. This is a known vitest limitation with
+  // optional peer dependencies that may or may not be installed.
   it.skip('should initialize OpenLLMetry when enabled', async () => {
     const { init, traceloopInitializeCalls } = await loadInitWithMocks();
 
@@ -139,14 +155,20 @@ describe('init() OpenLLMetry integration', () => {
     });
 
     // Wait for async import to complete (require fails, falls back to async import)
-    // Use a longer timeout for CI environments
-    await new Promise((resolve) => setTimeout(resolve, 500));
+    // Use a longer timeout and retry logic for CI environments
+    let attempts = 0;
+    while (traceloopInitializeCalls.length === 0 && attempts < 20) {
+      await new Promise((resolve) => setTimeout(resolve, 50));
+      attempts++;
+    }
 
     expect(traceloopInitializeCalls).toHaveLength(1);
     const callOptions = traceloopInitializeCalls[0];
     expect(callOptions).toBeDefined();
   });
 
+  // Skipped: Same mocking issue as above - vi.doMock doesn't intercept require()
+  // calls for optional peer dependencies when the real module is installed.
   it.skip('should pass OpenLLMetry options to initialize', async () => {
     const { init, traceloopInitializeCalls } = await loadInitWithMocks();
 
@@ -173,6 +195,8 @@ describe('init() OpenLLMetry integration', () => {
     });
   });
 
+  // Skipped: Same mocking issue - vi.doMock doesn't intercept require() for optional
+  // peer dependencies, so the mock initialize() function is never called.
   it.skip('should reuse autolemetry tracer provider when OpenLLMetry is enabled', async () => {
     const { init, traceloopInitializeCalls, sdkInstances } =
       await loadInitWithMocks();
@@ -232,6 +256,9 @@ describe('init() OpenLLMetry integration', () => {
     }).not.toThrow();
   });
 
+  // Skipped: Same mocking issue - vi.doMock doesn't intercept require() calls,
+  // so the async import fallback path is used but the mock isn't found either.
+  // This prevents proper verification of the initialization sequence.
   it.skip('should initialize OpenLLMetry after SDK start', async () => {
     const { init, sdkInstances, traceloopInitializeCalls } =
       await loadInitWithMocks();

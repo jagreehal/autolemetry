@@ -6,7 +6,7 @@
  *
  * @example Track business metrics
  * ```typescript
- * const metrics = new Metrics('checkout')
+ * const metrics = new Metric('checkout')
  *
  * // Track events as metrics
  * metrics.trackEvent('order.completed', {
@@ -38,15 +38,15 @@ import {
   type EventAttributes,
   type FunnelStatus,
   type OutcomeStatus,
-} from './analytics-adapter';
-import { type MetricsCollector } from './metrics-testing';
+} from './event-subscriber';
+import { type MetricsCollector } from './metric-testing';
 
 // Re-export types for convenience
 export type {
   EventAttributes,
   FunnelStatus,
   OutcomeStatus,
-} from './analytics-adapter';
+} from './event-subscriber';
 
 /**
  * Metrics class for tracking business metrics in OpenTelemetry
@@ -98,7 +98,7 @@ export interface MetricsOptions {
   };
 }
 
-export class Metrics {
+export class Metric {
   private serviceName: string;
   private eventCounter: Counter;
   private funnelCounter: Counter;
@@ -115,19 +115,19 @@ export class Metrics {
    *
    * @example Basic usage (default 'metrics' namespace)
    * ```typescript
-   * const metrics = new Metrics('checkout');
+   * const metrics = new Metric('checkout');
    * // Creates: checkout.metrics.events, checkout.metrics.funnel, etc.
    * ```
    *
    * @example Custom namespace
    * ```typescript
-   * const metrics = new Metrics('api', { namespace: 'business' });
+   * const metrics = new Metric('api', { namespace: 'business' });
    * // Creates: api.business.events, api.business.funnel, etc.
    * ```
    *
    * @example Custom metric names and descriptions
    * ```typescript
-   * const metrics = new Metrics('payments', {
+   * const metrics = new Metric('payments', {
    *   metrics: {
    *     outcomes: {
    *       name: 'payments.transactions',
@@ -404,7 +404,7 @@ export class Metrics {
 /**
  * Global metrics instances (singleton pattern)
  */
-const metricsInstances = new Map<string, Metrics>();
+const metricsInstances = new Map<string, Metric>();
 
 /**
  * Get or create a Metrics instance for a service
@@ -419,9 +419,9 @@ const metricsInstances = new Map<string, Metrics>();
  * metrics.trackEvent('order.completed', { orderId: '123' })
  * ```
  */
-export function getMetrics(serviceName: string, logger?: Logger): Metrics {
+export function getMetrics(serviceName: string, logger?: Logger): Metric {
   if (!metricsInstances.has(serviceName)) {
-    metricsInstances.set(serviceName, new Metrics(serviceName, { logger }));
+    metricsInstances.set(serviceName, new Metric(serviceName, { logger }));
   }
   return metricsInstances.get(serviceName)!;
 }

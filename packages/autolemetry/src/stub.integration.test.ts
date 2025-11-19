@@ -7,15 +7,15 @@
 import { describe, it, expect, beforeEach, afterEach } from 'vitest';
 import { init } from './init';
 import { trace } from './functional';
-import { track, resetAnalyticsQueue } from './track';
-import { Analytics, resetAnalytics } from './analytics';
+import { track, resetEventQueue } from './track';
+import { Event, resetEvents } from './event';
 import { flush, shutdown } from './shutdown';
-import { resetMetrics } from './metrics';
+import { resetMetrics } from './metric';
 import { resetConfig } from './config';
-import type { AnalyticsAdapter, EventAttributes } from './analytics-adapter';
+import { EventAttributes, EventSubscriber } from './event-subscriber';
 
 // Test adapter that collects events
-class TestAdapter implements AnalyticsAdapter {
+class TestAdapter implements EventSubscriber {
   name = 'test-adapter';
   events: Array<{ type: string; name: string; attributes?: EventAttributes }> =
     [];
@@ -74,8 +74,8 @@ describe('Integration Test Suite', () => {
 
   beforeEach(() => {
     // Reset all global state between tests
-    resetAnalyticsQueue();
-    resetAnalytics();
+    resetEventQueue();
+    resetEvents();
     resetMetrics();
     resetConfig();
     testAdapter = new TestAdapter();
@@ -90,7 +90,7 @@ describe('Integration Test Suite', () => {
     it('should initialize all components together', () => {
       init({
         service: 'test-app',
-        adapters: [testAdapter],
+        subscribers: [testAdapter],
         version: '1.0.0',
         environment: 'test',
       });
@@ -99,16 +99,16 @@ describe('Integration Test Suite', () => {
     });
   });
 
-  describe('Tracing + Analytics integration', () => {
-    it('should correlate traces with analytics events', async () => {
+  describe('Tracing + Events integration', () => {
+    it('should correlate traces with events events', async () => {
       init({
         service: 'user-service',
-        adapters: [testAdapter],
+        subscribers: [testAdapter],
       });
 
       // Create trace function
       const createUser = trace(async (userId: string, plan: string) => {
-        // Track analytics event inside trace function
+        // Track events event inside trace function
         track('user.signup', { userId, plan });
         return { id: userId, plan };
       });
@@ -122,16 +122,16 @@ describe('Integration Test Suite', () => {
       // Flush to send events
       await flush();
 
-      // Analytics event should be tracked
+      // Events event should be tracked
       // (traceId correlation happens automatically)
-      const events = testAdapter.events.filter((e) => e.name === 'user.signup');
-      expect(events.length).toBeGreaterThan(0);
+      const event = testAdapter.events.filter((e) => e.name === 'user.signup');
+      expect(event.length).toBeGreaterThan(0);
     });
 
     it('should handle nested trace functions', async () => {
       init({
         service: 'order-service',
-        adapters: [testAdapter],
+        subscribers: [testAdapter],
       });
 
       const validateOrder = trace(async (orderId: string) => {
@@ -168,25 +168,25 @@ describe('Integration Test Suite', () => {
     });
   });
 
-  describe('Analytics class integration', () => {
-    it('should track all analytics event types', async () => {
-      const analytics = new Analytics('checkout', {
-        adapters: [testAdapter],
+  describe('Events class integration', () => {
+    it('should track all events event types', async () => {
+      const event = new Event('checkout', {
+        subscribers: [testAdapter],
       });
 
       // Track different event types
-      analytics.trackEvent('checkout.started', { cartValue: 149.99 });
-      analytics.trackFunnelStep('checkout', 'started', { userId: '123' });
-      analytics.trackFunnelStep('checkout', 'started', {
+      event.trackEvent('checkout.started', { cartValue: 149.99 });
+      event.trackFunnelStep('checkout', 'started', { userId: '123' });
+      event.trackFunnelStep('checkout', 'started', {
         userId: '123',
         step: 'payment_info',
       });
-      analytics.trackFunnelStep('checkout', 'completed', { userId: '123' });
-      analytics.trackOutcome('payment.process', 'success', { amount: 149.99 });
-      analytics.trackValue('revenue', 149.99, { currency: 'USD' });
+      event.trackFunnelStep('checkout', 'completed', { userId: '123' });
+      event.trackOutcome('payment.process', 'success', { amount: 149.99 });
+      event.trackValue('revenue', 149.99, { currency: 'USD' });
 
       // Flush adapters
-      await analytics.flush();
+      await event.flush();
 
       // All events should be captured
       expect(testAdapter.events.length).toBe(6);
@@ -203,7 +203,7 @@ describe('Integration Test Suite', () => {
 
   describe('Error handling integration', () => {
     it('should handle adapter failures gracefully', async () => {
-      const failingAdapter: AnalyticsAdapter = {
+      const failingAdapter: EventSubscriber = {
         name: 'failing-adapter',
         trackEvent: async () => {
           throw new Error('Adapter error');
@@ -213,14 +213,14 @@ describe('Integration Test Suite', () => {
         trackValue: async () => {},
       };
 
-      const analytics = new Analytics('test', {
-        adapters: [failingAdapter, testAdapter], // Mix failing and working
+      const event = new Event('test', {
+        subscribers: [failingAdapter, testAdapter], // Mix failing and working
       });
 
       // Should not throw even though one adapter fails
-      analytics.trackEvent('test.event', { foo: 'bar' });
+      event.trackEvent('test.event', { foo: 'bar' });
 
-      await analytics.flush();
+      await event.flush();
 
       // Working adapter should still receive events
       expect(testAdapter.events.length).toBeGreaterThan(0);
@@ -229,7 +229,7 @@ describe('Integration Test Suite', () => {
     it('should handle circuit breaker opening', async () => {
       let callCount = 0;
 
-      const unreliableAdapter: AnalyticsAdapter = {
+      const unreliableAdapter: EventSubscriber = {
         name: 'unreliable-adapter',
         trackEvent: async () => {
           callCount++;
@@ -243,18 +243,18 @@ describe('Integration Test Suite', () => {
         trackValue: async () => {},
       };
 
-      const analytics = new Analytics('test', {
-        adapters: [unreliableAdapter],
+      const event = new Event('test', {
+        subscribers: [unreliableAdapter],
       });
 
       // Send events one at a time to allow circuit breaker to open
       for (let i = 0; i < 10; i++) {
-        analytics.trackEvent(`event.${i}`, { index: i });
+        event.trackEvent(`event.${i}`, { index: i });
         // Wait a bit to allow circuit breaker to process
         await new Promise((resolve) => setTimeout(resolve, 10));
       }
 
-      await analytics.flush();
+      await event.flush();
 
       // Circuit should open after 5 failures
       // Remaining calls should be fast-failed
@@ -266,7 +266,7 @@ describe('Integration Test Suite', () => {
     it('should sanitize sensitive data across all components', async () => {
       init({
         service: 'auth-service',
-        adapters: [testAdapter],
+        subscribers: [testAdapter],
       });
 
       // Track with sensitive data
@@ -287,17 +287,17 @@ describe('Integration Test Suite', () => {
     });
 
     it('should validate event names', () => {
-      const analytics = new Analytics('test', {
-        adapters: [testAdapter],
+      const event = new Event('test', {
+        subscribers: [testAdapter],
       });
 
       // Invalid event names should throw
       expect(() => {
-        analytics.trackEvent('', { foo: 'bar' });
+        event.trackEvent('', { foo: 'bar' });
       }).toThrow();
 
       expect(() => {
-        analytics.trackEvent('invalid event name', { foo: 'bar' });
+        event.trackEvent('invalid event name', { foo: 'bar' });
       }).toThrow();
     });
   });
@@ -306,7 +306,7 @@ describe('Integration Test Suite', () => {
     it('should shutdown all components cleanly', async () => {
       init({
         service: 'test-service',
-        adapters: [testAdapter],
+        subscribers: [testAdapter],
       });
 
       track('test.event', { foo: 'bar' });
@@ -322,7 +322,7 @@ describe('Integration Test Suite', () => {
     it('should handle high event volume', async () => {
       init({
         service: 'high-volume-service',
-        adapters: [testAdapter],
+        subscribers: [testAdapter],
       });
 
       // Send 1000 events
@@ -339,7 +339,7 @@ describe('Integration Test Suite', () => {
     it('should batch events efficiently', async () => {
       init({
         service: 'batch-test',
-        adapters: [testAdapter],
+        subscribers: [testAdapter],
       });
 
       const startTime = Date.now();

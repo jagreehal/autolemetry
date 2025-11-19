@@ -1,7 +1,7 @@
 /**
- * Kafka Streaming Adapter Example
+ * Kafka Streaming Subscriber Example
  *
- * Production-ready Kafka adapter for high-throughput, ordered event streaming.
+ * Production-ready Kafka subscriber for high-throughput, ordered event streaming.
  *
  * Installation:
  * ```bash
@@ -18,15 +18,15 @@
  *
  * Usage:
  * ```typescript
- * import { Analytics } from 'autolemetry/analytics';
- * import { KafkaAdapter } from './adapter-kafka';
+ * import { Events } from 'autolemetry/events';
+ * import { KafkaSubscriber } from './adapter-kafka';
  *
- * const analytics = new Analytics('app', {
- *   adapters: [
- *     new KafkaAdapter({
- *       clientId: 'analytics-producer',
+ * const events = new Events('app', {
+ *   subscribers: [
+ *     new KafkaSubscriber({
+ *       clientId: 'events-producer',
  *       brokers: ['kafka1:9092', 'kafka2:9092', 'kafka3:9092'],
- *       topic: 'analytics.events',
+ *       topic: 'events.events',
  *       partitionStrategy: 'userId', // or 'tenantId', 'eventType', 'round-robin'
  *       compression: 'gzip',
  *       maxBufferSize: 10000,
@@ -38,25 +38,25 @@
  *
  * // High-throughput: 10k+ events/sec
  * for (let i = 0; i < 10000; i++) {
- *   await analytics.trackEvent('page.viewed', { userId: `user_${i % 100}` });
+ *   await events.trackEvent('page.viewed', { userId: `user_${i % 100}` });
  * }
  *
  * // Graceful shutdown
- * await analytics.flush();
+ * await events.flush();
  * ```
  */
 
 import {
-  StreamingAnalyticsAdapter,
+  StreamingEventSubscriber,
   type BufferOverflowStrategy,
-} from '../src/streaming-analytics-adapter';
-import type { AdapterPayload } from '../src/analytics-adapter-base';
+} from '../src/streaming-event-subscriber';
+import type { EventPayload } from '../src/event-subscriber-base';
 import { Kafka, Producer, CompressionTypes, type ProducerRecord } from 'kafkajs';
 
 type CompressionType = 'gzip' | 'snappy' | 'lz4' | 'zstd' | 'none';
 type PartitionStrategy = 'userId' | 'tenantId' | 'eventType' | 'round-robin';
 
-export interface KafkaAdapterConfig {
+export interface KafkaSubscriberConfig {
   /** Kafka client ID */
   clientId: string;
 
@@ -72,7 +72,7 @@ export interface KafkaAdapterConfig {
   /** Compression type (default: 'gzip') */
   compression?: CompressionType;
 
-  /** Enable/disable adapter */
+  /** Enable/disable subscriber */
   enabled?: boolean;
 
   /** Maximum buffer size (default: 10000) */
@@ -98,20 +98,20 @@ export interface KafkaAdapterConfig {
   ssl?: boolean;
 }
 
-export class KafkaAdapter extends StreamingAnalyticsAdapter {
-  readonly name = 'KafkaAdapter';
+export class KafkaSubscriber extends StreamingEventSubscriber {
+  readonly name = 'KafkaSubscriber';
   readonly version = '1.0.0';
 
   private kafka: Kafka;
   private producer: Producer;
-  private adapterConfig: Required<Omit<KafkaAdapterConfig, 'sasl' | 'ssl'>> & {
-    sasl?: KafkaAdapterConfig['sasl'];
+  private subscriberConfig: Required<Omit<KafkaSubscriberConfig, 'sasl' | 'ssl'>> & {
+    sasl?: KafkaSubscriberConfig['sasl'];
     ssl?: boolean;
   };
   private roundRobinCounter = 0;
   private isConnected = false;
 
-  constructor(config: KafkaAdapterConfig) {
+  constructor(config: KafkaSubscriberConfig) {
     super({
       maxBufferSize: config.maxBufferSize ?? 10_000,
       maxBatchSize: config.maxBatchSize ?? 1000,
@@ -169,7 +169,7 @@ export class KafkaAdapter extends StreamingAnalyticsAdapter {
       // Connect asynchronously
       void this.connect();
     } catch (error) {
-      console.error('[KafkaAdapter] Failed to initialize:', error);
+      console.error('[KafkaSubscriber] Failed to initialize:', error);
       this.enabled = false;
     }
   }
@@ -178,9 +178,9 @@ export class KafkaAdapter extends StreamingAnalyticsAdapter {
     try {
       await this.producer.connect();
       this.isConnected = true;
-      console.log('[KafkaAdapter] Connected successfully');
+      console.log('[KafkaSubscriber] Connected successfully');
     } catch (error) {
-      console.error('[KafkaAdapter] Failed to connect:', error);
+      console.error('[KafkaSubscriber] Failed to connect:', error);
       this.enabled = false;
       this.isConnected = false;
     }
@@ -209,7 +209,7 @@ export class KafkaAdapter extends StreamingAnalyticsAdapter {
   /**
    * Get partition key based on configured strategy
    */
-  protected getPartitionKey(payload: AdapterPayload): string {
+  protected getPartitionKey(payload: EventPayload): string {
     switch (this.adapterConfig.partitionStrategy) {
       case 'userId': {
         return payload.attributes?.userId?.toString() || 'default';
@@ -238,9 +238,9 @@ export class KafkaAdapter extends StreamingAnalyticsAdapter {
   /**
    * Send batch of events to Kafka
    */
-  protected async sendBatch(events: AdapterPayload[]): Promise<void> {
+  protected async sendBatch(events: EventPayload[]): Promise<void> {
     if (!this.isConnected) {
-      throw new Error('[KafkaAdapter] Producer not connected');
+      throw new Error('[KafkaSubscriber] Producer not connected');
     }
 
     // Build Kafka messages
@@ -266,12 +266,12 @@ export class KafkaAdapter extends StreamingAnalyticsAdapter {
       // Log successful send (debug)
       if (process.env.DEBUG) {
         console.log(
-          `[KafkaAdapter] Sent ${messages.length} events to partition ${result[0].partition}`
+          `[KafkaSubscriber] Sent ${messages.length} events to partition ${result[0].partition}`
         );
       }
     } catch (error) {
       console.error(
-        `[KafkaAdapter] Failed to send ${messages.length} events:`,
+        `[KafkaSubscriber] Failed to send ${messages.length} events:`,
         error
       );
       throw error; // Re-throw for retry logic
@@ -279,11 +279,11 @@ export class KafkaAdapter extends StreamingAnalyticsAdapter {
   }
 
   /**
-   * Handle errors (override from AnalyticsAdapter)
+   * Handle errors (override from EventSubscriber)
    */
-  protected handleError(error: Error, payload: AdapterPayload): void {
+  protected handleError(error: Error, payload: EventPayload): void {
     console.error(
-      `[KafkaAdapter] Failed to process ${payload.type} event:`,
+      `[KafkaSubscriber] Failed to process ${payload.type} event:`,
       error,
       {
         eventName: payload.name,
@@ -294,12 +294,12 @@ export class KafkaAdapter extends StreamingAnalyticsAdapter {
     // Check for specific Kafka errors
     if (error.message.includes('NOT_LEADER_FOR_PARTITION')) {
       console.error(
-        '[KafkaAdapter] Partition leadership changed - will retry'
+        '[KafkaSubscriber] Partition leadership changed - will retry'
       );
     }
 
     if (error.message.includes('BROKER_NOT_AVAILABLE')) {
-      console.error('[KafkaAdapter] Broker unavailable - check cluster health');
+      console.error('[KafkaSubscriber] Broker unavailable - check cluster health');
     }
   }
 
@@ -307,7 +307,7 @@ export class KafkaAdapter extends StreamingAnalyticsAdapter {
    * Graceful shutdown
    */
   async shutdown(): Promise<void> {
-    console.log('[KafkaAdapter] Starting graceful shutdown...');
+    console.log('[KafkaSubscriber] Starting graceful shutdown...');
 
     // Flush buffer and drain pending requests
     await super.shutdown();
@@ -317,9 +317,9 @@ export class KafkaAdapter extends StreamingAnalyticsAdapter {
       try {
         await this.producer.disconnect();
         this.isConnected = false;
-        console.log('[KafkaAdapter] Disconnected successfully');
+        console.log('[KafkaSubscriber] Disconnected successfully');
       } catch (error) {
-        console.error('[KafkaAdapter] Error during disconnect:', error);
+        console.error('[KafkaSubscriber] Error during disconnect:', error);
       }
     }
   }

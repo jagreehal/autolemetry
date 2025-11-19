@@ -1,31 +1,31 @@
 /**
- * Factory functions for creating analytics adapters
+ * Factory functions for creating events subscribers
  *
- * Function-based alternatives to `new AdapterClass()` pattern.
+ * Function-based alternatives to `new SubscriberClass()` pattern.
  * Provides a consistent API and better tree-shaking.
  *
  * @example
  * ```typescript
- * import { createPostHogAdapter, createWebhookAdapter } from 'autolemetry-adapters/factories'
+ * import { createPostHogSubscriber, createWebhookSubscriber } from 'autolemetry-subscribers/factories'
  *
- * const analytics = new Analytics('my-service', {
- *   adapters: [
- *     createPostHogAdapter({ apiKey: 'phc_...' }),
- *     createWebhookAdapter({ url: 'https://...' })
+ * const events = new Events('my-service', {
+ *   subscribers: [
+ *     createPostHogSubscriber({ apiKey: 'phc_...' }),
+ *     createWebhookSubscriber({ url: 'https://...' })
  *   ]
  * })
  * ```
  */
 
-import { PostHogAdapter } from './posthog';
-import { MixpanelAdapter } from './mixpanel';
-import { AmplitudeAdapter } from './amplitude';
-import { SegmentAdapter } from './segment';
-import { WebhookAdapter } from './webhook';
-import { SlackAdapter } from './slack';
-import { MockAnalyticsAdapter } from './mock-analytics-adapter';
+import { PostHogSubscriber } from './posthog';
+import { MixpanelSubscriber } from './mixpanel';
+import { AmplitudeSubscriber } from './amplitude';
+import { SegmentSubscriber } from './segment';
+import { WebhookSubscriber } from './webhook';
+import { SlackSubscriber } from './slack';
+import { MockEventSubscriber } from './mock-event-subscriber';
 
-import type { AnalyticsAdapter, EventAttributes, OutcomeStatus, FunnelStatus } from 'autolemetry/analytics-adapter';
+import type { EventSubscriber, EventAttributes, OutcomeStatus, FunnelStatus } from 'autolemetry/event-subscriber';
 
 // Re-export config types
 export type { PostHogConfig } from './posthog';
@@ -33,151 +33,151 @@ export type { MixpanelConfig } from './mixpanel';
 export type { AmplitudeConfig } from './amplitude';
 export type { SegmentConfig } from './segment';
 export type { WebhookConfig } from './webhook';
-export type { SlackAdapterConfig } from './slack';
+export type { SlackSubscriberConfig } from './slack';
 
 /**
- * Create a PostHog analytics adapter
+ * Create a PostHog events subscriber
  *
  * @example
  * ```typescript
- * const posthog = createPostHogAdapter({
+ * const posthog = createPostHogSubscriber({
  *   apiKey: 'phc_...',
  *   host: 'https://app.posthog.com' // optional
  * })
  * ```
  */
-export function createPostHogAdapter(config: {
+export function createPostHogSubscriber(config: {
   apiKey: string;
   host?: string;
   enabled?: boolean;
-}): AnalyticsAdapter {
-  return new PostHogAdapter(config);
+}): EventSubscriber {
+  return new PostHogSubscriber(config);
 }
 
 /**
- * Create a Mixpanel analytics adapter
+ * Create a Mixpanel events subscriber
  *
  * @example
  * ```typescript
- * const mixpanel = createMixpanelAdapter({
+ * const mixpanel = createMixpanelSubscriber({
  *   token: 'YOUR_TOKEN'
  * })
  * ```
  */
-export function createMixpanelAdapter(config: {
+export function createMixpanelSubscriber(config: {
   token: string;
   enabled?: boolean;
-}): AnalyticsAdapter {
-  return new MixpanelAdapter(config);
+}): EventSubscriber {
+  return new MixpanelSubscriber(config);
 }
 
 /**
- * Create an Amplitude analytics adapter
+ * Create an Amplitude events subscriber
  *
  * @example
  * ```typescript
- * const amplitude = createAmplitudeAdapter({
+ * const amplitude = createAmplitudeSubscriber({
  *   apiKey: 'YOUR_API_KEY'
  * })
  * ```
  */
-export function createAmplitudeAdapter(config: {
+export function createAmplitudeSubscriber(config: {
   apiKey: string;
   enabled?: boolean;
-}): AnalyticsAdapter {
-  return new AmplitudeAdapter(config);
+}): EventSubscriber {
+  return new AmplitudeSubscriber(config);
 }
 
 /**
- * Create a Segment analytics adapter
+ * Create a Segment events subscriber
  *
  * @example
  * ```typescript
- * const segment = createSegmentAdapter({
+ * const segment = createSegmentSubscriber({
  *   writeKey: 'YOUR_WRITE_KEY'
  * })
  * ```
  */
-export function createSegmentAdapter(config: {
+export function createSegmentSubscriber(config: {
   writeKey: string;
   enabled?: boolean;
-}): AnalyticsAdapter {
-  return new SegmentAdapter(config);
+}): EventSubscriber {
+  return new SegmentSubscriber(config);
 }
 
 /**
- * Create a Webhook analytics adapter
+ * Create a Webhook events subscriber
  *
  * @example
  * ```typescript
- * const webhook = createWebhookAdapter({
+ * const webhook = createWebhookSubscriber({
  *   url: 'https://your-webhook-endpoint.com/events',
  *   headers: { 'Authorization': 'Bearer token' }
  * })
  * ```
  */
-export function createWebhookAdapter(config: {
+export function createWebhookSubscriber(config: {
   url: string;
   method?: 'POST' | 'PUT';
   headers?: Record<string, string>;
   enabled?: boolean;
-}): AnalyticsAdapter {
-  return new WebhookAdapter(config);
+}): EventSubscriber {
+  return new WebhookSubscriber(config);
 }
 
 /**
- * Create a Slack analytics adapter
+ * Create a Slack events subscriber
  *
  * @example
  * ```typescript
- * const slack = createSlackAdapter({
+ * const slack = createSlackSubscriber({
  *   webhookUrl: 'https://hooks.slack.com/services/...',
- *   channel: '#analytics'
+ *   channel: '#events'
  * })
  * ```
  */
-export function createSlackAdapter(config: {
+export function createSlackSubscriber(config: {
   webhookUrl: string;
   channel?: string;
   enabled?: boolean;
-}): AnalyticsAdapter {
-  return new SlackAdapter(config);
+}): EventSubscriber {
+  return new SlackSubscriber(config);
 }
 
 
 /**
- * Create a mock analytics adapter (for testing)
+ * Create a mock events subscriber (for testing)
  *
  * @example
  * ```typescript
- * const mock = createMockAdapter()
+ * const mock = createMockSubscriber()
  *
  * // Capture events
- * analytics.trackEvent('test.event', { foo: 'bar' })
+ * events.trackEvent('test.event', { foo: 'bar' })
  *
  * // Assert
  * expect(mock.events).toHaveLength(1)
  * expect(mock.events[0].name).toBe('test.event')
  * ```
  */
-export function createMockAdapter(): MockAnalyticsAdapter {
-  return new MockAnalyticsAdapter();
+export function createMockSubscriber(): MockEventSubscriber {
+  return new MockEventSubscriber();
 }
 
 /**
- * Compose multiple adapters into one
+ * Compose multiple subscribers into one
  *
  * @example
  * ```typescript
- * const multiAdapter = composeAdapters([
- *   createPostHogAdapter({ apiKey: '...' }),
- *   createWebhookAdapter({ url: '...' })
+ * const multiSubscriber = composeSubscribers([
+ *   createPostHogSubscriber({ apiKey: '...' }),
+ *   createWebhookSubscriber({ url: '...' })
  * ])
  * ```
  */
-export function composeAdapters(adapters: AnalyticsAdapter[]): AnalyticsAdapter {
+export function composeSubscribers(adapters: EventSubscriber[]): EventSubscriber {
   return {
-    name: 'ComposedAdapter',
+    name: 'ComposedSubscriber',
     async trackEvent(name: string, attributes: EventAttributes) {
       await Promise.all(adapters.map(a => a.trackEvent(name, attributes)));
     },

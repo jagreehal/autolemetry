@@ -1,37 +1,37 @@
 /**
- * Testing utilities for adapter authors.
+ * Testing utilities for subscriber authors.
  *
- * Use these to validate your custom adapters work correctly.
+ * Use these to validate your custom subscribers work correctly.
  *
- * @example Test your adapter
+ * @example Test your subscriber
  * ```typescript
- * import { AdapterTestHarness } from 'autolemetry-adapters/testing';
+ * import { SubscriberTestHarness } from 'autolemetry-subscribers/testing';
  *
- * const harness = new AdapterTestHarness(new MyAdapter());
+ * const harness = new SubscriberTestHarness(new MySubscriber());
  * const results = await harness.runAll();
- * AdapterTestHarness.printResults(results);
+ * SubscriberTestHarness.printResults(results);
  * ```
  *
- * @example Test webhook adapter
+ * @example Test webhook subscriber
  * ```typescript
- * import { MockWebhookServer } from 'autolemetry-adapters/testing';
+ * import { MockWebhookServer } from 'autolemetry-subscribers/testing';
  *
  * const server = new MockWebhookServer();
  * const url = await server.start();
- * const adapter = new WebhookAdapter({ url });
+ * const subscriber = new WebhookSubscriber({ url });
  *
- * await adapter.trackEvent('test', {});
+ * await subscriber.trackEvent('test', {});
  * expect(server.getRequestCount()).toBe(1);
  *
  * await server.stop();
  * ```
  */
 
-export { AdapterTestHarness } from './adapter-test-harness';
-export type { TestResult, TestSuiteResult } from './adapter-test-harness';
+export { SubscriberTestHarness } from './subscriber-test-harness';
+export type { TestResult, TestSuiteResult } from './subscriber-test-harness';
 
 export { MockWebhookServer } from './mock-webhook-server';
 export type { RecordedRequest, MockServerOptions } from './mock-webhook-server';
 
-// Re-export MockAnalyticsAdapter for convenience
-export { MockAnalyticsAdapter } from '../mock-analytics-adapter';
+// Re-export MockEventSubscriber for convenience
+export { MockEventSubscriber } from '../mock-event-subscriber';

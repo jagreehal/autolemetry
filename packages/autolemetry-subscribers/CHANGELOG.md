@@ -1,4 +1,4 @@
-# autolemetry-adapters
+# autolemetry-subscribers
 
 ## 1.1.0
 
@@ -48,7 +48,7 @@
   - ✅ Auto-enrichment: Automatic capture of trace context, operation names, service version, and environment
   - ✅ Functional API: `trace()`, `span()`, `instrument()`, `withTracing()`
   - ✅ Business metrics via `Metrics` class (OpenTelemetry metrics for Prometheus/Grafana)
-  - ✅ Product analytics via `track()` function and `Analytics` class
+  - ✅ Product events via `track()` function and `Events` class
   - ✅ Structured logging with Pino and Winston adapters
   - ✅ Database instrumentation (`instrumentDatabase()`)
   - ✅ HTTP instrumentation helpers
@@ -58,7 +58,7 @@
   - ✅ TypeScript 5.0+ decorators support
   - ✅ Auto-instrumentation support (HTTP, Express, Pino, etc.)
 
-  ### autolemetry-adapters
+  ### autolemetry-subscribers
   - ✅ PostHog adapter
   - ✅ Mixpanel adapter
   - ✅ Amplitude adapter

@@ -1,34 +1,34 @@
 /**
- * Analytics Adapter Interface (Type-only)
+ * Event Subscriber Interface (Type-only)
  *
- * Import this interface to create custom adapters without importing implementations.
+ * Import this interface to create custom subscribers without importing implementations.
  * Keeps core package focused on OpenTelemetry with zero extra dependencies.
  *
- * For ready-made adapters (PostHog, Mixpanel, Amplitude, Segment),
- * see the separate `autolemetry-adapters` package.
+ * For ready-made subscribers (PostHog, Mixpanel, Amplitude, Segment),
+ * see the separate `autolemetry-subscribers` package.
  *
- * @example Custom adapter
+ * @example Custom subscriber
  * ```typescript
- * import { AnalyticsAdapter } from 'autolemetry/analytics-adapter';
+ * import { EventSubscriber } from 'autolemetry/event-subscriber';
  *
- * class MyCustomAdapter implements AnalyticsAdapter {
+ * class MyCustomSubscriber implements EventSubscriber {
  *   trackEvent(name: string, attributes?: Record<string, any>): void {
- *     // Send to your analytics platform
+ *     // Send to your events platform
  *   }
  *   // ... implement other methods
  * }
  * ```
  *
- * @example Use pre-built adapters
+ * @example Use pre-built subscribers
  * ```typescript
- * import { Analytics } from 'autolemetry/analytics';
- * import { PostHogAdapter } from 'autolemetry-adapters/posthog';
- * import { MixpanelAdapter } from 'autolemetry-adapters/mixpanel';
+ * import { Events } from 'autolemetry/events';
+ * import { PostHogSubscriber } from 'autolemetry-subscribers/posthog';
+ * import { MixpanelSubscriber } from 'autolemetry-subscribers/mixpanel';
  *
- * const analytics = new Analytics('checkout', {
- *   adapters: [
- *     new PostHogAdapter({ apiKey: 'phc_...' }),
- *     new MixpanelAdapter({ token: '...' })
+ * const event =new Event('checkout', {
+ *   subscribers: [
+ *     new PostHogSubscriber({ apiKey: 'phc_...' }),
+ *     new MixpanelSubscriber({ token: '...' })
  *   ]
  * });
  * ```
@@ -50,9 +50,9 @@ export type FunnelStatus = 'started' | 'completed' | 'abandoned' | 'failed';
 export type OutcomeStatus = 'success' | 'failure' | 'partial';
 
 /**
- * Analytics adapter interface
+ * Event subscriber interface
  *
- * Implement this to send analytics to any platform.
+ * Implement this to send events to any platform.
  * Zero runtime dependencies - just types.
  *
  * All tracking methods are async to support:
@@ -61,7 +61,7 @@ export type OutcomeStatus = 'success' | 'failure' | 'partial';
  * - Await delivery confirmation
  * - Proper error propagation
  */
-export interface AnalyticsAdapter {
+export interface EventSubscriber {
   /**
    * Track an event (e.g., "user.registered", "order.created")
    *
@@ -105,12 +105,12 @@ export interface AnalyticsAdapter {
   /**
    * Optional: Flush pending events and clean up resources
    *
-   * Implement this if your adapter buffers events, maintains connections,
+   * Implement this if your subscriber buffers events, maintains connections,
    * or needs cleanup before shutdown. Called during graceful shutdown.
    *
    * @example
    * ```typescript
-   * class MyAdapter implements AnalyticsAdapter {
+   * class MySubscriber implements EventSubscriber {
    *   async shutdown(): Promise<void> {
    *     await this.flushBuffer();
    *     await this.closeConnections();
@@ -121,14 +121,14 @@ export interface AnalyticsAdapter {
   shutdown?(): Promise<void>;
 
   /**
-   * Optional: Adapter name for debugging and error reporting
+   * Optional: Subscriber name for debugging and error reporting
    *
-   * @example "PostHogAdapter", "SnowflakeAdapter", "CustomWebhookAdapter"
+   * @example "PostHogSubscriber", "SnowflakeSubscriber", "CustomWebhookSubscriber"
    */
   readonly name?: string;
 
   /**
-   * Optional: Adapter version for debugging
+   * Optional: Subscriber version for debugging
    *
    * @example "1.0.0"
    */

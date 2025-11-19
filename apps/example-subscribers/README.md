@@ -1,12 +1,12 @@
-# Example Adapters
+# Example Subscribers
 
-This application demonstrates how to use autolemetry analytics adapters to send product analytics events to various platforms.
+This application demonstrates how to use autolemetry event subscribers to send product events to various platforms.
 
 ## Available Examples
 
-### PostHog Adapter (`src/posthog.ts`)
+### PostHog Subscriber (`src/posthog.ts`)
 
-Demonstrates sending analytics events to PostHog with the official adapter.
+Demonstrates sending events to PostHog with the official adapter.
 
 **Setup:**
 1. Sign up for PostHog at https://posthog.com
@@ -29,9 +29,9 @@ pnpm start:posthog
 - Outcome tracking (payment success/failure)
 - Value tracking (revenue attribution)
 
-### Slack Adapter (`src/slack.ts`)
+### Slack Subscriber (`src/slack.ts`)
 
-Demonstrates sending selective analytics alerts to Slack channels.
+Demonstrates sending selective events alerts to Slack channels.
 
 **Setup:**
 1. Create a Slack App at https://api.slack.com/apps
@@ -59,7 +59,7 @@ pnpm start:slack
 
 ### Webhook Server (`src/webhook-server.ts`)
 
-Demonstrates the WebhookAdapter with a self-contained local server.
+Demonstrates the WebhookSubscriber with a self-contained local server.
 
 **Setup:**
 No external services required! This example creates both the webhook sender and receiver in one process.
@@ -71,14 +71,14 @@ pnpm start:webhook
 
 **What it demonstrates:**
 - Creating a webhook receiver endpoint
-- Sending analytics events through WebhookAdapter
+- Sending events through WebhookSubscriber
 - Testing webhook integration locally
 - Custom headers for webhook authentication
 
 **Endpoints:**
 - `GET /health` - Health check
 - `POST /webhook` - Receives webhook payloads
-- `POST /trigger` - Triggers demo analytics events
+- `POST /trigger` - Triggers demo events
 
 **Test manually:**
 ```bash
@@ -114,17 +114,17 @@ curl -X POST http://localhost:4100/webhook \
 
 ## Architecture Notes
 
-### Analytics Queue Pattern
-All adapters use an async queue pattern:
+### Events Queue Pattern
+All subscribers use an async queue pattern:
 - Events are queued immediately and return to the caller
 - A background worker processes the queue
 - Multiple adapters can be configured simultaneously
 - Graceful shutdown waits for queue to drain
 
 ### Filtering Events
-Each adapter supports filtering to control which events are sent:
+Each subscriber supports filtering to control which events are sent:
 ```typescript
-new SlackAdapter({
+new SlackSubscriber({
   webhookUrl: process.env.SLACK_WEBHOOK_URL!,
   filter: (payload) => {
     // Only send failures and high-value events
@@ -141,7 +141,7 @@ new SlackAdapter({
 
 ### Graceful Shutdown
 All examples implement proper cleanup:
-- Flush pending analytics events
+- Flush pending events
 - Shutdown OpenTelemetry SDK
 - Close HTTP servers
 - Handle SIGINT/SIGTERM signals
@@ -153,7 +153,7 @@ All examples implement proper cleanup:
 
 **"ECONNREFUSED on localhost:4318"**
 - This is expected if you don't have a local OTLP collector running
-- The analytics functionality still works; this only affects OpenTelemetry traces
+- The events functionality still works; this only affects OpenTelemetry traces
 - To fix: Run a local OTLP collector or set `OTLP_ENDPOINT` to a remote endpoint
 
 **PostHog events not appearing**

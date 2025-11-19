@@ -1,46 +1,46 @@
 /**
- * Webhook Adapter for autolemetry
+ * Webhook Subscriber for autolemetry
  *
- * Send analytics to any webhook endpoint (custom integrations, Zapier, Make.com, etc.).
+ * Send events to any webhook endpoint (custom integrations, Zapier, Make.com, etc.).
  *
  * @example
  * ```typescript
- * import { Analytics } from 'autolemetry/analytics';
- * import { WebhookAdapter } from 'autolemetry-adapters/webhook';
+ * import { Events } from 'autolemetry/events';
+ * import { WebhookSubscriber } from 'autolemetry-subscribers/webhook';
  *
- * const analytics = new Analytics('checkout', {
- *   adapters: [
- *     new WebhookAdapter({
+ * const events = new Events('checkout', {
+ *   subscribers: [
+ *     new WebhookSubscriber({
  *       url: 'https://hooks.zapier.com/hooks/catch/...',
  *       headers: { 'X-API-Key': 'secret' }
  *     })
  *   ]
  * });
  *
- * analytics.trackEvent('order.completed', { userId: '123', amount: 99.99 });
+ * events.trackEvent('order.completed', { userId: '123', amount: 99.99 });
  * ```
  */
 
 import type {
-  AnalyticsAdapter,
+  EventSubscriber,
   EventAttributes,
   FunnelStatus,
   OutcomeStatus,
-} from 'autolemetry/analytics-adapter';
+} from 'autolemetry/event-subscriber';
 
 export interface WebhookConfig {
   /** Webhook URL */
   url: string;
   /** Optional headers (e.g., API keys) */
   headers?: Record<string, string>;
-  /** Enable/disable the adapter */
+  /** Enable/disable the subscriber */
   enabled?: boolean;
   /** Retry failed requests (default: 3) */
   maxRetries?: number;
 }
 
-export class WebhookAdapter implements AnalyticsAdapter {
-  readonly name = 'WebhookAdapter';
+export class WebhookSubscriber implements EventSubscriber {
+  readonly name = 'WebhookSubscriber';
   readonly version = '1.0.0';
 
   private config: WebhookConfig;
@@ -83,7 +83,7 @@ export class WebhookAdapter implements AnalyticsAdapter {
       }
     }
 
-    console.error(`Webhook adapter failed after ${maxRetries} attempts:`, lastError);
+    console.error(`Webhook subscriber failed after ${maxRetries} attempts:`, lastError);
   }
 
   async trackEvent(name: string, attributes?: EventAttributes): Promise<void> {

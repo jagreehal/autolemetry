@@ -1,7 +1,7 @@
 /**
- * Google Cloud Pub/Sub Streaming Adapter Example
+ * Google Cloud Pub/Sub Streaming Subscriber Example
  *
- * Production-ready Pub/Sub adapter for GCP-native event streaming.
+ * Production-ready Pub/Sub subscriber for GCP-native event streaming.
  *
  * Installation:
  * ```bash
@@ -19,26 +19,26 @@
  * Setup:
  * ```bash
  * # Create topic
- * gcloud pubsub topics create analytics-events \
+ * gcloud pubsub topics create events-events \
  *   --message-retention-duration=7d
  *
  * # Create subscription (for consumers)
- * gcloud pubsub subscriptions create analytics-events-sub \
- *   --topic=analytics-events \
+ * gcloud pubsub subscriptions create events-events-sub \
+ *   --topic=events-events \
  *   --ack-deadline=60 \
  *   --message-retention-duration=7d
  * ```
  *
  * Usage:
  * ```typescript
- * import { Analytics } from 'autolemetry/analytics';
- * import { PubSubAdapter } from './adapter-pubsub';
+ * import { Events } from 'autolemetry/events';
+ * import { PubSubSubscriber } from './adapter-pubsub';
  *
- * const analytics = new Analytics('app', {
- *   adapters: [
- *     new PubSubAdapter({
+ * const events = new Events('app', {
+ *   subscribers: [
+ *     new PubSubSubscriber({
  *       projectId: 'my-gcp-project',
- *       topicName: 'analytics-events',
+ *       topicName: 'events-events',
  *       enableMessageOrdering: true,
  *       partitionStrategy: 'userId',
  *       maxBufferSize: 10000,
@@ -49,7 +49,7 @@
  * });
  *
  * // Events ordered by userId
- * await analytics.trackEvent('order.completed', {
+ * await events.trackEvent('order.completed', {
  *   userId: 'user_123',
  *   amount: 99.99
  * });
@@ -57,15 +57,15 @@
  */
 
 import {
-  StreamingAnalyticsAdapter,
+  StreamingEventSubscriber,
   type BufferOverflowStrategy,
-} from '../src/streaming-analytics-adapter';
-import type { AdapterPayload } from '../src/analytics-adapter-base';
+} from '../src/streaming-event-subscriber';
+import type { EventPayload } from '../src/event-subscriber-base';
 import { PubSub, Topic } from '@google-cloud/pubsub';
 
 type PartitionStrategy = 'userId' | 'tenantId' | 'eventType' | 'none';
 
-export interface PubSubAdapterConfig {
+export interface PubSubSubscriberConfig {
   /** GCP Project ID */
   projectId: string;
 
@@ -78,7 +78,7 @@ export interface PubSubAdapterConfig {
   /** Partitioning strategy for ordering keys (default: 'userId') */
   partitionStrategy?: PartitionStrategy;
 
-  /** Enable/disable adapter */
+  /** Enable/disable subscriber */
   enabled?: boolean;
 
   /** Maximum buffer size (default: 10000) */
@@ -106,19 +106,19 @@ export interface PubSubAdapterConfig {
   maxOutstandingBytes?: number;
 }
 
-export class PubSubAdapter extends StreamingAnalyticsAdapter {
-  readonly name = 'PubSubAdapter';
+export class PubSubSubscriber extends StreamingEventSubscriber {
+  readonly name = 'PubSubSubscriber';
   readonly version = '1.0.0';
 
   private client: PubSub;
   private topic: Topic;
-  private adapterConfig: Required<
-    Omit<PubSubAdapterConfig, 'keyFilename'>
+  private subscriberConfig: Required<
+    Omit<PubSubSubscriberConfig, 'keyFilename'>
   > & {
     keyFilename?: string;
   };
 
-  constructor(config: PubSubAdapterConfig) {
+  constructor(config: PubSubSubscriberConfig) {
     super({
       maxBufferSize: config.maxBufferSize ?? 10_000,
       maxBatchSize: config.maxBatchSize ?? 1000,
@@ -188,9 +188,9 @@ export class PubSubAdapter extends StreamingAnalyticsAdapter {
         this.topic.setPublishOptions(publishOptions);
       }
 
-      console.log('[PubSubAdapter] Initialized successfully');
+      console.log('[PubSubSubscriber] Initialized successfully');
     } catch (error) {
-      console.error('[PubSubAdapter] Failed to initialize:', error);
+      console.error('[PubSubSubscriber] Failed to initialize:', error);
       this.enabled = false;
     }
   }
@@ -201,7 +201,7 @@ export class PubSubAdapter extends StreamingAnalyticsAdapter {
    * Pub/Sub uses ordering keys to ensure messages with same key
    * are delivered in order to subscribers.
    */
-  protected getPartitionKey(payload: AdapterPayload): string {
+  protected getPartitionKey(payload: EventPayload): string {
     switch (this.adapterConfig.partitionStrategy) {
       case 'userId': {
         return payload.attributes?.userId?.toString() || '';
@@ -228,7 +228,7 @@ export class PubSubAdapter extends StreamingAnalyticsAdapter {
   /**
    * Send batch of events to Pub/Sub
    */
-  protected async sendBatch(events: AdapterPayload[]): Promise<void> {
+  protected async sendBatch(events: EventPayload[]): Promise<void> {
     // Publish all messages concurrently
     const publishPromises = events.map((event) => {
       const data = Buffer.from(JSON.stringify(event));
@@ -261,25 +261,25 @@ export class PubSubAdapter extends StreamingAnalyticsAdapter {
       // Success - log metrics
       if (process.env.DEBUG) {
         console.log(
-          `[PubSubAdapter] Published ${events.length} messages (IDs: ${messageIds.slice(0, 3).join(', ')}${events.length > 3 ? '...' : ''})`
+          `[PubSubSubscriber] Published ${events.length} messages (IDs: ${messageIds.slice(0, 3).join(', ')}${events.length > 3 ? '...' : ''})`
         );
       }
     } catch (error: any) {
       console.error(
-        `[PubSubAdapter] Failed to publish ${events.length} messages:`,
+        `[PubSubSubscriber] Failed to publish ${events.length} messages:`,
         error
       );
 
       // Handle specific Pub/Sub errors
       if (error.code === 10) {
         console.error(
-          '[PubSubAdapter] Flow control limits exceeded - reduce rate or increase limits'
+          '[PubSubSubscriber] Flow control limits exceeded - reduce rate or increase limits'
         );
       }
 
       if (error.code === 5) {
         console.error(
-          `[PubSubAdapter] Topic not found: ${this.adapterConfig.topicName}`
+          `[PubSubSubscriber] Topic not found: ${this.adapterConfig.topicName}`
         );
       }
 
@@ -288,11 +288,11 @@ export class PubSubAdapter extends StreamingAnalyticsAdapter {
   }
 
   /**
-   * Handle errors (override from AnalyticsAdapter)
+   * Handle errors (override from EventSubscriber)
    */
-  protected handleError(error: Error, payload: AdapterPayload): void {
+  protected handleError(error: Error, payload: EventPayload): void {
     console.error(
-      `[PubSubAdapter] Failed to process ${payload.type} event:`,
+      `[PubSubSubscriber] Failed to process ${payload.type} event:`,
       error,
       {
         eventName: payload.name,
@@ -306,7 +306,7 @@ export class PubSubAdapter extends StreamingAnalyticsAdapter {
    * Graceful shutdown
    */
   async shutdown(): Promise<void> {
-    console.log('[PubSubAdapter] Starting graceful shutdown...');
+    console.log('[PubSubSubscriber] Starting graceful shutdown...');
 
     // Flush buffer and drain pending requests
     await super.shutdown();
@@ -315,9 +315,9 @@ export class PubSubAdapter extends StreamingAnalyticsAdapter {
     if (this.topic) {
       try {
         await this.topic.flush();
-        console.log('[PubSubAdapter] Flushed topic buffer');
+        console.log('[PubSubSubscriber] Flushed topic buffer');
       } catch (error) {
-        console.error('[PubSubAdapter] Error flushing topic:', error);
+        console.error('[PubSubSubscriber] Error flushing topic:', error);
       }
     }
 
@@ -325,12 +325,12 @@ export class PubSubAdapter extends StreamingAnalyticsAdapter {
     if (this.client) {
       try {
         await this.client.close();
-        console.log('[PubSubAdapter] Closed Pub/Sub client');
+        console.log('[PubSubSubscriber] Closed Pub/Sub client');
       } catch (error) {
-        console.error('[PubSubAdapter] Error closing client:', error);
+        console.error('[PubSubSubscriber] Error closing client:', error);
       }
     }
 
-    console.log('[PubSubAdapter] Shutdown complete');
+    console.log('[PubSubSubscriber] Shutdown complete');
   }
 }

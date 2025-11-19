@@ -1,7 +1,7 @@
 /**
- * AWS Kinesis Streaming Adapter Example
+ * AWS Kinesis Streaming Subscriber Example
  *
- * Production-ready Kinesis adapter for AWS-native event streaming.
+ * Production-ready Kinesis subscriber for AWS-native event streaming.
  *
  * Installation:
  * ```bash
@@ -20,23 +20,23 @@
  * ```bash
  * # Create Kinesis stream
  * aws kinesis create-stream \
- *   --stream-name analytics-events \
+ *   --stream-name events-events \
  *   --shard-count 10
  *
  * # Wait for stream to become active
  * aws kinesis wait stream-exists \
- *   --stream-name analytics-events
+ *   --stream-name events-events
  * ```
  *
  * Usage:
  * ```typescript
- * import { Analytics } from 'autolemetry/analytics';
- * import { KinesisAdapter } from './adapter-kinesis';
+ * import { Events } from 'autolemetry/events';
+ * import { KinesisSubscriber } from './adapter-kinesis';
  *
- * const analytics = new Analytics('app', {
- *   adapters: [
- *     new KinesisAdapter({
- *       streamName: 'analytics-events',
+ * const events = new Events('app', {
+ *   subscribers: [
+ *     new KinesisSubscriber({
+ *       streamName: 'events-events',
  *       region: 'us-east-1',
  *       partitionStrategy: 'userId',
  *       maxBufferSize: 10000,
@@ -47,7 +47,7 @@
  * });
  *
  * // Events partitioned by userId
- * await analytics.trackEvent('order.completed', {
+ * await events.trackEvent('order.completed', {
  *   userId: 'user_123',
  *   amount: 99.99
  * });
@@ -55,10 +55,10 @@
  */
 
 import {
-  StreamingAnalyticsAdapter,
+  StreamingEventSubscriber,
   type BufferOverflowStrategy,
-} from '../src/streaming-analytics-adapter';
-import type { AdapterPayload } from '../src/analytics-adapter-base';
+} from '../src/streaming-event-subscriber';
+import type { EventPayload } from '../src/event-subscriber-base';
 import {
   KinesisClient,
   PutRecordsCommand,
@@ -68,7 +68,7 @@ import {
 
 type PartitionStrategy = 'userId' | 'tenantId' | 'eventType' | 'random';
 
-export interface KinesisAdapterConfig {
+export interface KinesisSubscriberConfig {
   /** Kinesis stream name */
   streamName: string;
 
@@ -78,7 +78,7 @@ export interface KinesisAdapterConfig {
   /** Partitioning strategy (default: 'userId') */
   partitionStrategy?: PartitionStrategy;
 
-  /** Enable/disable adapter */
+  /** Enable/disable subscriber */
   enabled?: boolean;
 
   /** Maximum buffer size (default: 10000) */
@@ -103,16 +103,16 @@ export interface KinesisAdapterConfig {
   maxRetries?: number;
 }
 
-export class KinesisAdapter extends StreamingAnalyticsAdapter {
-  readonly name = 'KinesisAdapter';
+export class KinesisSubscriber extends StreamingEventSubscriber {
+  readonly name = 'KinesisSubscriber';
   readonly version = '1.0.0';
 
   private client: KinesisClient;
-  private adapterConfig: Required<Omit<KinesisAdapterConfig, 'credentials'>> & {
-    credentials?: KinesisAdapterConfig['credentials'];
+  private subscriberConfig: Required<Omit<KinesisSubscriberConfig, 'credentials'>> & {
+    credentials?: KinesisSubscriberConfig['credentials'];
   };
 
-  constructor(config: KinesisAdapterConfig) {
+  constructor(config: KinesisSubscriberConfig) {
     super({
       maxBufferSize: config.maxBufferSize ?? 10_000,
       maxBatchSize: Math.min(config.maxBatchSize ?? 500, 500), // Kinesis max is 500
@@ -149,9 +149,9 @@ export class KinesisAdapter extends StreamingAnalyticsAdapter {
         maxAttempts: this.adapterConfig.maxRetries,
       });
 
-      console.log('[KinesisAdapter] Initialized successfully');
+      console.log('[KinesisSubscriber] Initialized successfully');
     } catch (error) {
-      console.error('[KinesisAdapter] Failed to initialize:', error);
+      console.error('[KinesisSubscriber] Failed to initialize:', error);
       this.enabled = false;
     }
   }
@@ -162,7 +162,7 @@ export class KinesisAdapter extends StreamingAnalyticsAdapter {
    * Kinesis uses partition key for shard assignment and ordering.
    * Events with same partition key go to same shard (ordered).
    */
-  protected getPartitionKey(payload: AdapterPayload): string {
+  protected getPartitionKey(payload: EventPayload): string {
     switch (this.adapterConfig.partitionStrategy) {
       case 'userId': {
         return payload.attributes?.userId?.toString() || 'default';
@@ -190,7 +190,7 @@ export class KinesisAdapter extends StreamingAnalyticsAdapter {
   /**
    * Send batch of events to Kinesis
    */
-  protected async sendBatch(events: AdapterPayload[]): Promise<void> {
+  protected async sendBatch(events: EventPayload[]): Promise<void> {
     // Build Kinesis records
     const records: PutRecordsRequestEntry[] = events.map((event) => ({
       Data: Buffer.from(JSON.stringify(event)),
@@ -223,7 +223,7 @@ export class KinesisAdapter extends StreamingAnalyticsAdapter {
         if (result.Records) for (const [index, record] of result.Records.entries()) {
           if (record.ErrorCode) {
             console.error(
-              `[KinesisAdapter] Record ${index} failed: ${record.ErrorCode} - ${record.ErrorMessage}`
+              `[KinesisSubscriber] Record ${index} failed: ${record.ErrorCode} - ${record.ErrorMessage}`
             );
             failedRecords.push(records[index]);
           }
@@ -233,7 +233,7 @@ export class KinesisAdapter extends StreamingAnalyticsAdapter {
         if (failedRecords.length > 0 && attempt < this.adapterConfig.maxRetries) {
           const backoffMs = Math.min(1000 * Math.pow(2, attempt), 30_000);
           console.warn(
-            `[KinesisAdapter] Retrying ${failedRecords.length} failed records (attempt ${attempt}) after ${backoffMs}ms`
+            `[KinesisSubscriber] Retrying ${failedRecords.length} failed records (attempt ${attempt}) after ${backoffMs}ms`
           );
 
           await new Promise((resolve) => setTimeout(resolve, backoffMs));
@@ -248,14 +248,14 @@ export class KinesisAdapter extends StreamingAnalyticsAdapter {
       // Success - log metrics
       if (process.env.DEBUG) {
         console.log(
-          `[KinesisAdapter] Sent ${records.length} records successfully`
+          `[KinesisSubscriber] Sent ${records.length} records successfully`
         );
       }
     } catch (error: any) {
       // Handle specific Kinesis errors
       if (error.name === 'ProvisionedThroughputExceededException') {
         console.error(
-          '[KinesisAdapter] Provisioned throughput exceeded - consider increasing shard count or reducing rate'
+          '[KinesisSubscriber] Provisioned throughput exceeded - consider increasing shard count or reducing rate'
         );
 
         // Backpressure: Wait before retry
@@ -269,7 +269,7 @@ export class KinesisAdapter extends StreamingAnalyticsAdapter {
 
       if (error.name === 'ResourceNotFoundException') {
         console.error(
-          `[KinesisAdapter] Stream not found: ${this.adapterConfig.streamName}`
+          `[KinesisSubscriber] Stream not found: ${this.adapterConfig.streamName}`
         );
       }
 
@@ -278,11 +278,11 @@ export class KinesisAdapter extends StreamingAnalyticsAdapter {
   }
 
   /**
-   * Handle errors (override from AnalyticsAdapter)
+   * Handle errors (override from EventSubscriber)
    */
-  protected handleError(error: Error, payload: AdapterPayload): void {
+  protected handleError(error: Error, payload: EventPayload): void {
     console.error(
-      `[KinesisAdapter] Failed to process ${payload.type} event:`,
+      `[KinesisSubscriber] Failed to process ${payload.type} event:`,
       error,
       {
         eventName: payload.name,
@@ -296,12 +296,12 @@ export class KinesisAdapter extends StreamingAnalyticsAdapter {
    * Graceful shutdown
    */
   async shutdown(): Promise<void> {
-    console.log('[KinesisAdapter] Starting graceful shutdown...');
+    console.log('[KinesisSubscriber] Starting graceful shutdown...');
 
     // Flush buffer and drain pending requests
     await super.shutdown();
 
     // Kinesis client doesn't need explicit disconnect
-    console.log('[KinesisAdapter] Shutdown complete');
+    console.log('[KinesisSubscriber] Shutdown complete');
   }
 }

@@ -8,7 +8,7 @@ import type {
   EventAttributes,
   FunnelStatus,
   OutcomeStatus,
-} from './analytics-adapter';
+} from './event-subscriber';
 
 export interface MetricsEvent {
   event: string;
@@ -72,10 +72,10 @@ export interface MetricsCollector {
  * ```typescript
  * const collector = createMetricsCollector()
  *
- * const metrics = new Metrics('test-service', { collector })
+ * const metrics = new Metric('test-service', { collector })
  * metrics.trackEvent('order.completed', { orderId: '123' })
  *
- * const events = collector.getEvents()
+ * const event =collector.getEvents()
  * expect(events).toHaveLength(1)
  * expect(events[0].event).toBe('order.completed')
  * ```

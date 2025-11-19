@@ -1,18 +1,18 @@
 import { describe, expect, it, vi } from 'vitest';
 import { context as otelContext, trace } from '@opentelemetry/api';
-import { createEdgeAdapters, getEdgeAdapters } from './adapters';
+import { createEdgeSubscribers, getEdgeSubscribers } from './subscribers';
 import { getActiveConfig, parseConfig, setConfig } from '../core/config';
 
-describe('createEdgeAdapters', () => {
+describe('createEdgeSubscribers', () => {
   it('dispatches events with service name and attributes', () => {
     const transport = vi.fn();
-    const Adapters = createEdgeAdapters({
+    const Subscribers = createEdgeSubscribers({
       service: 'edge-service',
       transport,
       includeTraceContext: false,
     });
 
-    Adapters.trackEvent('user.signup', { plan: 'pro' });
+    Subscribers.trackEvent('user.signup', { plan: 'pro' });
 
     expect(transport).toHaveBeenCalledTimes(1);
     const event = transport.mock.calls[0][0];
@@ -25,13 +25,13 @@ describe('createEdgeAdapters', () => {
 
   it('passes promise to waitUntil when delivery is fire-and-forget', async () => {
     const waitUntil = vi.fn();
-    const Adapters = createEdgeAdapters({
+    const Subscribers = createEdgeSubscribers({
       service: 'edge',
       transport: () => Promise.resolve(),
       waitUntil,
     });
 
-    Adapters.trackEvent('user.signup');
+    Subscribers.trackEvent('user.signup');
 
     expect(waitUntil).toHaveBeenCalledTimes(1);
     const promise = waitUntil.mock.calls[0][0];
@@ -39,13 +39,13 @@ describe('createEdgeAdapters', () => {
   });
 
   it('returns promise when delivery is await', async () => {
-    const Adapters = createEdgeAdapters({
+    const Subscribers = createEdgeSubscribers({
       service: 'edge',
       transport: () => Promise.resolve(),
       delivery: 'await',
     });
 
-    const result = Adapters.trackEvent('user.signup');
+    const result = Subscribers.trackEvent('user.signup');
 
     expect(result).toBeInstanceOf(Promise);
     await result;
@@ -53,14 +53,14 @@ describe('createEdgeAdapters', () => {
 
   it('logs trace context when span is active', () => {
     const transport = vi.fn();
-    const Adapters = createEdgeAdapters({
+    const Subscribers = createEdgeSubscribers({
       service: 'edge',
       transport,
     });
 
     const tracer = trace.getTracer('edge-test');
     tracer.startActiveSpan('test-span', (span) => {
-      Adapters.trackEvent('user.signup');
+      Subscribers.trackEvent('user.signup');
       span.end();
     });
 
@@ -72,7 +72,7 @@ describe('createEdgeAdapters', () => {
 
   it('uses active config service name when available', () => {
     const transport = vi.fn();
-    const Adapters = createEdgeAdapters({
+    const Subscribers = createEdgeSubscribers({
       transport,
       includeTraceContext: false,
     });
@@ -84,7 +84,7 @@ describe('createEdgeAdapters', () => {
     const configContext = setConfig(resolved);
 
     otelContext.with(configContext, () => {
-      Adapters.trackEvent('user.signup');
+      Subscribers.trackEvent('user.signup');
     });
 
     const event = transport.mock.calls[0][0];
@@ -97,14 +97,14 @@ describe('createEdgeAdapters', () => {
       void promise;
     });
     const onError = vi.fn();
-    const Adapters = createEdgeAdapters({
+    const Subscribers = createEdgeSubscribers({
       service: 'edge',
       transport: () => Promise.reject(new Error('boom')),
       waitUntil,
       onError,
     });
 
-    Adapters.trackEvent('user.signup');
+    Subscribers.trackEvent('user.signup');
 
     await vi.waitFor(() => {
       expect(onError).toHaveBeenCalledTimes(1);
@@ -116,12 +116,12 @@ describe('createEdgeAdapters', () => {
       void promise;
     });
     const transport = vi.fn(() => Promise.resolve());
-    const Adapters = createEdgeAdapters({
+    const Subscribers = createEdgeSubscribers({
       service: 'edge',
       transport,
     });
 
-    const bound = Adapters.bind({ waitUntil });
+    const bound = Subscribers.bind({ waitUntil });
     bound.trackEvent('user.signup');
 
     expect(waitUntil).toHaveBeenCalledTimes(1);
@@ -134,12 +134,12 @@ describe('createEdgeAdapters', () => {
       void promise;
     });
     const transport = vi.fn(() => Promise.resolve());
-    const Adapters = createEdgeAdapters({
+    const Subscribers = createEdgeSubscribers({
       service: 'edge',
       transport,
     });
 
-    const bound = Adapters.bind({ waitUntil }).bind({ delivery: 'await' });
+    const bound = Subscribers.bind({ waitUntil }).bind({ delivery: 'await' });
     const result = bound.trackEvent('user.signup');
 
     expect(result).toBeInstanceOf(Promise);
@@ -147,8 +147,8 @@ describe('createEdgeAdapters', () => {
   });
 });
 
-describe('getEdgeAdapters', () => {
-  it('returns null when adapters are not configured', () => {
+describe('getEdgeSubscribers', () => {
+  it('returns null when subscribers are not configured', () => {
     const resolved = parseConfig({
       service: { name: 'test' },
       spanProcessors: [],
@@ -156,25 +156,25 @@ describe('getEdgeAdapters', () => {
     const configContext = setConfig(resolved);
 
     otelContext.with(configContext, () => {
-      const Adapters = getEdgeAdapters();
-      expect(Adapters).toBeNull();
+      const Subscribers = getEdgeSubscribers();
+      expect(Subscribers).toBeNull();
     });
   });
 
-  it('creates Adapters instance from config adapters', () => {
+  it('creates Subscribers instance from config subscribers', () => {
     const transport1 = vi.fn();
     const transport2 = vi.fn();
     const resolved = parseConfig({
       service: { name: 'test' },
       spanProcessors: [],
-      adapters: [transport1, transport2],
+      subscribers: [transport1, transport2],
     });
     const configContext = setConfig(resolved);
 
     otelContext.with(configContext, () => {
-      const Adapters = getEdgeAdapters();
-      expect(Adapters).not.toBeNull();
-      Adapters!.trackEvent('user.signup', { plan: 'pro' });
+      const Subscribers = getEdgeSubscribers();
+      expect(Subscribers).not.toBeNull();
+      Subscribers!.trackEvent('user.signup', { plan: 'pro' });
 
       expect(transport1).toHaveBeenCalledTimes(1);
       expect(transport2).toHaveBeenCalledTimes(1);
@@ -193,16 +193,16 @@ describe('getEdgeAdapters', () => {
     const resolved = parseConfig({
       service: { name: 'test' },
       spanProcessors: [],
-      adapters: [transport],
+      subscribers: [transport],
     });
     const configContext = setConfig(resolved);
 
     const mockCtx = { waitUntil } as ExecutionContext;
 
     await otelContext.with(configContext, async () => {
-      const Adapters = getEdgeAdapters(mockCtx);
-      expect(Adapters).not.toBeNull();
-      Adapters!.trackEvent('user.signup');
+      const Subscribers = getEdgeSubscribers(mockCtx);
+      expect(Subscribers).not.toBeNull();
+      Subscribers!.trackEvent('user.signup');
 
       expect(waitUntil).toHaveBeenCalledTimes(1);
       const promise = waitUntil.mock.calls[0][0];
@@ -210,30 +210,30 @@ describe('getEdgeAdapters', () => {
     });
   });
 
-  it('logs adapter errors without interrupting other adapters', async () => {
+  it('logs subscriber errors without interrupting other subscribers', async () => {
     const successAdapter = vi.fn(() => Promise.resolve());
     const failingAdapter = vi.fn(() => Promise.reject(new Error('boom')));
     const resolved = parseConfig({
       service: { name: 'test' },
       spanProcessors: [],
-      adapters: [successAdapter, failingAdapter],
+      subscribers: [successAdapter, failingAdapter],
     });
     const configContext = setConfig(resolved);
 
     const consoleSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
 
     await otelContext.with(configContext, async () => {
-      const Adapters = getEdgeAdapters();
-      expect(Adapters).not.toBeNull();
-      await Adapters!.trackEvent('user.signup', undefined, { delivery: 'await' });
+      const Subscribers = getEdgeSubscribers();
+      expect(Subscribers).not.toBeNull();
+      await Subscribers!.trackEvent('user.signup', undefined, { delivery: 'await' });
     });
 
     expect(successAdapter).toHaveBeenCalledTimes(1);
     expect(failingAdapter).toHaveBeenCalledTimes(1);
     expect(consoleSpy).toHaveBeenCalledWith(
-      '[autolemetry-edge] Adapters adapter failed',
+      '[autolemetry-edge] Subscribers subscriber failed',
       expect.any(Error),
-      expect.objectContaining({ adapterIndex: expect.any(Number), eventType: 'event' }),
+      expect.objectContaining({ subscriberIndex: expect.any(Number), eventType: 'event' }),
     );
 
     consoleSpy.mockRestore();

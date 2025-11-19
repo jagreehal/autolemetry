@@ -1,5 +1,5 @@
 /**
- * Example: Send analytics alerts to Slack using the SlackAdapter.
+ * Example: Send analytics alerts to Slack using the SlackSubscriber.
  *
  * Requirements:
  * - SLACK_WEBHOOK_URL (Incoming webhook from your Slack app)
@@ -18,10 +18,10 @@ import 'dotenv/config';
 import pino from 'pino';
 
 import { init, shutdown } from 'autolemetry';
-import { Analytics } from 'autolemetry/analytics';
+import { Event } from 'autolemetry/event';
 import { trace } from 'autolemetry/functional';
-import { SlackAdapter } from 'autolemetry-adapters/slack';
-import type { AdapterPayload } from 'autolemetry-adapters';
+import { SlackSubscriber } from 'autolemetry-subscribers/slack';
+import type { EventPayload } from 'autolemetry-subscribers';
 
 const logger = pino({
   name: 'example-slack',
@@ -54,13 +54,13 @@ init({
   logger,
 });
 
-const slackAdapter = new SlackAdapter({
+const slackSubscriber = new SlackSubscriber({
   webhookUrl: slackWebhookUrl,
   channel: slackChannel,
   username: 'Telemetry Demo Bot',
   iconEmoji: ':satellite:',
   includeAttributes: true,
-  filter: (payload: AdapterPayload) => {
+  filter: (payload: EventPayload) => {
     if (payload.type === 'outcome') {
       // Always alert on failures
       return payload.outcome !== 'success';
@@ -71,8 +71,8 @@ const slackAdapter = new SlackAdapter({
   },
 });
 
-const analytics = new Analytics('example-adapters-slack', {
-  adapters: [slackAdapter],
+const analytics = new Event('example-adapters-slack', {
+  subscribers: [slackSubscriber],
   logger,
 });
 
@@ -164,8 +164,8 @@ async function closeGracefully(signal?: NodeJS.Signals): Promise<void> {
     logger.info({ signal }, 'Received shutdown signal');
   }
 
-  await slackAdapter.shutdown().catch((error: unknown) => {
-    logger.warn({ error }, 'Failed to flush Slack adapter');
+  await slackSubscriber.shutdown().catch((error: unknown) => {
+    logger.warn({ error }, 'Failed to flush Slack subscriber');
   });
 
   await shutdown().catch((error) => {

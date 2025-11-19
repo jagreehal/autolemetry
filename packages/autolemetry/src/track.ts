@@ -1,11 +1,11 @@
 /**
- * Global track() function for business analytics
+ * Global track() function for business events
  *
  * Simple, no instantiation needed, auto-attaches trace context
  */
 
 import { trace } from '@opentelemetry/api';
-import { AnalyticsQueue } from './analytics-queue';
+import { EventQueue } from './event-queue';
 import {
   getConfig,
   warnIfNotInitialized,
@@ -14,39 +14,39 @@ import {
 } from './init';
 import { validateEvent } from './validation';
 
-// Global analytics queue (initialized on first track call)
-let analyticsQueue: AnalyticsQueue | null = null;
+// Global events queue (initialized on first track call)
+let eventsQueue: EventQueue | null = null;
 
 /**
- * Initialize analytics queue lazily
+ * Initialize events queue lazily
  */
-function getOrCreateQueue(): AnalyticsQueue | null {
+function getOrCreateQueue(): EventQueue | null {
   if (!isInitialized()) {
     warnIfNotInitialized('track()');
     return null;
   }
 
-  if (!analyticsQueue) {
+  if (!eventsQueue) {
     const config = getConfig();
-    if (!config?.adapters || config.adapters.length === 0) {
-      // No adapters configured - no-op
+    if (!config?.subscribers || config.subscribers.length === 0) {
+      // No subscribers configured - no-op
       return null;
     }
 
-    analyticsQueue = new AnalyticsQueue(config.adapters);
+    eventsQueue = new EventQueue(config.subscribers);
   }
 
-  return analyticsQueue;
+  return eventsQueue;
 }
 
 /**
- * Track a business analytics event
+ * Track a business events event
  *
  * Features:
  * - Auto-attaches traceId and spanId if in active span
  * - Batched sending with retry
  * - Type-safe with optional generic
- * - No-op if init() not called or no adapters configured
+ * - No-op if init() not called or no subscribers configured
  *
  * @example Basic usage
  * ```typescript
@@ -55,12 +55,12 @@ function getOrCreateQueue(): AnalyticsQueue | null {
  *
  * @example With type safety
  * ```typescript
- * interface AnalyticsEvents {
+ * interface EventDatas {
  *   'user.signup': { userId: string; plan: string }
  *   'plan.upgraded': { userId: string; revenue: number }
  * }
  *
- * track<AnalyticsEvents>('user.signup', { userId: '123', plan: 'pro' })
+ * track<EventDatas>('user.signup', { userId: '123', plan: 'pro' })
  * ```
  *
  * @example Trace correlation (automatic)
@@ -80,7 +80,7 @@ export function track<Events extends Record<string, any> = Record<string, any>>(
   data?: Events[typeof event],
 ): void {
   const queue = getOrCreateQueue();
-  if (!queue) return; // No-op if not initialized or no adapters
+  if (!queue) return; // No-op if not initialized or no subscribers
 
   // Validate and sanitize input (with custom config if provided)
   const validationConfig = getValidationConfig();
@@ -104,17 +104,17 @@ export function track<Events extends Record<string, any> = Record<string, any>>(
 }
 
 /**
- * Get analytics queue (for flush/shutdown)
+ * Get events queue (for flush/shutdown)
  * @internal
  */
-export function getAnalyticsQueue(): AnalyticsQueue | null {
-  return analyticsQueue;
+export function getEventQueue(): EventQueue | null {
+  return eventsQueue;
 }
 
 /**
- * Reset analytics queue (for shutdown/cleanup)
+ * Reset events queue (for shutdown/cleanup)
  * @internal
  */
-export function resetAnalyticsQueue(): void {
-  analyticsQueue = null;
+export function resetEventQueue(): void {
+  eventsQueue = null;
 }

@@ -1,12 +1,12 @@
 /**
- * Analytics event queue with batching, backpressure, retry logic, and rate limiting
+ * Events event queue with batching, backpressure, retry logic, and rate limiting
  */
 
-import type { AnalyticsAdapter, EventAttributes } from './analytics-adapter';
+import type { EventSubscriber, EventAttributes } from './event-subscriber';
 import { getLogger } from './init';
 import { TokenBucketRateLimiter, type RateLimiterConfig } from './rate-limiter';
 
-export interface AnalyticsEvent {
+export interface EventData {
   name: string;
   attributes?: EventAttributes;
   timestamp: number;
@@ -32,25 +32,25 @@ const DEFAULT_CONFIG: QueueConfig = {
 };
 
 /**
- * Analytics queue with batching and backpressure
+ * Events queue with batching and backpressure
  *
  * Features:
  * - Batches events for efficient sending
  * - Bounded queue with drop-oldest policy (prod) or blocking (dev)
  * - Exponential backoff retry
- * - Rate limiting to prevent overwhelming adapters
+ * - Rate limiting to prevent overwhelming subscribers
  * - Graceful flush on shutdown
  */
-export class AnalyticsQueue {
-  private queue: AnalyticsEvent[] = [];
+export class EventQueue {
+  private queue: EventData[] = [];
   private flushTimer: NodeJS.Timeout | null = null;
   private readonly config: QueueConfig;
-  private readonly adapters: AnalyticsAdapter[];
+  private readonly subscribers: EventSubscriber[];
   private readonly rateLimiter: TokenBucketRateLimiter | null;
   private flushing = false;
 
-  constructor(adapters: AnalyticsAdapter[], config?: Partial<QueueConfig>) {
-    this.adapters = adapters;
+  constructor(subscribers: EventSubscriber[], config?: Partial<QueueConfig>) {
+    this.subscribers = subscribers;
     this.config = { ...DEFAULT_CONFIG, ...config };
 
     // Initialize rate limiter if configured
@@ -65,15 +65,15 @@ export class AnalyticsQueue {
    * Backpressure policy:
    * - Drops oldest event and logs warning if queue is full (same behavior in all environments)
    */
-  enqueue(event: AnalyticsEvent): void {
+  enqueue(event: EventData): void {
     // Check queue size
     if (this.queue.length >= this.config.maxSize) {
       // Drop oldest event and log warning (same behavior in all environments)
       const droppedEvent = this.queue.shift();
       getLogger().warn(
-        `[autolemetry] Analytics queue full (${this.config.maxSize} events). ` +
+        `[autolemetry] Events queue full (${this.config.maxSize} events). ` +
           'Dropping oldest event. Events are being produced faster than they can be sent. ' +
-          'Check your adapters or reduce tracking frequency.',
+          'Check your subscribers or reduce tracking frequency.',
         { droppedEvent: droppedEvent?.name },
       );
     }
@@ -119,11 +119,11 @@ export class AnalyticsQueue {
    * Send events with exponential backoff retry
    */
   private async sendWithRetry(
-    events: AnalyticsEvent[],
+    events: EventData[],
     retriesLeft: number,
   ): Promise<void> {
     try {
-      await this.sendToAdapters(events);
+      await this.sendToSubscribers(events);
     } catch (error) {
       if (retriesLeft > 0) {
         // Exponential backoff: 1s, 2s, 4s
@@ -134,7 +134,7 @@ export class AnalyticsQueue {
         // Give up after max retries
         // Always log failed retries to maintain visibility (same behavior in all environments)
         getLogger().error(
-          '[autolemetry] Failed to send analytics after retries',
+          '[autolemetry] Failed to send events after retries',
           error instanceof Error ? error : undefined,
           { retriesAttempted: this.config.maxRetries },
         );
@@ -143,15 +143,15 @@ export class AnalyticsQueue {
   }
 
   /**
-   * Send events to all configured adapters with rate limiting
+   * Send events to all configured subscribers with rate limiting
    */
-  private async sendToAdapters(events: AnalyticsEvent[]): Promise<void> {
+  private async sendToSubscribers(events: EventData[]): Promise<void> {
     // If rate limiting is disabled, send all at once
     if (!this.rateLimiter) {
       const promises = events.map((event) =>
         Promise.all(
-          this.adapters.map((adapter) =>
-            adapter.trackEvent(event.name, event.attributes),
+          this.subscribers.map((subscriber) =>
+            subscriber.trackEvent(event.name, event.attributes),
           ),
         ),
       );
@@ -164,10 +164,10 @@ export class AnalyticsQueue {
       // Wait for rate limiter token (smooth traffic)
       await this.rateLimiter.waitForToken();
 
-      // Send to all adapters concurrently
+      // Send to all subscribers concurrently
       await Promise.all(
-        this.adapters.map((adapter) =>
-          adapter.trackEvent(event.name, event.attributes),
+        this.subscribers.map((subscriber) =>
+          subscriber.trackEvent(event.name, event.attributes),
         ),
       );
     }

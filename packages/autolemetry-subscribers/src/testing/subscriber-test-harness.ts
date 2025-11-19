@@ -1,7 +1,7 @@
 /**
- * AdapterTestHarness - Validate Your Custom Adapter
+ * SubscriberTestHarness - Validate Your Custom Subscriber
  *
- * Use this to test that your custom adapter implements the AnalyticsAdapter
+ * Use this to test that your custom subscriber implements the EventSubscriber
  * interface correctly. It runs a suite of tests covering:
  * - Basic tracking (all 4 methods)
  * - Concurrent requests
@@ -10,10 +10,10 @@
  *
  * @example
  * ```typescript
- * import { AdapterTestHarness } from 'autolemetry-adapters/testing';
- * import { MyCustomAdapter } from './my-adapter';
+ * import { SubscriberTestHarness } from 'autolemetry-subscribers/testing';
+ * import { MyCustomSubscriber } from './my-adapter';
  *
- * const harness = new AdapterTestHarness(new MyCustomAdapter());
+ * const harness = new SubscriberTestHarness(new MyCustomSubscriber());
  * const results = await harness.runAll();
  *
  * if (results.passed) {
@@ -25,10 +25,10 @@
  */
 
 import type {
-  AnalyticsAdapter,
+  EventSubscriber,
   FunnelStatus,
   OutcomeStatus,
-} from '../analytics-adapter-base';
+} from '../event-subscriber-base';
 
 export interface TestResult {
   name: string;
@@ -49,16 +49,16 @@ export interface TestSuiteResult {
 }
 
 /**
- * Test harness for validating custom adapters.
+ * Test harness for validating custom subscribers.
  *
- * Runs a comprehensive suite of tests to ensure your adapter:
+ * Runs a comprehensive suite of tests to ensure your subscriber:
  * 1. Implements all required methods
  * 2. Handles concurrent requests
  * 3. Deals with errors gracefully
  * 4. Shuts down cleanly
  */
-export class AdapterTestHarness {
-  constructor(private adapter: AnalyticsAdapter) {}
+export class SubscriberTestHarness {
+  constructor(private subscriber: EventSubscriber) {}
 
   /**
    * Run all tests and return a comprehensive report.
@@ -102,7 +102,7 @@ export class AdapterTestHarness {
     const startTime = performance.now();
 
     try {
-      await this.adapter.trackEvent('test.event', {
+      await this.subscriber.trackEvent('test.event', {
         userId: 'test-user',
         testAttribute: 'test-value',
       });
@@ -130,11 +130,11 @@ export class AdapterTestHarness {
     const startTime = performance.now();
 
     try {
-      await this.adapter.trackFunnelStep('test_funnel', 'started' as FunnelStatus, {
+      await this.subscriber.trackFunnelStep('test_funnel', 'started' as FunnelStatus, {
         cartValue: 99.99,
       });
 
-      await this.adapter.trackFunnelStep('test_funnel', 'completed' as FunnelStatus, {
+      await this.subscriber.trackFunnelStep('test_funnel', 'completed' as FunnelStatus, {
         cartValue: 99.99,
       });
 
@@ -161,11 +161,11 @@ export class AdapterTestHarness {
     const startTime = performance.now();
 
     try {
-      await this.adapter.trackOutcome('test_operation', 'success' as OutcomeStatus, {
+      await this.subscriber.trackOutcome('test_operation', 'success' as OutcomeStatus, {
         duration: 100,
       });
 
-      await this.adapter.trackOutcome('test_operation', 'failure' as OutcomeStatus, {
+      await this.subscriber.trackOutcome('test_operation', 'failure' as OutcomeStatus, {
         error: 'Test error',
       });
 
@@ -192,11 +192,11 @@ export class AdapterTestHarness {
     const startTime = performance.now();
 
     try {
-      await this.adapter.trackValue('test_metric', 42, {
+      await this.subscriber.trackValue('test_metric', 42, {
         unit: 'ms',
       });
 
-      await this.adapter.trackValue('revenue', 99.99, {
+      await this.subscriber.trackValue('revenue', 99.99, {
         currency: 'USD',
       });
 
@@ -224,7 +224,7 @@ export class AdapterTestHarness {
 
     try {
       const promises = Array.from({ length: 50 }, (_, i) =>
-        this.adapter.trackEvent(`concurrent_event_${i}`, {
+        this.subscriber.trackEvent(`concurrent_event_${i}`, {
           index: i,
           timestamp: Date.now(),
         })
@@ -256,13 +256,13 @@ export class AdapterTestHarness {
 
     try {
       // Test with empty event name
-      await this.adapter.trackEvent('', {});
+      await this.subscriber.trackEvent('', {});
 
       // Test with undefined attributes
-      await this.adapter.trackEvent('test');
+      await this.subscriber.trackEvent('test');
 
       // Test with null-ish values
-      await this.adapter.trackValue('test', 0, {});
+      await this.subscriber.trackValue('test', 0, {});
 
       return {
         name: 'Error Handling',
@@ -271,12 +271,12 @@ export class AdapterTestHarness {
         details: 'Handled edge cases gracefully',
       };
     } catch {
-      // Some adapters might throw on invalid input - that's OK
+      // Some subscribers might throw on invalid input - that's OK
       return {
         name: 'Error Handling',
         passed: true,
         duration: performance.now() - startTime,
-        details: 'Adapter throws on invalid input (acceptable)',
+        details: 'Subscriber throws on invalid input (acceptable)',
       };
     }
   }
@@ -290,13 +290,13 @@ export class AdapterTestHarness {
     try {
       // Start some long-running operations
       const promises = [
-        this.adapter.trackEvent('shutdown_test_1', {}),
-        this.adapter.trackEvent('shutdown_test_2', {}),
-        this.adapter.trackEvent('shutdown_test_3', {}),
+        this.subscriber.trackEvent('shutdown_test_1', {}),
+        this.subscriber.trackEvent('shutdown_test_2', {}),
+        this.subscriber.trackEvent('shutdown_test_3', {}),
       ];
 
       // Call shutdown
-      await this.adapter.shutdown?.();
+      await this.subscriber.shutdown?.();
 
       // Wait for operations to complete
       const results = await Promise.allSettled(promises);
@@ -330,7 +330,7 @@ export class AdapterTestHarness {
    */
   static printResults(results: TestSuiteResult): void {
     console.log('\n' + '='.repeat(60));
-    console.log('📊 Adapter Test Results');
+    console.log('📊 Subscriber Test Results');
     console.log('='.repeat(60));
     console.log(`\nTotal Tests: ${results.total}`);
     console.log(`✅ Passed: ${results.passed_count}`);
@@ -355,7 +355,7 @@ export class AdapterTestHarness {
     console.log('='.repeat(60));
 
     if (results.passed) {
-      console.log('\n🎉 All tests passed! Your adapter is ready to use.');
+      console.log('\n🎉 All tests passed! Your subscriber is ready to use.');
     } else {
       console.log('\n⚠️  Some tests failed. Review the errors above.');
     }

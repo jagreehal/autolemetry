@@ -1,27 +1,27 @@
 /**
- * QUICKSTART: Your First Custom Adapter in 5 Minutes
+ * QUICKSTART: Your First Custom Subscriber in 5 Minutes
  *
- * This template shows you EVERYTHING you need to write a custom analytics adapter.
+ * This template shows you EVERYTHING you need to write a custom events subscriber.
  * Just copy-paste this code and replace the console.log statements with your API calls.
  *
  * @example
  * ```typescript
- * import { Analytics } from 'autolemetry/analytics';
- * import { MyFirstAdapter } from './my-first-adapter';
+ * import { Events } from 'autolemetry/events';
+ * import { MyFirstSubscriber } from './my-first-subscriber';
  *
- * const analytics = new Analytics('my-app', {
- *   adapters: [new MyFirstAdapter()]
+ * const event =new Event('my-app', {
+ *   subscribers: [new MyFirstSubscriber()]
  * });
  *
- * analytics.trackEvent('user.signup', { userId: '123', email: 'user@example.com' });
+ * events.trackEvent('user.signup', { userId: '123', email: 'user@example.com' });
  * ```
  */
 
-import type { AnalyticsAdapter, EventAttributes, FunnelStatus, OutcomeStatus } from '../src/analytics-adapter-base';
+import type { EventSubscriber, EventAttributes, FunnelStatus, OutcomeStatus } from '../src/event-subscriber-base';
 
-export class MyFirstAdapter implements AnalyticsAdapter {
-  // Required: Adapter name (shows up in logs)
-  readonly name = 'MyFirstAdapter';
+export class MyFirstSubscriber implements EventSubscriber {
+  // Required: Subscriber name (shows up in logs)
+  readonly name = 'MyFirstSubscriber';
 
   // Optional: Version for debugging
   readonly version = '1.0.0';
@@ -103,42 +103,42 @@ export class MyFirstAdapter implements AnalyticsAdapter {
 // ============================================================================
 
 // Uncomment to test:
-// import { Analytics } from 'autolemetry/analytics';
+// import { Events } from 'autolemetry/events';
 //
-// const analytics = new Analytics('my-app', {
-//   adapters: [new MyFirstAdapter()]
+// const events = new Events('my-app', {
+//   subscribers: [new MyFirstSubscriber()]
 // });
 //
 // // Track events
-// await analytics.trackEvent('user.signup', {
+// await events.trackEvent('user.signup', {
 //   userId: 'user-123',
 //   email: 'user@example.com',
 //   plan: 'pro'
 // });
 //
-// await analytics.trackFunnelStep('checkout', 'started', {
+// await events.trackFunnelStep('checkout', 'started', {
 //   cartValue: 99.99
 // });
 //
-// await analytics.trackOutcome('payment', 'success', {
+// await events.trackOutcome('payment', 'success', {
 //   amount: 99.99,
 //   method: 'credit_card'
 // });
 //
-// await analytics.trackValue('revenue', 99.99, {
+// await events.trackValue('revenue', 99.99, {
 //   currency: 'USD',
 //   orderId: 'ord-456'
 // });
 //
 // // Cleanup
-// await analytics.shutdown();
+// await events.shutdown();
 
 // ============================================================================
 // NEXT STEPS
 // ============================================================================
 
 // 1. Copy this file to your project
-// 2. Rename "MyFirstAdapter" to your service name (e.g., "AmplitudeAdapter")
+// 2. Rename "MyFirstSubscriber" to your service name (e.g., "AmplitudeSubscriber")
 // 3. Replace console.log with your API calls
 // 4. Test it! (see examples/testing-custom-adapter.ts)
 // 5. Add error handling and retry logic (see docs/adapter-guide.md)

@@ -1,15 +1,15 @@
 /**
- * Middleware System for Analytics Adapters
+ * Middleware System for Events Subscribers
  *
- * Compose adapter behaviors using middleware (like Redux/Express).
- * Add retry logic, sampling, enrichment, logging, and more without modifying adapter code.
+ * Compose subscriber behaviors using middleware (like Redux/Express).
+ * Add retry logic, sampling, enrichment, logging, and more without modifying subscriber code.
  *
  * @example
  * ```typescript
- * import { applyMiddleware, retryMiddleware, loggingMiddleware } from 'autolemetry-adapters/middleware';
+ * import { applyMiddleware, retryMiddleware, loggingMiddleware } from 'autolemetry-subscribers/middleware';
  *
- * const adapter = applyMiddleware(
- *   new PostHogAdapter({ apiKey: '...' }),
+ * const subscriber = applyMiddleware(
+ *   new PostHogSubscriber({ apiKey: '...' }),
  *   [
  *     retryMiddleware({ maxRetries: 3 }),
  *     loggingMiddleware()
@@ -18,12 +18,12 @@
  * ```
  */
 
-import type { AnalyticsAdapter, EventAttributes, FunnelStatus, OutcomeStatus } from 'autolemetry/analytics-adapter';
+import type { EventSubscriber, EventAttributes, FunnelStatus, OutcomeStatus } from 'autolemetry/event-subscriber';
 
 /**
  * Unified event type for middleware
  */
-export type AnalyticsEvent =
+export type EventsEvent =
   | {
       type: 'event';
       name: string;
@@ -53,13 +53,13 @@ export type AnalyticsEvent =
  *
  * Like Express middleware: `(event, next) => Promise<void>`
  */
-export type AdapterMiddleware = (
-  event: AnalyticsEvent,
-  next: (event: AnalyticsEvent) => Promise<void>
+export type SubscriberMiddleware = (
+  event: EventsEvent,
+  next: (event: EventsEvent) => Promise<void>
 ) => Promise<void>;
 
 /**
- * Apply middleware to an adapter.
+ * Apply middleware to an subscriber.
  *
  * Middleware is executed in order. Each middleware can:
  * - Transform the event before passing to next()
@@ -69,8 +69,8 @@ export type AdapterMiddleware = (
  *
  * @example
  * ```typescript
- * const adapter = applyMiddleware(
- *   new WebhookAdapter({ url: '...' }),
+ * const subscriber = applyMiddleware(
+ *   new WebhookSubscriber({ url: '...' }),
  *   [
  *     loggingMiddleware(),
  *     retryMiddleware({ maxRetries: 3 }),
@@ -80,44 +80,44 @@ export type AdapterMiddleware = (
  * ```
  */
 export function applyMiddleware(
-  adapter: AnalyticsAdapter,
-  middlewares: AdapterMiddleware[]
-): AnalyticsAdapter {
-  // Convert adapter methods to event format
-  const trackEvent = async (event: AnalyticsEvent): Promise<void> => {
+  subscriber: EventSubscriber,
+  middlewares: SubscriberMiddleware[]
+): EventSubscriber {
+  // Convert subscriber methods to event format
+  const trackEvent = async (event: EventsEvent): Promise<void> => {
     switch (event.type) {
       case 'event': {
-        await adapter.trackEvent(event.name, event.attributes);
+        await subscriber.trackEvent(event.name, event.attributes);
         break;
       }
       case 'funnel': {
-        await adapter.trackFunnelStep(event.funnel, event.step, event.attributes);
+        await subscriber.trackFunnelStep(event.funnel, event.step, event.attributes);
         break;
       }
       case 'outcome': {
-        await adapter.trackOutcome(event.operation, event.outcome, event.attributes);
+        await subscriber.trackOutcome(event.operation, event.outcome, event.attributes);
         break;
       }
       case 'value': {
-        await adapter.trackValue(event.name, event.value, event.attributes);
+        await subscriber.trackValue(event.name, event.value, event.attributes);
         break;
       }
     }
   };
 
   // Build middleware chain
-  type ChainFunction = (event: AnalyticsEvent) => Promise<void>;
+  type ChainFunction = (event: EventsEvent) => Promise<void>;
   const reversedMiddlewares = middlewares.toReversed();
   let chain: ChainFunction = trackEvent;
   for (const middleware of reversedMiddlewares) {
     const next = chain;
-    chain = (event: AnalyticsEvent) => middleware(event, next);
+    chain = (event: EventsEvent) => middleware(event, next);
   }
 
-  // Wrap adapter with middleware chain
+  // Wrap subscriber with middleware chain
   return {
-    name: `${adapter.name}(middleware)`,
-    version: adapter.version,
+    name: `${subscriber.name}(middleware)`,
+    version: subscriber.version,
 
     async trackEvent(name: string, attributes?: EventAttributes): Promise<void> {
       await chain({ type: 'event', name, attributes });
@@ -136,7 +136,7 @@ export function applyMiddleware(
     },
 
     async shutdown(): Promise<void> {
-      await adapter.shutdown?.();
+      await subscriber.shutdown?.();
     },
   };
 }
@@ -150,7 +150,7 @@ export function applyMiddleware(
  *
  * @example
  * ```typescript
- * const adapter = applyMiddleware(adapter, [
+ * const subscriber = applyMiddleware(adapter, [
  *   retryMiddleware({ maxRetries: 3, delayMs: 1000 })
  * ]);
  * ```
@@ -159,7 +159,7 @@ export function retryMiddleware(options: {
   maxRetries?: number;
   delayMs?: number;
   onRetry?: (attempt: number, error: Error) => void;
-}): AdapterMiddleware {
+}): SubscriberMiddleware {
   const { maxRetries = 3, delayMs = 1000, onRetry } = options;
 
   return async (event, next) => {
@@ -190,12 +190,12 @@ export function retryMiddleware(options: {
  * @example
  * ```typescript
  * // Only send 10% of events (reduce costs)
- * const adapter = applyMiddleware(adapter, [
+ * const subscriber = applyMiddleware(adapter, [
  *   samplingMiddleware(0.1)
  * ]);
  * ```
  */
-export function samplingMiddleware(rate: number): AdapterMiddleware {
+export function samplingMiddleware(rate: number): SubscriberMiddleware {
   if (rate < 0 || rate > 1) {
     throw new Error('Sample rate must be between 0 and 1');
   }
@@ -213,7 +213,7 @@ export function samplingMiddleware(rate: number): AdapterMiddleware {
  *
  * @example
  * ```typescript
- * const adapter = applyMiddleware(adapter, [
+ * const subscriber = applyMiddleware(adapter, [
  *   enrichmentMiddleware((event) => ({
  *     ...event,
  *     attributes: {
@@ -226,8 +226,8 @@ export function samplingMiddleware(rate: number): AdapterMiddleware {
  * ```
  */
 export function enrichmentMiddleware(
-  enricher: (event: AnalyticsEvent) => AnalyticsEvent
-): AdapterMiddleware {
+  enricher: (event: EventsEvent) => EventsEvent
+): SubscriberMiddleware {
   return async (event, next) => {
     const enriched = enricher(event);
     await next(enriched);
@@ -239,16 +239,16 @@ export function enrichmentMiddleware(
  *
  * @example
  * ```typescript
- * const adapter = applyMiddleware(adapter, [
- *   loggingMiddleware({ prefix: '[Analytics]', logAttributes: true })
+ * const subscriber = applyMiddleware(adapter, [
+ *   loggingMiddleware({ prefix: '[Events]', logAttributes: true })
  * ]);
  * ```
  */
 export function loggingMiddleware(options: {
   prefix?: string;
   logAttributes?: boolean;
-} = {}): AdapterMiddleware {
-  const { prefix = '[Analytics]', logAttributes = false } = options;
+} = {}): SubscriberMiddleware {
+  const { prefix = '[Events]', logAttributes = false } = options;
 
   return async (event, next) => {
     if (logAttributes) {
@@ -269,7 +269,7 @@ export function loggingMiddleware(options: {
  * @example
  * ```typescript
  * // Only send 'order' events
- * const adapter = applyMiddleware(adapter, [
+ * const subscriber = applyMiddleware(adapter, [
  *   filterMiddleware((event) =>
  *     event.type === 'event' && event.name.startsWith('order.')
  *   )
@@ -277,8 +277,8 @@ export function loggingMiddleware(options: {
  * ```
  */
 export function filterMiddleware(
-  predicate: (event: AnalyticsEvent) => boolean
-): AdapterMiddleware {
+  predicate: (event: EventsEvent) => boolean
+): SubscriberMiddleware {
   return async (event, next) => {
     if (predicate(event)) {
       await next(event);
@@ -292,7 +292,7 @@ export function filterMiddleware(
  * @example
  * ```typescript
  * // Lowercase all event names
- * const adapter = applyMiddleware(adapter, [
+ * const subscriber = applyMiddleware(adapter, [
  *   transformMiddleware((event) => {
  *     if (event.type === 'event') {
  *       return { ...event, name: event.name.toLowerCase() };
@@ -303,8 +303,8 @@ export function filterMiddleware(
  * ```
  */
 export function transformMiddleware(
-  transformer: (event: AnalyticsEvent) => AnalyticsEvent
-): AdapterMiddleware {
+  transformer: (event: EventsEvent) => EventsEvent
+): SubscriberMiddleware {
   return async (event, next) => {
     const transformed = transformer(event);
     await next(transformed);
@@ -316,7 +316,7 @@ export function transformMiddleware(
  *
  * @example
  * ```typescript
- * const adapter = applyMiddleware(adapter, [
+ * const subscriber = applyMiddleware(adapter, [
  *   batchingMiddleware({ batchSize: 100, flushInterval: 5000 })
  * ]);
  * ```
@@ -324,9 +324,9 @@ export function transformMiddleware(
 export function batchingMiddleware(options: {
   batchSize?: number;
   flushInterval?: number;
-}): AdapterMiddleware {
+}): SubscriberMiddleware {
   const { batchSize = 100, flushInterval = 5000 } = options;
-  const buffer: Array<{ event: AnalyticsEvent; next: (event: AnalyticsEvent) => Promise<void> }> = [];
+  const buffer: Array<{ event: EventsEvent; next: (event: EventsEvent) => Promise<void> }> = [];
   let flushTimer: NodeJS.Timeout | null = null;
 
   const flush = async () => {
@@ -361,14 +361,14 @@ export function batchingMiddleware(options: {
  * @example
  * ```typescript
  * // Max 100 events per second
- * const adapter = applyMiddleware(adapter, [
+ * const subscriber = applyMiddleware(adapter, [
  *   rateLimitMiddleware({ requestsPerSecond: 100 })
  * ]);
  * ```
  */
 export function rateLimitMiddleware(options: {
   requestsPerSecond: number;
-}): AdapterMiddleware {
+}): SubscriberMiddleware {
   const { requestsPerSecond } = options;
   const intervalMs = 1000 / requestsPerSecond;
   let lastCallTime = 0;
@@ -414,7 +414,7 @@ export function rateLimitMiddleware(options: {
  *
  * @example
  * ```typescript
- * const adapter = applyMiddleware(adapter, [
+ * const subscriber = applyMiddleware(adapter, [
  *   circuitBreakerMiddleware({
  *     failureThreshold: 5,
  *     timeout: 60000 // 1 minute
@@ -427,7 +427,7 @@ export function circuitBreakerMiddleware(options: {
   timeout?: number;
   onOpen?: () => void;
   onClose?: () => void;
-}): AdapterMiddleware {
+}): SubscriberMiddleware {
   const { failureThreshold = 5, timeout = 60_000, onOpen, onClose } = options;
   let failureCount = 0;
   let lastFailureTime = 0;
@@ -469,14 +469,14 @@ export function circuitBreakerMiddleware(options: {
  *
  * @example
  * ```typescript
- * const adapter = applyMiddleware(adapter, [
+ * const subscriber = applyMiddleware(adapter, [
  *   timeoutMiddleware({ timeoutMs: 5000 })
  * ]);
  * ```
  */
 export function timeoutMiddleware(options: {
   timeoutMs: number;
-}): AdapterMiddleware {
+}): SubscriberMiddleware {
   const { timeoutMs } = options;
 
   return async (event, next) => {

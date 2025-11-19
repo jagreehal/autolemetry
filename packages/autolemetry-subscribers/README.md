@@ -1,14 +1,14 @@
-# autolemetry-adapters
+# autolemetry-subscribers
 
-**Send analytics to multiple platforms**
+**Send events to multiple platforms**
 
-Adapters for [autolemetry](https://github.com/jagreehal/autolemetry) to send analytics to PostHog, Mixpanel, Amplitude, Segment, and custom webhooks.
+Subscribers for [autolemetry](https://github.com/jagreehal/autolemetry) to send events to PostHog, Mixpanel, Amplitude, Segment, and custom webhooks.
 
 ## Why Use This?
 
 **Track once, send everywhere:**
 - Primary metrics → **OpenTelemetry** (infrastructure monitoring)
-- Product analytics → **PostHog / Mixpanel / Amplitude**
+- Product events → **PostHog / Mixpanel / Amplitude**
 - Customer data → **Segment**
 - Custom integrations → **Webhooks** (Zapier, Make.com, etc.)
 
@@ -17,13 +17,13 @@ Adapters are optional. If you don't use them, they're tree-shaken out (0 bytes).
 
 ---
 
-## Building Custom Adapters
+## Building Custom Subscribers
 
 Two base classes available:
 
-### `AnalyticsAdapter` - Standard Base Class
+### `EventSubscriber` - Standard Base Class
 
-Use for most custom adapters. Provides production-ready features:
+Use for most custom subscribers. Provides production-ready features:
 
 - Error handling (automatic catching + custom handlers)
 - Pending request tracking (ensures delivery during shutdown)
@@ -33,12 +33,12 @@ Use for most custom adapters. Provides production-ready features:
 **When to use:** Any custom adapter (HTTP APIs, databases, webhooks, etc.)
 
 ```typescript
-import { AnalyticsAdapter, AdapterPayload } from 'autolemetry-adapters';
+import { EventSubscriber, EventPayload } from 'autolemetry-subscribers';
 
-class MyAdapter extends AnalyticsAdapter {
-  readonly name = 'MyAdapter';
+class MySubscriber extends EventSubscriber {
+  readonly name = 'MySubscriber';
 
-  protected async sendToDestination(payload: AdapterPayload): Promise<void> {
+  protected async sendToDestination(payload: EventPayload): Promise<void> {
     // Send to your platform
     await fetch('https://api.example.com/events', {
       method: 'POST',
@@ -48,21 +48,21 @@ class MyAdapter extends AnalyticsAdapter {
 }
 ```
 
-### `StreamingAnalyticsAdapter` - For High-Throughput Streams
+### `StreamingEventSubscriber` - For High-Throughput Streams
 
-Extends `AnalyticsAdapter` with batching and partitioning for streaming platforms.
+Extends `EventSubscriber` with batching and partitioning for streaming platforms.
 
 **When to use:** Kafka, Kinesis, Pub/Sub, event streams, high-volume data pipelines
 
 ```typescript
-import { StreamingAnalyticsAdapter } from 'autolemetry-adapters';
+import { StreamingEventSubscriber } from 'autolemetry-subscribers';
 
-class KafkaAdapter extends StreamingAnalyticsAdapter {
-  readonly name = 'KafkaAdapter';
+class KafkaSubscriber extends StreamingEventSubscriber {
+  readonly name = 'KafkaSubscriber';
 
-  protected async sendBatch(events: AdapterPayload[]): Promise<void> {
+  protected async sendBatch(events: EventPayload[]): Promise<void> {
     await this.producer.send({
-      topic: 'analytics',
+      topic: 'events',
       messages: events.map(e => ({ value: JSON.stringify(e) }))
     });
   }
@@ -77,55 +77,55 @@ class KafkaAdapter extends StreamingAnalyticsAdapter {
 # Core package (required)
 pnpm add autolemetry
 
-# Adapters package (optional)
-pnpm add autolemetry-adapters
+# Subscribers package (optional)
+pnpm add autolemetry-subscribers
 
-# Install the analytics SDKs you need
+# Install the events SDKs you need
 pnpm add posthog-node      # For PostHog
 pnpm add mixpanel          # For Mixpanel
-pnpm add @segment/analytics-node  # For Segment
-pnpm add @amplitude/analytics-node  # For Amplitude
+pnpm add @segment/events-node  # For Segment
+pnpm add @amplitude/events-node  # For Amplitude
 ```
 
 ---
 
 ## Quick Start
 
-### Using Built-in Adapters (Easiest)
+### Using Built-in Subscribers (Easiest)
 
-Import adapters directly from their entry points:
+Import subscribers directly from their entry points:
 
 ```typescript
-import { Analytics } from 'autolemetry/analytics';
-import { PostHogAdapter } from 'autolemetry-adapters/posthog';
-import { WebhookAdapter } from 'autolemetry-adapters/webhook';
+import { Events } from 'autolemetry/events';
+import { PostHogSubscriber } from 'autolemetry-subscribers/posthog';
+import { WebhookSubscriber } from 'autolemetry-subscribers/webhook';
 
-const analytics = new Analytics('checkout', {
-  adapters: [
-    new PostHogAdapter({ apiKey: process.env.POSTHOG_API_KEY! }),
-    new WebhookAdapter({ url: 'https://your-webhook.com' })
+const events = new Event('checkout', {
+  subscribers: [
+    new PostHogSubscriber({ apiKey: process.env.POSTHOG_API_KEY! }),
+    new WebhookSubscriber({ url: 'https://your-webhook.com' })
   ]
 });
 
 // Sent to: OpenTelemetry + PostHog + Webhook
-analytics.trackEvent('order.completed', { userId: '123', amount: 99.99 });
+events.trackEvent('order.completed', { userId: '123', amount: 99.99 });
 ```
 
-### Your First Custom Adapter (5 Minutes)
+### Your First Custom Subscriber (5 Minutes)
 
 Create an adapter in 25 lines:
 
 ```typescript
-import { AnalyticsAdapter, AdapterPayload } from 'autolemetry-adapters';
+import { EventSubscriber, EventPayload } from 'autolemetry-subscribers';
 
-class MyAdapter extends AnalyticsAdapter {
-  readonly name = 'MyAdapter';
+class MySubscriber extends EventSubscriber {
+  readonly name = 'MySubscriber';
 
   constructor(private apiKey: string) {
     super();
   }
 
-  protected async sendToDestination(payload: AdapterPayload): Promise<void> {
+  protected async sendToDestination(payload: EventPayload): Promise<void> {
     await fetch('https://your-api.com/events', {
       method: 'POST',
       headers: {
@@ -138,19 +138,19 @@ class MyAdapter extends AnalyticsAdapter {
 }
 
 // Use it!
-const analytics = new Analytics('my-app', {
-  adapters: [new MyAdapter('your-api-key')]
+const events = new Event('my-app', {
+  subscribers: [new MySubscriber('your-api-key')]
 });
 ```
 
-**That's it!** Extend `AnalyticsAdapter` and implement `sendToDestination()`. You get error handling, graceful shutdown, and pending request tracking automatically. See [Your First Adapter Guide](./docs/your-first-adapter.md) for details.
+**That's it!** Extend `EventSubscriber` and implement `sendToDestination()`. You get error handling, graceful shutdown, and pending request tracking automatically. See [Your First Adapter Guide](./docs/your-first-subscriber.md) for details.
 
 ### Test Your Adapter
 
 ```typescript
-import { AdapterTestHarness } from 'autolemetry-adapters/testing';
+import { AdapterTestHarness } from 'autolemetry-subscribers/testing';
 
-const harness = new AdapterTestHarness(new MyAdapter('test-key'));
+const harness = new AdapterTestHarness(new MySubscriber('test-key'));
 const results = await harness.runAll();
 
 AdapterTestHarness.printResults(results);
@@ -160,10 +160,10 @@ AdapterTestHarness.printResults(results);
 ### Add Middleware (Retry, Sampling, etc.)
 
 ```typescript
-import { applyMiddleware, retryMiddleware, samplingMiddleware } from 'autolemetry-adapters/middleware';
+import { applyMiddleware, retryMiddleware, samplingMiddleware } from 'autolemetry-subscribers/middleware';
 
-const adapter = applyMiddleware(
-  new MyAdapter('api-key'),
+const subscriber = applyMiddleware(
+  new MySubscriber('api-key'),
   [
     retryMiddleware({ maxRetries: 3 }),  // Retry failed requests
     samplingMiddleware(0.1)               // Only send 10% of events
@@ -178,12 +178,12 @@ const adapter = applyMiddleware(
 ### PostHog
 
 ```typescript
-import { Analytics } from 'autolemetry/analytics';
-import { PostHogAdapter } from 'autolemetry-adapters/posthog';
+import { Events } from 'autolemetry/events';
+import { PostHogSubscriber } from 'autolemetry-subscribers/posthog';
 
-const analytics = new Analytics('checkout', {
-  adapters: [
-    new PostHogAdapter({
+const events = new Event('checkout', {
+  subscribers: [
+    new PostHogSubscriber({
       apiKey: process.env.POSTHOG_API_KEY!,
       host: 'https://us.i.posthog.com' // optional
     })
@@ -191,7 +191,7 @@ const analytics = new Analytics('checkout', {
 });
 
 // Sent to: OpenTelemetry + PostHog
-analytics.trackEvent('order.completed', { 
+events.trackEvent('order.completed', { 
   userId: '123', 
   amount: 99.99 
 });
@@ -200,11 +200,11 @@ analytics.trackEvent('order.completed', {
 ### Mixpanel
 
 ```typescript
-import { MixpanelAdapter } from 'autolemetry-adapters/mixpanel';
+import { MixpanelSubscriber } from 'autolemetry-subscribers/mixpanel';
 
-const analytics = new Analytics('checkout', {
-  adapters: [
-    new MixpanelAdapter({
+const events = new Event('checkout', {
+  subscribers: [
+    new MixpanelSubscriber({
       token: process.env.MIXPANEL_TOKEN!
     })
   ]
@@ -214,11 +214,11 @@ const analytics = new Analytics('checkout', {
 ### Segment
 
 ```typescript
-import { SegmentAdapter } from 'autolemetry-adapters/segment';
+import { SegmentSubscriber } from 'autolemetry-subscribers/segment';
 
-const analytics = new Analytics('checkout', {
-  adapters: [
-    new SegmentAdapter({
+const events = new Event('checkout', {
+  subscribers: [
+    new SegmentSubscriber({
       writeKey: process.env.SEGMENT_WRITE_KEY!
     })
   ]
@@ -228,11 +228,11 @@ const analytics = new Analytics('checkout', {
 ### Amplitude
 
 ```typescript
-import { AmplitudeAdapter } from 'autolemetry-adapters/amplitude';
+import { AmplitudeSubscriber } from 'autolemetry-subscribers/amplitude';
 
-const analytics = new Analytics('checkout', {
-  adapters: [
-    new AmplitudeAdapter({
+const events = new Event('checkout', {
+  subscribers: [
+    new AmplitudeSubscriber({
       apiKey: process.env.AMPLITUDE_API_KEY!
     })
   ]
@@ -242,11 +242,11 @@ const analytics = new Analytics('checkout', {
 ### Webhook (Custom Integrations)
 
 ```typescript
-import { WebhookAdapter } from 'autolemetry-adapters/webhook';
+import { WebhookSubscriber } from 'autolemetry-subscribers/webhook';
 
-const analytics = new Analytics('checkout', {
-  adapters: [
-    new WebhookAdapter({
+const events = new Event('checkout', {
+  subscribers: [
+    new WebhookSubscriber({
       url: 'https://hooks.zapier.com/hooks/catch/...',
       headers: { 'X-API-Key': 'secret' },
       maxRetries: 3
@@ -262,21 +262,21 @@ const analytics = new Analytics('checkout', {
 Send to **multiple platforms simultaneously**:
 
 ```typescript
-import { Analytics } from 'autolemetry/analytics';
-import { PostHogAdapter } from 'autolemetry-adapters/posthog';
-import { MixpanelAdapter } from 'autolemetry-adapters/mixpanel';
-import { SegmentAdapter } from 'autolemetry-adapters/segment';
+import { Events } from 'autolemetry/events';
+import { PostHogSubscriber } from 'autolemetry-subscribers/posthog';
+import { MixpanelSubscriber } from 'autolemetry-subscribers/mixpanel';
+import { SegmentSubscriber } from 'autolemetry-subscribers/segment';
 
-const analytics = new Analytics('checkout', {
-  adapters: [
-    new PostHogAdapter({ apiKey: 'phc_...' }),
-    new MixpanelAdapter({ token: '...' }),
-    new SegmentAdapter({ writeKey: '...' })
+const events = new Event('checkout', {
+  subscribers: [
+    new PostHogSubscriber({ apiKey: 'phc_...' }),
+    new MixpanelSubscriber({ token: '...' }),
+    new SegmentSubscriber({ writeKey: '...' })
   ]
 });
 
 // Sent to: OpenTelemetry + PostHog + Mixpanel + Segment
-analytics.trackEvent('order.completed', { 
+events.trackEvent('order.completed', { 
   userId: '123', 
   amount: 99.99,
   currency: 'USD'
@@ -287,27 +287,27 @@ analytics.trackEvent('order.completed', {
 
 ## Delivery Patterns
 
-Autolemetry-adapters provides **direct adapters** (fire-and-forget) - events are sent immediately to analytics platforms.
+Autolemetry-subscribers provides **direct subscribers** (fire-and-forget) - events are sent immediately to events platforms.
 
-### Direct Adapters (Default)
+### Direct Subscribers (Default)
 
-**Simple, fire-and-forget tracking** - Events sent immediately to analytics platforms:
+**Simple, fire-and-forget tracking** - Events sent immediately to events platforms:
 
 ```typescript
-const analytics = new Analytics('app', {
-  adapters: [new PostHogAdapter({ apiKey: '...' })]
+const events = new Event('app', {
+  subscribers: [new PostHogSubscriber({ apiKey: '...' })]
 })
 
 // Events sent immediately, real-time
-analytics.trackEvent('user.signup', { userId: '123' })
-analytics.trackEvent('page.viewed', { path: '/checkout' })
+events.trackEvent('user.signup', { userId: '123' })
+events.trackEvent('page.viewed', { path: '/checkout' })
 ```
 
 **Use for:**
 - Page views, button clicks, feature usage
 - User behavior tracking
-- High-volume, non-critical analytics
-- Real-time analytics dashboards
+- High-volume, non-critical events
+- Real-time events dashboards
 
 **Benefits:**
 - Simple, zero infrastructure
@@ -337,13 +337,13 @@ npm install autolemetry-outbox
 
 **Usage:**
 ```typescript
-import { OutboxAnalyticsAdapter } from 'autolemetry-outbox';
-import { PostHogAdapter } from 'autolemetry-adapters/posthog';
+import { OutboxEventSubscriber } from 'autolemetry-outbox';
+import { PostHogSubscriber } from 'autolemetry-subscribers/posthog';
 
 const outbox = new DrizzleD1OutboxStorage(env.DB);
-const analytics = new Analytics('checkout', {
-  adapters: [
-    new OutboxAnalyticsAdapter(outbox, { aggregateType: 'Order' })
+const events = new Event('checkout', {
+  subscribers: [
+    new OutboxEventSubscriber(outbox, { aggregateType: 'Order' })
   ]
 });
 ```
@@ -352,10 +352,10 @@ const analytics = new Analytics('checkout', {
 
 ## Adapter Methods
 
-All adapters implement these methods:
+All subscribers implement these methods:
 
 ```typescript
-interface AnalyticsAdapter {
+interface EventSubscriber {
   // Track events
   trackEvent(name: string, attributes?: Record<string, any>): void;
   
@@ -384,14 +384,14 @@ interface AnalyticsAdapter {
 
 ---
 
-## Custom Adapter
+## Custom Subscriber
 
 Create your own adapter for any platform:
 
 ```typescript
-import { AnalyticsAdapter } from 'autolemetry/analytics-adapter';
+import { EventSubscriber } from 'autolemetry/events-adapter';
 
-class MyCustomAdapter implements AnalyticsAdapter {
+class MyCustomSubscriber implements EventSubscriber {
   trackEvent(name: string, attributes?: Record<string, any>): void {
     // Send to your platform
     fetch('https://api.myplatform.com/events', {
@@ -414,8 +414,8 @@ class MyCustomAdapter implements AnalyticsAdapter {
 }
 
 // Use it
-const analytics = new Analytics('app', {
-  adapters: [new MyCustomAdapter()]
+const events = new Event('app', {
+  subscribers: [new MyCustomSubscriber()]
 });
 ```
 
@@ -426,13 +426,13 @@ const analytics = new Analytics('app', {
 ### Enable/Disable Adapters
 
 ```typescript
-const analytics = new Analytics('checkout', {
-  adapters: [
-    new PostHogAdapter({ 
+const events = new Event('checkout', {
+  subscribers: [
+    new PostHogSubscriber({ 
       apiKey: 'phc_...',
       enabled: process.env.NODE_ENV === 'production' // Only in prod
     }),
-    new MixpanelAdapter({ 
+    new MixpanelSubscriber({ 
       token: '...',
       enabled: false // Temporarily disabled
     })
@@ -443,8 +443,8 @@ const analytics = new Analytics('checkout', {
 ### Shutdown Gracefully
 
 ```typescript
-const posthog = new PostHogAdapter({ apiKey: 'phc_...' });
-const segment = new SegmentAdapter({ writeKey: '...' });
+const posthog = new PostHogSubscriber({ apiKey: 'phc_...' });
+const segment = new SegmentSubscriber({ writeKey: '...' });
 
 // Before app shutdown
 await posthog.shutdown();
@@ -459,7 +459,7 @@ Adapters are **fully tree-shakeable**:
 
 ```typescript
 // Only PostHog code is bundled (not Mixpanel, Segment, etc.)
-import { PostHogAdapter } from 'autolemetry-adapters/posthog';
+import { PostHogSubscriber } from 'autolemetry-subscribers/posthog';
 ```
 
 Bundle sizes (gzipped):
@@ -474,7 +474,7 @@ Bundle sizes (gzipped):
 ## Performance
 
 **Zero overhead when not used:**
-- If `adapters: []` (empty), no adapter code runs
+- If `subscribers: []` (empty), no adapter code runs
 - Tree-shaken out in production builds
 
 **Minimal overhead when used:**
@@ -503,15 +503,15 @@ import {
   rateLimitMiddleware,      // Throttle requests
   circuitBreakerMiddleware, // Prevent cascading failures
   timeoutMiddleware         // Add timeouts
-} from 'autolemetry-adapters/middleware';
+} from 'autolemetry-subscribers/middleware';
 ```
 
 ### Examples
 
 **Retry with Circuit Breaker:**
 ```typescript
-const adapter = applyMiddleware(
-  new PostHogAdapter({ apiKey: '...' }),
+const subscriber = applyMiddleware(
+  new PostHogSubscriber({ apiKey: '...' }),
   [
     retryMiddleware({ maxRetries: 3, delayMs: 1000 }),
     circuitBreakerMiddleware({ failureThreshold: 5, timeout: 60000 })
@@ -522,15 +522,15 @@ const adapter = applyMiddleware(
 **Sample Events (Reduce Costs):**
 ```typescript
 // Only send 10% of events
-const adapter = applyMiddleware(
-  new WebhookAdapter({ url: '...' }),
+const subscriber = applyMiddleware(
+  new WebhookSubscriber({ url: '...' }),
   [samplingMiddleware(0.1)]
 );
 ```
 
 **Enrich Events:**
 ```typescript
-const adapter = applyMiddleware(
+const subscriber = applyMiddleware(
   adapter,
   [
     enrichmentMiddleware((event) => ({
@@ -547,7 +547,7 @@ const adapter = applyMiddleware(
 
 **Batch Events:**
 ```typescript
-const adapter = applyMiddleware(
+const subscriber = applyMiddleware(
   adapter,
   [batchingMiddleware({ batchSize: 100, flushInterval: 5000 })]
 );
@@ -555,16 +555,16 @@ const adapter = applyMiddleware(
 
 ---
 
-## Testing Custom Adapters
+## Testing Custom Subscribers
 
 ### AdapterTestHarness
 
 Validate your adapter works correctly:
 
 ```typescript
-import { AdapterTestHarness } from 'autolemetry-adapters/testing';
+import { AdapterTestHarness } from 'autolemetry-subscribers/testing';
 
-const harness = new AdapterTestHarness(new MyAdapter());
+const harness = new AdapterTestHarness(new MySubscriber());
 const results = await harness.runAll();
 
 if (results.passed) {
@@ -588,16 +588,16 @@ Tests include:
 
 ### MockWebhookServer
 
-Test webhook adapters without real HTTP calls:
+Test webhook subscribers without real HTTP calls:
 
 ```typescript
-import { MockWebhookServer } from 'autolemetry-adapters/testing';
+import { MockWebhookServer } from 'autolemetry-subscribers/testing';
 
 const server = new MockWebhookServer();
 const url = await server.start();
 
-const adapter = new WebhookAdapter({ url });
-await adapter.trackEvent('test', { foo: 'bar' });
+const subscriber = new WebhookSubscriber({ url });
+await subscriber.trackEvent('test', { foo: 'bar' });
 
 // Assert
 const requests = server.getRequests();
@@ -614,17 +614,17 @@ await server.stop();
 All exports available:
 
 ```typescript
-// Import adapters from their specific entry points
-import { PostHogAdapter } from 'autolemetry-adapters/posthog';
-import { MixpanelAdapter } from 'autolemetry-adapters/mixpanel';
-import { SegmentAdapter } from 'autolemetry-adapters/segment';
-import { AmplitudeAdapter } from 'autolemetry-adapters/amplitude';
-import { WebhookAdapter } from 'autolemetry-adapters/webhook';
-import { SlackAdapter } from 'autolemetry-adapters/slack';
+// Import subscribers from their specific entry points
+import { PostHogSubscriber } from 'autolemetry-subscribers/posthog';
+import { MixpanelSubscriber } from 'autolemetry-subscribers/mixpanel';
+import { SegmentSubscriber } from 'autolemetry-subscribers/segment';
+import { AmplitudeSubscriber } from 'autolemetry-subscribers/amplitude';
+import { WebhookSubscriber } from 'autolemetry-subscribers/webhook';
+import { SlackSubscriber } from 'autolemetry-subscribers/slack';
 
-// Base classes for building custom adapters
-import { AnalyticsAdapter, AdapterPayload } from 'autolemetry-adapters';
-import { StreamingAnalyticsAdapter } from 'autolemetry-adapters';
+// Base classes for building custom subscribers
+import { EventSubscriber, EventPayload } from 'autolemetry-subscribers';
+import { StreamingEventSubscriber } from 'autolemetry-subscribers';
 
 // Middleware (composition)
 import {
@@ -632,14 +632,14 @@ import {
   retryMiddleware,
   samplingMiddleware,
   /* ... 8 more middleware functions */
-} from 'autolemetry-adapters/middleware';
+} from 'autolemetry-subscribers/middleware';
 
 // Testing utilities
 import {
   AdapterTestHarness,
   MockWebhookServer,
-  MockAnalyticsAdapter
-} from 'autolemetry-adapters/testing';
+  MockEventSubscriber
+} from 'autolemetry-subscribers/testing';
 
 // For outbox pattern, see autolemetry-outbox package
 ```
@@ -648,10 +648,10 @@ import {
 
 ## Resources
 
-- [Your First Adapter Guide](./docs/your-first-adapter.md) - Create a custom adapter in 5 minutes
-- [Quickstart Template](./examples/quickstart-custom-adapter.ts) - Copy-paste 20-line template
-- [Testing Guide](./docs/your-first-adapter.md#test-your-adapter) - Validate your adapter works
-- [Middleware Guide](./docs/your-first-adapter.md#add-superpowers-with-middleware) - Add retry, sampling, etc.
+- [Your First Adapter Guide](./docs/your-first-subscriber.md) - Create a custom adapter in 5 minutes
+- [Quickstart Template](./examples/quickstart-custom-subscriber.ts) - Copy-paste 20-line template
+- [Testing Guide](./docs/your-first-subscriber.md#test-your-adapter) - Validate your adapter works
+- [Middleware Guide](./docs/your-first-subscriber.md#add-superpowers-with-middleware) - Add retry, sampling, etc.
 - [Outbox Pattern](/packages/autolemetry-outbox/) - For transactional outbox pattern
 
 ---

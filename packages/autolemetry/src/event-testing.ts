@@ -1,23 +1,23 @@
 /**
- * Testing utilities for Analytics
+ * Testing utilities for Events
  *
- * Provides in-memory collection of analytics for testing purposes.
+ * Provides in-memory collection of events for testing purposes.
  */
 
 import type {
   EventAttributes,
   FunnelStatus,
   OutcomeStatus,
-} from './analytics-adapter';
+} from './event-subscriber';
 
-export interface AnalyticsEvent {
+export interface EventData {
   event: string;
   attributes?: EventAttributes;
   service: string;
   timestamp: number;
 }
 
-export interface AnalyticsFunnelStep {
+export interface EventsFunnelStep {
   funnel: string;
   status: FunnelStatus;
   attributes?: EventAttributes;
@@ -25,7 +25,7 @@ export interface AnalyticsFunnelStep {
   timestamp: number;
 }
 
-export interface AnalyticsOutcome {
+export interface EventsOutcome {
   operation: string;
   status: OutcomeStatus;
   attributes?: EventAttributes;
@@ -33,7 +33,7 @@ export interface AnalyticsOutcome {
   timestamp: number;
 }
 
-export interface AnalyticsValue {
+export interface EventsValue {
   metric: string;
   value: number;
   attributes?: EventAttributes;
@@ -42,64 +42,64 @@ export interface AnalyticsValue {
 }
 
 /**
- * In-memory analytics collector for testing
+ * In-memory events collector for testing
  */
-export interface AnalyticsCollector {
+export interface EventCollector {
   /** Get all collected events */
-  getEvents(): AnalyticsEvent[];
+  getEvents(): EventData[];
   /** Get all collected funnel steps */
-  getFunnelSteps(): AnalyticsFunnelStep[];
+  getFunnelSteps(): EventsFunnelStep[];
   /** Get all collected outcomes */
-  getOutcomes(): AnalyticsOutcome[];
+  getOutcomes(): EventsOutcome[];
   /** Get all collected values */
-  getValues(): AnalyticsValue[];
-  /** Clear all collected analytics */
+  getValues(): EventsValue[];
+  /** Clear all collected events */
   clear(): void;
   /** Record an event (internal use) */
-  recordEvent(event: AnalyticsEvent): void;
+  recordEvent(event: EventData): void;
   /** Record a funnel step (internal use) */
-  recordFunnelStep(step: AnalyticsFunnelStep): void;
+  recordFunnelStep(step: EventsFunnelStep): void;
   /** Record an outcome (internal use) */
-  recordOutcome(outcome: AnalyticsOutcome): void;
+  recordOutcome(outcome: EventsOutcome): void;
   /** Record a value (internal use) */
-  recordValue(value: AnalyticsValue): void;
+  recordValue(value: EventsValue): void;
 }
 
 /**
- * Create an in-memory analytics collector for testing
+ * Create an in-memory events collector for testing
  *
  * @example
  * ```typescript
- * const collector = createAnalyticsCollector()
+ * const collector = createEventCollector()
  *
- * const analytics = new Analytics('test-service', { collector })
- * analytics.trackEvent('application.submitted', { jobId: '123' })
+ * const events = new Event('test-service', { collector })
+ * events.trackEvent('application.submitted', { jobId: '123' })
  *
- * const events = collector.getEvents()
+ * const event =collector.getEvents()
  * expect(events).toHaveLength(1)
  * expect(events[0].event).toBe('application.submitted')
  * ```
  */
-export function createAnalyticsCollector(): AnalyticsCollector {
-  const events: AnalyticsEvent[] = [];
-  const funnelSteps: AnalyticsFunnelStep[] = [];
-  const outcomes: AnalyticsOutcome[] = [];
-  const values: AnalyticsValue[] = [];
+export function createEventCollector(): EventCollector {
+  const events: EventData[] = [];
+  const funnelSteps: EventsFunnelStep[] = [];
+  const outcomes: EventsOutcome[] = [];
+  const values: EventsValue[] = [];
 
   return {
-    getEvents(): AnalyticsEvent[] {
+    getEvents(): EventData[] {
       return [...events];
     },
 
-    getFunnelSteps(): AnalyticsFunnelStep[] {
+    getFunnelSteps(): EventsFunnelStep[] {
       return [...funnelSteps];
     },
 
-    getOutcomes(): AnalyticsOutcome[] {
+    getOutcomes(): EventsOutcome[] {
       return [...outcomes];
     },
 
-    getValues(): AnalyticsValue[] {
+    getValues(): EventsValue[] {
       return [...values];
     },
 
@@ -110,26 +110,26 @@ export function createAnalyticsCollector(): AnalyticsCollector {
       values.length = 0;
     },
 
-    recordEvent(event: AnalyticsEvent): void {
+    recordEvent(event: EventData): void {
       events.push(event);
     },
 
-    recordFunnelStep(step: AnalyticsFunnelStep): void {
+    recordFunnelStep(step: EventsFunnelStep): void {
       funnelSteps.push(step);
     },
 
-    recordOutcome(outcome: AnalyticsOutcome): void {
+    recordOutcome(outcome: EventsOutcome): void {
       outcomes.push(outcome);
     },
 
-    recordValue(value: AnalyticsValue): void {
+    recordValue(value: EventsValue): void {
       values.push(value);
     },
   };
 }
 
 /**
- * Assert that an analytics event was tracked
+ * Assert that an events event was tracked
  *
  * @example
  * ```typescript
@@ -141,7 +141,7 @@ export function createAnalyticsCollector(): AnalyticsCollector {
  * ```
  */
 export function assertEventTracked(options: {
-  collector: AnalyticsCollector;
+  collector: EventCollector;
   eventName: string;
   attributes?: Record<string, unknown>;
 }): void {
@@ -180,7 +180,7 @@ export function assertEventTracked(options: {
  * ```
  */
 export function assertOutcomeTracked(options: {
-  collector: AnalyticsCollector;
+  collector: EventCollector;
   operation: string;
   status: 'success' | 'failure' | 'partial';
 }): void {

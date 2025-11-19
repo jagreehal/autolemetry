@@ -1,10 +1,10 @@
 # Your First Custom Adapter in 5 Minutes
 
-This guide will walk you through creating a custom analytics adapter from scratch.
+This guide will walk you through creating a custom events adapter from scratch.
 
 ## Why Custom Adapters?
 
-autolemetry-adapters provides adapters for popular platforms (PostHog, Mixpanel, etc.), but you might need to:
+autolemetry-subscribers provides adapters for popular platforms (PostHog, Mixpanel, etc.), but you might need to:
 - Send events to an internal system
 - Integrate with a platform we don't support yet
 - Add custom logic (filtering, transformation, enrichment)
@@ -16,9 +16,9 @@ autolemetry-adapters provides adapters for popular platforms (PostHog, Mixpanel,
 ## Quick Start (Copy-Paste Template)
 
 ```typescript
-import type { AnalyticsAdapter, EventAttributes } from 'autolemetry-adapters';
+import type { EventsAdapter, EventAttributes } from 'autolemetry-subscribers';
 
-export class MyFirstAdapter implements AnalyticsAdapter {
+export class MyFirstAdapter implements EventsAdapter {
   readonly name = 'MyFirstAdapter';
 
   async trackEvent(name: string, attributes?: EventAttributes): Promise<void> {
@@ -51,21 +51,21 @@ export class MyFirstAdapter implements AnalyticsAdapter {
 ## Using Your Adapter
 
 ```typescript
-import { Analytics } from 'autolemetry/analytics';
+import { Events } from 'autolemetry/events';
 import { MyFirstAdapter } from './my-first-adapter';
 
-const analytics = new Analytics('my-app', {
+const events = new Events('my-app', {
   adapters: [new MyFirstAdapter()]
 });
 
 // Track events
-await analytics.trackEvent('user.signup', {
+await events.trackEvent('user.signup', {
   userId: 'user-123',
   email: 'user@example.com'
 });
 
 // Cleanup
-await analytics.shutdown();
+await events.shutdown();
 ```
 
 ---
@@ -75,7 +75,7 @@ await analytics.shutdown();
 Replace the `console.log` with your actual API:
 
 ```typescript
-export class WebhookAdapter implements AnalyticsAdapter {
+export class WebhookAdapter implements EventsAdapter {
   readonly name = 'WebhookAdapter';
 
   constructor(private webhookUrl: string) {}
@@ -94,14 +94,14 @@ export class WebhookAdapter implements AnalyticsAdapter {
 
 ---
 
-## Production-Ready: Use AnalyticsAdapter
+## Production-Ready: Use EventsAdapter
 
-For production deployments, extend `AnalyticsAdapter` to get lifecycle management:
+For production deployments, extend `EventsAdapter` to get lifecycle management:
 
 ```typescript
-import { AnalyticsAdapter, type AdapterPayload } from 'autolemetry-adapters';
+import { EventsAdapter, type AdapterPayload } from 'autolemetry-subscribers';
 
-export class WebhookAdapter extends AnalyticsAdapter {
+export class WebhookAdapter extends EventsAdapter {
   readonly name = 'WebhookAdapter';
 
   constructor(private webhookUrl: string) {
@@ -127,7 +127,7 @@ export class WebhookAdapter extends AnalyticsAdapter {
 Use `AdapterTestHarness` to validate it works:
 
 ```typescript
-import { AdapterTestHarness } from 'autolemetry-adapters/testing';
+import { AdapterTestHarness } from 'autolemetry-subscribers/testing';
 
 const harness = new AdapterTestHarness(new MyFirstAdapter());
 const results = await harness.runAll();
@@ -143,7 +143,7 @@ AdapterTestHarness.printResults(results);
 Compose behaviors without modifying your adapter:
 
 ```typescript
-import { applyMiddleware, retryMiddleware, loggingMiddleware } from 'autolemetry-adapters/middleware';
+import { applyMiddleware, retryMiddleware, loggingMiddleware } from 'autolemetry-subscribers/middleware';
 
 const adapter = applyMiddleware(
   new MyFirstAdapter(),
@@ -179,11 +179,11 @@ Available middleware:
 Here's a complete production-ready adapter:
 
 ```typescript
-import { AnalyticsAdapter, type AdapterPayload } from 'autolemetry-adapters';
-import { applyMiddleware, retryMiddleware, circuitBreakerMiddleware } from 'autolemetry-adapters/middleware';
+import { EventsAdapter, type AdapterPayload } from 'autolemetry-subscribers';
+import { applyMiddleware, retryMiddleware, circuitBreakerMiddleware } from 'autolemetry-subscribers/middleware';
 
-class InternalAnalyticsAdapter extends AnalyticsAdapter {
-  readonly name = 'InternalAnalytics';
+class InternalEventsAdapter extends EventsAdapter {
+  readonly name = 'InternalEvents';
   readonly version = '1.0.0';
 
   constructor(private apiKey: string, private endpoint: string) {
@@ -212,7 +212,7 @@ class InternalAnalyticsAdapter extends AnalyticsAdapter {
 // Add middleware for production
 export const createInternalAdapter = (apiKey: string, endpoint: string) => {
   return applyMiddleware(
-    new InternalAnalyticsAdapter(apiKey, endpoint),
+    new InternalEventsAdapter(apiKey, endpoint),
     [
       retryMiddleware({ maxRetries: 3, delayMs: 1000 }),
       circuitBreakerMiddleware({ failureThreshold: 5, timeout: 60000 })

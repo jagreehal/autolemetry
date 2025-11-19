@@ -594,7 +594,8 @@ const logger = pino(
 ### After (autolemetry with OTLP)
 
 ```typescript
-import { init, createLogger } from 'autolemetry';
+import { init } from 'autolemetry';
+import { createLogger } from 'autolemetry/logger';
 import { BatchLogRecordProcessor } from '@opentelemetry/sdk-logs';
 import { OTLPLogExporter } from '@opentelemetry/exporter-logs-otlp-http';
 

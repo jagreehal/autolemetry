@@ -1,21 +1,21 @@
 /**
- * Streaming Analytics Adapter Base Class
+ * Streaming Events Subscriber Base Class
  *
  * Specialized base class for high-throughput streaming platforms like
  * Kafka, Kinesis, Pub/Sub, etc.
  *
- * Extends AnalyticsAdapter with streaming-specific features:
+ * Extends EventSubscriber with streaming-specific features:
  * - Partitioning strategy for ordered delivery
  * - Buffer overflow handling (drop/block/disk)
  * - High-throughput optimizations
  * - Backpressure signaling
  *
- * @example Kafka Streaming Adapter
+ * @example Kafka Streaming Subscriber
  * ```typescript
- * import { StreamingAnalyticsAdapter } from 'autolemetry-adapters/streaming-analytics-adapter';
+ * import { StreamingEventSubscriber } from 'autolemetry-subscribers/streaming-event-subscriber';
  *
- * class KafkaAdapter extends StreamingAnalyticsAdapter {
- *   name = 'KafkaAdapter';
+ * class KafkaSubscriber extends StreamingEventSubscriber {
+ *   name = 'KafkaSubscriber';
  *   version = '1.0.0';
  *
  *   constructor(config: KafkaConfig) {
@@ -26,12 +26,12 @@
  *     });
  *   }
  *
- *   protected getPartitionKey(payload: AdapterPayload): string {
+ *   protected getPartitionKey(payload: EventPayload): string {
  *     // Partition by userId for ordered events per user
  *     return payload.attributes?.userId || 'default';
  *   }
  *
- *   protected async sendBatch(events: AdapterPayload[]): Promise<void> {
+ *   protected async sendBatch(events: EventPayload[]): Promise<void> {
  *     await this.producer.send({
  *       topic: this.topic,
  *       messages: events.map(e => ({
@@ -45,9 +45,9 @@
  */
 
 import {
-  AnalyticsAdapter,
-  type AdapterPayload,
-} from './analytics-adapter-base';
+  EventSubscriber,
+  type EventPayload,
+} from './event-subscriber-base';
 
 /**
  * Buffer overflow strategy
@@ -59,9 +59,9 @@ import {
 export type BufferOverflowStrategy = 'drop' | 'block' | 'disk';
 
 /**
- * Streaming adapter configuration
+ * Streaming subscriber configuration
  */
-export interface StreamingAdapterConfig {
+export interface StreamingSubscriberConfig {
   /** Maximum buffer size before triggering overflow strategy (default: 10000) */
   maxBufferSize?: number;
 
@@ -99,17 +99,17 @@ export interface BufferStatus {
 }
 
 /**
- * Streaming Analytics Adapter Base Class
+ * Streaming Events Subscriber Base Class
  *
- * Provides streaming-specific patterns on top of AnalyticsAdapter.
+ * Provides streaming-specific patterns on top of EventSubscriber.
  */
-export abstract class StreamingAnalyticsAdapter extends AnalyticsAdapter {
-  protected config: Required<StreamingAdapterConfig>;
-  protected buffer: AdapterPayload[] = [];
+export abstract class StreamingEventSubscriber extends EventSubscriber {
+  protected config: Required<StreamingSubscriberConfig>;
+  protected buffer: EventPayload[] = [];
   protected flushIntervalHandle: NodeJS.Timeout | null = null;
   private isShuttingDown = false;
 
-  constructor(config: StreamingAdapterConfig = {}) {
+  constructor(config: StreamingSubscriberConfig = {}) {
     super();
 
     // Set defaults
@@ -142,12 +142,12 @@ export abstract class StreamingAnalyticsAdapter extends AnalyticsAdapter {
    *
    * @example Partition by userId
    * ```typescript
-   * protected getPartitionKey(payload: AdapterPayload): string {
+   * protected getPartitionKey(payload: EventPayload): string {
    *   return payload.attributes?.userId || 'default';
    * }
    * ```
    */
-  protected abstract getPartitionKey(payload: AdapterPayload): string;
+  protected abstract getPartitionKey(payload: EventPayload): string;
 
   /**
    * Send batch of events to streaming platform
@@ -157,15 +157,15 @@ export abstract class StreamingAnalyticsAdapter extends AnalyticsAdapter {
    *
    * @param events - Batch of events to send
    */
-  protected abstract sendBatch(events: AdapterPayload[]): Promise<void>;
+  protected abstract sendBatch(events: EventPayload[]): Promise<void>;
 
   /**
-   * Send single event to destination (from AnalyticsAdapter)
+   * Send single event to destination (from EventSubscriber)
    *
    * This buffers events and sends in batches for performance.
    * Override sendBatch() instead of this method.
    */
-  protected async sendToDestination(payload: AdapterPayload): Promise<void> {
+  protected async sendToDestination(payload: EventPayload): Promise<void> {
     // Check buffer capacity before adding
     await this.ensureBufferCapacity();
 
@@ -303,7 +303,7 @@ export abstract class StreamingAnalyticsAdapter extends AnalyticsAdapter {
     await super.shutdown();
 
     // THEN flush remaining buffer
-    // (no new events can arrive after super.shutdown() disabled the adapter)
+    // (no new events can arrive after super.shutdown() disabled the subscriber)
     await this.flushBuffer();
   }
 

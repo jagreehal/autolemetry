@@ -1,18 +1,22 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
-import { SegmentAdapter } from './segment';
+import { SegmentSubscriber } from './segment';
 
 // Mock the @segment/analytics-node module
 const mockTrack = vi.fn();
 const mockCloseAndFlush = vi.fn(() => Promise.resolve());
 
+// Create a mock Analytics class that returns instances with mocked methods
+const MockAnalytics = vi.fn(function(this: any) {
+  this.track = mockTrack;
+  this.closeAndFlush = mockCloseAndFlush;
+  return this;
+});
+
 vi.mock('@segment/analytics-node', () => ({
-  Analytics: vi.fn(function(this: any) {
-    this.track = mockTrack;
-    this.closeAndFlush = mockCloseAndFlush;
-  }),
+  Analytics: MockAnalytics,
 }));
 
-describe('SegmentAdapter', () => {
+describe('SegmentSubscriber', () => {
   beforeEach(() => {
     mockTrack.mockClear();
     mockCloseAndFlush.mockClear();
@@ -20,7 +24,7 @@ describe('SegmentAdapter', () => {
 
   describe('initialization', () => {
     it('should initialize with valid config', async () => {
-      const adapter = new SegmentAdapter({
+      const adapter = new SegmentSubscriber({
         writeKey: 'test_write_key',
       });
 
@@ -30,7 +34,7 @@ describe('SegmentAdapter', () => {
     });
 
     it('should not initialize when disabled', () => {
-      const adapter = new SegmentAdapter({
+      const adapter = new SegmentSubscriber({
         writeKey: 'test_write_key',
         enabled: false,
       });
@@ -41,8 +45,7 @@ describe('SegmentAdapter', () => {
 
   describe('trackEvent', () => {
     it('should track event with attributes', async () => {
-      const { Analytics } = await import('@segment/analytics-node');
-      const adapter = new SegmentAdapter({
+      const adapter = new SegmentSubscriber({
         writeKey: 'test_write_key',
       });
 
@@ -55,8 +58,7 @@ describe('SegmentAdapter', () => {
 
       await new Promise((resolve) => setTimeout(resolve, 100));
 
-      const mockInstance = (Analytics as any).mock.results[0].value;
-      expect(mockInstance.track).toHaveBeenCalledWith({
+      expect(mockTrack).toHaveBeenCalledWith({
         userId: 'user-123',
         event: 'order.completed',
         properties: {
@@ -67,8 +69,7 @@ describe('SegmentAdapter', () => {
     });
 
     it('should use user_id if userId is not present', async () => {
-      const { Analytics } = await import('@segment/analytics-node');
-      const adapter = new SegmentAdapter({
+      const adapter = new SegmentSubscriber({
         writeKey: 'test_write_key',
       });
 
@@ -80,8 +81,7 @@ describe('SegmentAdapter', () => {
 
       await new Promise((resolve) => setTimeout(resolve, 100));
 
-      const mockInstance = (Analytics as any).mock.results[0].value;
-      expect(mockInstance.track).toHaveBeenCalledWith({
+      expect(mockTrack).toHaveBeenCalledWith({
         userId: 'user-456',
         event: 'order.completed',
         properties: {
@@ -91,8 +91,7 @@ describe('SegmentAdapter', () => {
     });
 
     it('should use anonymous if no userId is present', async () => {
-      const { Analytics } = await import('@segment/analytics-node');
-      const adapter = new SegmentAdapter({
+      const adapter = new SegmentSubscriber({
         writeKey: 'test_write_key',
       });
 
@@ -102,8 +101,7 @@ describe('SegmentAdapter', () => {
 
       await new Promise((resolve) => setTimeout(resolve, 100));
 
-      const mockInstance = (Analytics as any).mock.results[0].value;
-      expect(mockInstance.track).toHaveBeenCalledWith({
+      expect(mockTrack).toHaveBeenCalledWith({
         userId: 'anonymous',
         event: 'page.viewed',
         properties: undefined,
@@ -111,7 +109,7 @@ describe('SegmentAdapter', () => {
     });
 
     it('should not track when disabled', async () => {
-      const adapter = new SegmentAdapter({
+      const adapter = new SegmentSubscriber({
         writeKey: 'test_write_key',
         enabled: false,
       });
@@ -125,8 +123,7 @@ describe('SegmentAdapter', () => {
 
   describe('trackFunnelStep', () => {
     it('should track funnel step', async () => {
-      const { Analytics } = await import('@segment/analytics-node');
-      const adapter = new SegmentAdapter({
+      const adapter = new SegmentSubscriber({
         writeKey: 'test_write_key',
       });
 
@@ -139,8 +136,7 @@ describe('SegmentAdapter', () => {
 
       await new Promise((resolve) => setTimeout(resolve, 100));
 
-      const mockInstance = (Analytics as any).mock.results[0].value;
-      expect(mockInstance.track).toHaveBeenCalledWith({
+      expect(mockTrack).toHaveBeenCalledWith({
         userId: 'user-123',
         event: 'checkout.started',
         properties: {
@@ -155,8 +151,7 @@ describe('SegmentAdapter', () => {
 
   describe('trackOutcome', () => {
     it('should track outcome', async () => {
-      const { Analytics } = await import('@segment/analytics-node');
-      const adapter = new SegmentAdapter({
+      const adapter = new SegmentSubscriber({
         writeKey: 'test_write_key',
       });
 
@@ -169,8 +164,7 @@ describe('SegmentAdapter', () => {
 
       await new Promise((resolve) => setTimeout(resolve, 100));
 
-      const mockInstance = (Analytics as any).mock.results[0].value;
-      expect(mockInstance.track).toHaveBeenCalledWith({
+      expect(mockTrack).toHaveBeenCalledWith({
         userId: 'user-123',
         event: 'payment.processing.success',
         properties: {
@@ -185,8 +179,7 @@ describe('SegmentAdapter', () => {
 
   describe('trackValue', () => {
     it('should track value', async () => {
-      const { Analytics } = await import('@segment/analytics-node');
-      const adapter = new SegmentAdapter({
+      const adapter = new SegmentSubscriber({
         writeKey: 'test_write_key',
       });
 
@@ -199,8 +192,7 @@ describe('SegmentAdapter', () => {
 
       await new Promise((resolve) => setTimeout(resolve, 100));
 
-      const mockInstance = (Analytics as any).mock.results[0].value;
-      expect(mockInstance.track).toHaveBeenCalledWith({
+      expect(mockTrack).toHaveBeenCalledWith({
         userId: 'user-123',
         event: 'revenue',
         properties: {
@@ -213,21 +205,19 @@ describe('SegmentAdapter', () => {
   });
 
   describe('shutdown', () => {
-    it('should call closeAndFlush on Analytics instance', async () => {
-      const { Analytics } = await import('@segment/analytics-node');
-      const adapter = new SegmentAdapter({
+    it('should call closeAndFlush on Events instance', async () => {
+      const adapter = new SegmentSubscriber({
         writeKey: 'test_write_key',
       });
 
       await new Promise((resolve) => setTimeout(resolve, 100));
       await adapter.shutdown();
 
-      const mockInstance = (Analytics as any).mock.results[0].value;
-      expect(mockInstance.closeAndFlush).toHaveBeenCalled();
+      expect(mockCloseAndFlush).toHaveBeenCalled();
     });
 
     it('should not throw when shutting down disabled adapter', async () => {
-      const adapter = new SegmentAdapter({
+      const adapter = new SegmentSubscriber({
         writeKey: 'test_write_key',
         enabled: false,
       });

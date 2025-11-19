@@ -5,11 +5,11 @@
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 import { flush, shutdown } from './shutdown';
 import { init } from './init';
-import { track, getAnalyticsQueue } from './track';
-import type { AnalyticsAdapter } from './analytics-adapter';
+import { track, getEventQueue } from './track';
+import type { EventSubscriber } from './events-adapter';
 
 // Mock adapter for testing
-class MockAdapter implements AnalyticsAdapter {
+class MockAdapter implements EventSubscriber {
   name = 'mock-adapter';
   public events: Array<{ name: string; attributes?: Record<string, unknown> }> =
     [];
@@ -41,18 +41,18 @@ describe('shutdown module', () => {
 
   afterEach(async () => {
     // Clean up after each test
-    const queue = getAnalyticsQueue();
+    const queue = getEventQueue();
     if (queue) {
       await queue.flush();
     }
   });
 
   describe('flush()', () => {
-    it('should flush analytics queue', async () => {
+    it('should flush events queue', async () => {
       // Initialize with adapter
       init({
         service: 'test-service',
-        adapters: [mockAdapter],
+        subscribers: [mockAdapter],
       });
 
       // Track events
@@ -60,7 +60,7 @@ describe('shutdown module', () => {
       track('test.event2', { baz: 'qux' });
 
       // Events should be in queue
-      const queue = getAnalyticsQueue();
+      const queue = getEventQueue();
       expect(queue?.size()).toBeGreaterThan(0);
 
       // Flush
@@ -73,7 +73,7 @@ describe('shutdown module', () => {
     it('should be safe to call multiple times', async () => {
       init({
         service: 'test-service',
-        adapters: [mockAdapter],
+        subscribers: [mockAdapter],
       });
 
       track('test.event', { data: 'value' });
@@ -83,10 +83,10 @@ describe('shutdown module', () => {
       await flush();
 
       // Should not throw
-      expect(getAnalyticsQueue()?.size()).toBe(0);
+      expect(getEventQueue()?.size()).toBe(0);
     });
 
-    it('should be no-op if no analytics queue initialized', async () => {
+    it('should be no-op if no events queue initialized', async () => {
       init({ service: 'test-service' }); // No adapters
 
       await expect(flush()).resolves.toBeUndefined();
@@ -107,7 +107,7 @@ describe('shutdown module', () => {
       init({
         service: 'test-service',
         sdkFactory: () => mockSdk as any,
-        adapters: [mockAdapter],
+        subscribers: [mockAdapter],
       });
 
       // Flush should call tracer provider's forceFlush
@@ -137,7 +137,7 @@ describe('shutdown module', () => {
       init({
         service: 'test-service',
         sdkFactory: () => mockSdk as any,
-        adapters: [mockAdapter],
+        subscribers: [mockAdapter],
       });
 
       // Flush should timeout and throw
@@ -206,7 +206,7 @@ describe('shutdown module', () => {
     it('should flush and shutdown SDK', async () => {
       init({
         service: 'test-service',
-        adapters: [mockAdapter],
+        subscribers: [mockAdapter],
       });
 
       track('test.event', { foo: 'bar' });
@@ -215,14 +215,14 @@ describe('shutdown module', () => {
       await shutdown();
 
       // After shutdown, queue should be null (cleaned up to prevent memory leaks)
-      const queue = getAnalyticsQueue();
+      const queue = getEventQueue();
       expect(queue).toBeNull();
     });
 
     it('should be safe to call multiple times', async () => {
       init({
         service: 'test-service',
-        adapters: [mockAdapter],
+        subscribers: [mockAdapter],
       });
 
       await shutdown();
@@ -235,12 +235,12 @@ describe('shutdown module', () => {
     it('should flush before SDK shutdown', async () => {
       init({
         service: 'test-service',
-        adapters: [mockAdapter],
+        subscribers: [mockAdapter],
       });
 
       track('test.event', { foo: 'bar' });
 
-      const queue = getAnalyticsQueue();
+      const queue = getEventQueue();
       const queueSizeBefore = queue?.size() || 0;
       expect(queueSizeBefore).toBeGreaterThan(0);
 
@@ -252,7 +252,7 @@ describe('shutdown module', () => {
     });
 
     it('should handle errors during shutdown gracefully', async () => {
-      const failingAdapter: AnalyticsAdapter = {
+      const failingAdapter: EventSubscriber = {
         name: 'failing-adapter',
         trackEvent: vi.fn(),
         trackFunnelStep: vi.fn(),
@@ -263,7 +263,7 @@ describe('shutdown module', () => {
 
       init({
         service: 'test-service',
-        adapters: [failingAdapter],
+        subscribers: [failingAdapter],
       });
 
       // Should not throw even if adapter shutdown fails
@@ -275,13 +275,13 @@ describe('shutdown module', () => {
     it('should properly shutdown in correct order', async () => {
       init({
         service: 'test-service',
-        adapters: [mockAdapter],
+        subscribers: [mockAdapter],
       });
 
       track('user.signup', { userId: '123' });
       track('order.completed', { orderId: '456' });
 
-      const queue = getAnalyticsQueue();
+      const queue = getEventQueue();
       expect(queue?.size()).toBeGreaterThan(0);
 
       // Shutdown should flush all pending events
@@ -294,11 +294,11 @@ describe('shutdown module', () => {
     it('should work with no events to flush', async () => {
       init({
         service: 'test-service',
-        adapters: [mockAdapter],
+        subscribers: [mockAdapter],
       });
 
       // No events tracked
-      const queue = getAnalyticsQueue();
+      const queue = getEventQueue();
       const queueSize = queue?.size() || 0;
       expect(queueSize).toBe(0);
 

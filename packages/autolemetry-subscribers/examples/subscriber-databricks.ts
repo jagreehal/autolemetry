@@ -1,7 +1,7 @@
 /**
- * Databricks Adapter Example
+ * Databricks Subscriber Example
  *
- * Sends analytics events to Databricks Delta Lake via REST API.
+ * Sends events events to Databricks Delta Lake via REST API.
  * This is a complete, production-ready implementation.
  *
  * Installation:
@@ -11,7 +11,7 @@
  *
  * Setup Databricks table:
  * ```sql
- * CREATE TABLE analytics.events (
+ * CREATE TABLE events.events (
  *   event_id STRING NOT NULL,
  *   event_type STRING NOT NULL,
  *   event_name STRING NOT NULL,
@@ -39,32 +39,32 @@
  *
  * Usage:
  * ```typescript
- * import { Analytics } from 'autolemetry/analytics';
- * import { DatabricksAdapter } from './adapter-databricks';
+ * import { Events } from 'autolemetry/events';
+ * import { DatabricksSubscriber } from './adapter-databricks';
  *
- * const analytics = new Analytics('app', {
- *   adapters: [
- *     new DatabricksAdapter({
+ * const events = new Events('app', {
+ *   subscribers: [
+ *     new DatabricksSubscriber({
  *       host: 'https://dbc-1234567-890.cloud.databricks.com',
  *       token: process.env.DATABRICKS_TOKEN!,
  *       catalog: 'main',
- *       schema: 'analytics',
+ *       schema: 'events',
  *       table: 'events',
  *       warehouseId: 'abc123def456' // SQL warehouse ID
  *     })
  *   ]
  * });
  *
- * analytics.trackEvent('order.completed', { orderId: 'ord_123', amount: 99.99 });
+ * events.trackEvent('order.completed', { orderId: 'ord_123', amount: 99.99 });
  * ```
  */
 
 import {
-  AnalyticsAdapter,
-  type AdapterPayload,
-} from '../src/analytics-adapter-base';
+  EventSubscriber,
+  type EventPayload,
+} from '../src/event-subscriber-base';
 
-export interface DatabricksAdapterConfig {
+export interface DatabricksSubscriberConfig {
   /** Databricks workspace URL (e.g., 'https://dbc-1234567-890.cloud.databricks.com') */
   host: string;
   /** Personal Access Token */
@@ -77,7 +77,7 @@ export interface DatabricksAdapterConfig {
   table: string;
   /** SQL Warehouse ID (for SQL execution) */
   warehouseId: string;
-  /** Enable/disable adapter */
+  /** Enable/disable subscriber */
   enabled?: boolean;
   /** Batch size (default: 200) */
   batchSize?: number;
@@ -94,15 +94,15 @@ interface SQLExecutionResponse {
   };
 }
 
-export class DatabricksAdapter extends AnalyticsAdapter {
-  readonly name = 'DatabricksAdapter';
+export class DatabricksSubscriber extends EventSubscriber {
+  readonly name = 'DatabricksSubscriber';
   readonly version = '1.0.0';
 
-  private config: Required<DatabricksAdapterConfig>;
-  private buffer: AdapterPayload[] = [];
+  private config: Required<DatabricksSubscriberConfig>;
+  private buffer: EventPayload[] = [];
   private flushIntervalHandle: NodeJS.Timeout | null = null;
 
-  constructor(config: DatabricksAdapterConfig) {
+  constructor(config: DatabricksSubscriberConfig) {
     super();
 
     // Set defaults
@@ -128,7 +128,7 @@ export class DatabricksAdapter extends AnalyticsAdapter {
     }, this.config.flushInterval);
   }
 
-  protected async sendToDestination(payload: AdapterPayload): Promise<void> {
+  protected async sendToDestination(payload: EventPayload): Promise<void> {
     this.buffer.push(payload);
 
     // Auto-flush at batch size
@@ -146,13 +146,13 @@ export class DatabricksAdapter extends AnalyticsAdapter {
     try {
       await this.insertBatch(batch);
     } catch (error) {
-      console.error('[DatabricksAdapter] Failed to flush batch:', error);
+      console.error('[DatabricksSubscriber] Failed to flush batch:', error);
       // Re-add to buffer for retry
       this.buffer.unshift(...batch);
     }
   }
 
-  private async insertBatch(events: AdapterPayload[]): Promise<void> {
+  private async insertBatch(events: EventPayload[]): Promise<void> {
     // Build VALUES clause
     const values = events
       .map((event) => {
@@ -232,9 +232,9 @@ export class DatabricksAdapter extends AnalyticsAdapter {
     return value.replaceAll('\'', "''");
   }
 
-  protected handleError(error: Error, payload: AdapterPayload): void {
+  protected handleError(error: Error, payload: EventPayload): void {
     console.error(
-      `[DatabricksAdapter] Failed to send ${payload.type}:`,
+      `[DatabricksSubscriber] Failed to send ${payload.type}:`,
       error,
       {
         eventName: payload.name,
@@ -245,19 +245,19 @@ export class DatabricksAdapter extends AnalyticsAdapter {
     // Databricks-specific error handling
     if (error.message.includes('401')) {
       console.error(
-        '[DatabricksAdapter] Authentication failed - check your token'
+        '[DatabricksSubscriber] Authentication failed - check your token'
       );
     }
 
     if (error.message.includes('warehouse')) {
       console.error(
-        '[DatabricksAdapter] SQL warehouse error - check warehouse ID and status'
+        '[DatabricksSubscriber] SQL warehouse error - check warehouse ID and status'
       );
     }
 
     if (error.message.includes('timeout')) {
       console.error(
-        '[DatabricksAdapter] Timeout - consider increasing timeout or reducing batch size'
+        '[DatabricksSubscriber] Timeout - consider increasing timeout or reducing batch size'
       );
     }
   }
@@ -275,6 +275,6 @@ export class DatabricksAdapter extends AnalyticsAdapter {
     // Wait for pending requests
     await super.shutdown();
 
-    console.log('[DatabricksAdapter] Shutdown complete');
+    console.log('[DatabricksSubscriber] Shutdown complete');
   }
 }

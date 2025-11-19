@@ -1,5 +1,5 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
-import { PostHogAdapter } from './posthog';
+import { PostHogSubscriber } from './posthog';
 import type { PostHog } from 'posthog-node';
 
 // Mock the posthog-node module
@@ -29,7 +29,7 @@ vi.mock('posthog-node', () => ({
   }),
 }));
 
-describe('PostHogAdapter', () => {
+describe('PostHogSubscriber', () => {
   beforeEach(() => {
     mockCapture.mockClear();
     mockShutdown.mockClear();
@@ -45,7 +45,7 @@ describe('PostHogAdapter', () => {
 
   describe('initialization', () => {
     it('should initialize with valid config', async () => {
-      const adapter = new PostHogAdapter({
+      const adapter = new PostHogSubscriber({
         apiKey: 'phc_test_key',
         host: 'https://us.i.posthog.com',
       });
@@ -57,7 +57,7 @@ describe('PostHogAdapter', () => {
     });
 
     it('should initialize with default host', async () => {
-      const adapter = new PostHogAdapter({
+      const adapter = new PostHogSubscriber({
         apiKey: 'phc_test_key',
       });
 
@@ -67,7 +67,7 @@ describe('PostHogAdapter', () => {
     });
 
     it('should not initialize when disabled', () => {
-      const adapter = new PostHogAdapter({
+      const adapter = new PostHogSubscriber({
         apiKey: 'phc_test_key',
         enabled: false,
       });
@@ -81,7 +81,7 @@ describe('PostHogAdapter', () => {
         shutdown: mockShutdown,
       } as unknown as PostHog;
 
-      const adapter = new PostHogAdapter({
+      const adapter = new PostHogSubscriber({
         client: customClient,
       });
 
@@ -91,14 +91,14 @@ describe('PostHogAdapter', () => {
     });
 
     it('should throw if no apiKey and no client provided', () => {
-      expect(() => new PostHogAdapter({})).toThrow(
-        'PostHogAdapter requires either apiKey or client to be provided',
+      expect(() => new PostHogSubscriber({})).toThrow(
+        'PostHogSubscriber requires either apiKey or client to be provided',
       );
     });
 
     it('should setup error handling when onError is provided', async () => {
       const onError = vi.fn();
-      const adapter = new PostHogAdapter({
+      const adapter = new PostHogSubscriber({
         apiKey: 'phc_test_key',
         onError,
       });
@@ -110,7 +110,7 @@ describe('PostHogAdapter', () => {
     });
 
     it('should enable debug mode when debug is true', async () => {
-      const adapter = new PostHogAdapter({
+      const adapter = new PostHogSubscriber({
         apiKey: 'phc_test_key',
         debug: true,
       });
@@ -124,7 +124,7 @@ describe('PostHogAdapter', () => {
     it('should pass serverless config options', async () => {
       const { PostHog } = await import('posthog-node');
 
-      const adapter = new PostHogAdapter({
+      const adapter = new PostHogSubscriber({
         apiKey: 'phc_test_key',
         flushAt: 1,
         flushInterval: 0,
@@ -149,7 +149,7 @@ describe('PostHogAdapter', () => {
 
   describe('trackEvent', () => {
     it('should track event with attributes', async () => {
-      const adapter = new PostHogAdapter({
+      const adapter = new PostHogSubscriber({
         apiKey: 'phc_test_key',
       });
 
@@ -173,7 +173,7 @@ describe('PostHogAdapter', () => {
     });
 
     it('should use user_id if userId is not present', async () => {
-      const adapter = new PostHogAdapter({
+      const adapter = new PostHogSubscriber({
         apiKey: 'phc_test_key',
       });
 
@@ -195,7 +195,7 @@ describe('PostHogAdapter', () => {
     });
 
     it('should use anonymous if no userId is present', async () => {
-      const adapter = new PostHogAdapter({
+      const adapter = new PostHogSubscriber({
         apiKey: 'phc_test_key',
       });
 
@@ -213,7 +213,7 @@ describe('PostHogAdapter', () => {
     });
 
     it('should not track when disabled', async () => {
-      const adapter = new PostHogAdapter({
+      const adapter = new PostHogSubscriber({
         apiKey: 'phc_test_key',
         enabled: false,
       });
@@ -225,7 +225,7 @@ describe('PostHogAdapter', () => {
     });
 
     it('should include groups in capture payload', async () => {
-      const adapter = new PostHogAdapter({
+      const adapter = new PostHogSubscriber({
         apiKey: 'phc_test_key',
       });
 
@@ -252,7 +252,7 @@ describe('PostHogAdapter', () => {
 
   describe('trackFunnelStep', () => {
     it('should track funnel step', async () => {
-      const adapter = new PostHogAdapter({
+      const adapter = new PostHogSubscriber({
         apiKey: 'phc_test_key',
       });
 
@@ -280,7 +280,7 @@ describe('PostHogAdapter', () => {
 
   describe('trackOutcome', () => {
     it('should track outcome', async () => {
-      const adapter = new PostHogAdapter({
+      const adapter = new PostHogSubscriber({
         apiKey: 'phc_test_key',
       });
 
@@ -308,7 +308,7 @@ describe('PostHogAdapter', () => {
 
   describe('trackValue', () => {
     it('should track value', async () => {
-      const adapter = new PostHogAdapter({
+      const adapter = new PostHogSubscriber({
         apiKey: 'phc_test_key',
       });
 
@@ -339,7 +339,7 @@ describe('PostHogAdapter', () => {
     it('should check if feature is enabled', async () => {
       mockIsFeatureEnabled.mockResolvedValue(true);
 
-      const adapter = new PostHogAdapter({
+      const adapter = new PostHogSubscriber({
         apiKey: 'phc_test_key',
       });
 
@@ -354,7 +354,7 @@ describe('PostHogAdapter', () => {
     it('should check feature with options', async () => {
       mockIsFeatureEnabled.mockResolvedValue(true);
 
-      const adapter = new PostHogAdapter({
+      const adapter = new PostHogSubscriber({
         apiKey: 'phc_test_key',
       });
 
@@ -374,7 +374,7 @@ describe('PostHogAdapter', () => {
       mockIsFeatureEnabled.mockRejectedValue(new Error('Network error'));
       const onError = vi.fn();
 
-      const adapter = new PostHogAdapter({
+      const adapter = new PostHogSubscriber({
         apiKey: 'phc_test_key',
         onError,
       });
@@ -390,7 +390,7 @@ describe('PostHogAdapter', () => {
     it('should get feature flag value', async () => {
       mockGetFeatureFlag.mockResolvedValue('test-variant');
 
-      const adapter = new PostHogAdapter({
+      const adapter = new PostHogSubscriber({
         apiKey: 'phc_test_key',
       });
 
@@ -406,7 +406,7 @@ describe('PostHogAdapter', () => {
       const flags = { 'new-checkout': true, experiment: 'test' };
       mockGetAllFlags.mockResolvedValue(flags);
 
-      const adapter = new PostHogAdapter({
+      const adapter = new PostHogSubscriber({
         apiKey: 'phc_test_key',
       });
 
@@ -419,7 +419,7 @@ describe('PostHogAdapter', () => {
     });
 
     it('should reload feature flags', async () => {
-      const adapter = new PostHogAdapter({
+      const adapter = new PostHogSubscriber({
         apiKey: 'phc_test_key',
       });
 
@@ -431,7 +431,7 @@ describe('PostHogAdapter', () => {
     });
 
     it('should not call feature flags when disabled', async () => {
-      const adapter = new PostHogAdapter({
+      const adapter = new PostHogSubscriber({
         apiKey: 'phc_test_key',
         enabled: false,
       });
@@ -451,9 +451,9 @@ describe('PostHogAdapter', () => {
     });
   });
 
-  describe('person and group analytics', () => {
+  describe('person and group events', () => {
     it('should identify user with properties', async () => {
-      const adapter = new PostHogAdapter({
+      const adapter = new PostHogSubscriber({
         apiKey: 'phc_test_key',
       });
 
@@ -478,7 +478,7 @@ describe('PostHogAdapter', () => {
     });
 
     it('should identify user with $set_once', async () => {
-      const adapter = new PostHogAdapter({
+      const adapter = new PostHogSubscriber({
         apiKey: 'phc_test_key',
       });
 
@@ -501,7 +501,7 @@ describe('PostHogAdapter', () => {
     });
 
     it('should identify group', async () => {
-      const adapter = new PostHogAdapter({
+      const adapter = new PostHogSubscriber({
         apiKey: 'phc_test_key',
       });
 
@@ -529,7 +529,7 @@ describe('PostHogAdapter', () => {
     });
 
     it('should track event with groups', async () => {
-      const adapter = new PostHogAdapter({
+      const adapter = new PostHogSubscriber({
         apiKey: 'phc_test_key',
       });
 
@@ -539,7 +539,7 @@ describe('PostHogAdapter', () => {
         'feature.used',
         {
           userId: 'user-123',
-          feature: 'analytics',
+          feature: 'events',
         },
         { company: 'acme-corp' },
       );
@@ -551,7 +551,7 @@ describe('PostHogAdapter', () => {
         event: 'feature.used',
         properties: {
           userId: 'user-123',
-          feature: 'analytics',
+          feature: 'events',
           groups: { company: 'acme-corp' },
         },
         groups: { company: 'acme-corp' },
@@ -564,7 +564,7 @@ describe('PostHogAdapter', () => {
       });
 
       const onError = vi.fn();
-      const adapter = new PostHogAdapter({
+      const adapter = new PostHogSubscriber({
         apiKey: 'phc_test_key',
         onError,
       });
@@ -577,7 +577,7 @@ describe('PostHogAdapter', () => {
     });
 
     it('should not call identify when disabled', async () => {
-      const adapter = new PostHogAdapter({
+      const adapter = new PostHogSubscriber({
         apiKey: 'phc_test_key',
         enabled: false,
       });
@@ -592,7 +592,7 @@ describe('PostHogAdapter', () => {
 
   describe('shutdown', () => {
     it('should call shutdown on PostHog instance', async () => {
-      const adapter = new PostHogAdapter({
+      const adapter = new PostHogSubscriber({
         apiKey: 'phc_test_key',
       });
 
@@ -603,7 +603,7 @@ describe('PostHogAdapter', () => {
     });
 
     it('should not throw when shutting down disabled adapter', async () => {
-      const adapter = new PostHogAdapter({
+      const adapter = new PostHogSubscriber({
         apiKey: 'phc_test_key',
         enabled: false,
       });
@@ -615,7 +615,7 @@ describe('PostHogAdapter', () => {
       mockShutdown.mockRejectedValue(new Error('Shutdown error'));
       const onError = vi.fn();
 
-      const adapter = new PostHogAdapter({
+      const adapter = new PostHogSubscriber({
         apiKey: 'phc_test_key',
         onError,
       });

@@ -11,7 +11,7 @@
  * - R2 (object storage operations)
  * - D1 (database operations)
  * - Service Bindings
- * - Analytics Engine
+ * - Events Engine
  * - Workers AI
  * - Vectorize
  * - Hyperdrive
@@ -610,7 +610,7 @@ export function instrumentBindings(env: Record<string, any>): Record<string, any
       }
     }
     
-    // For other bindings (Analytics Engine, Workers AI, Vectorize, Hyperdrive),
+    // For other bindings (Events Engine, Workers AI, Vectorize, Hyperdrive),
     // they don't have standard interfaces we can detect, so we pass them through
     // Users can manually instrument them if needed
     instrumented[key] = value;

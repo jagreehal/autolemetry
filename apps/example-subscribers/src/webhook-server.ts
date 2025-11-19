@@ -1,10 +1,10 @@
 /**
- * Demonstrates the autolemetry WebhookAdapter with two separate servers.
+ * Demonstrates the autolemetry WebhookSubscriber with two separate servers.
  *
  * Architecture:
  * - Webhook Receiver Server (port 4101): Receives webhook POSTs at `/webhook`
- * - Trigger Server (port 4100): Has `/trigger` endpoint that sends analytics events
- *   through the WebhookAdapter, which POSTs to the receiver server
+ * - Trigger Server (port 4100): Has `/trigger` endpoint that sends events events
+ *   through the WebhookSubscriber, which POSTs to the receiver server
  *
  * This two-server approach avoids the self-referential deadlock that would occur
  * if a single server tried to POST to itself while handling a request.
@@ -23,9 +23,9 @@ import 'dotenv/config';
 import pino from 'pino';
 
 import { init, shutdown } from 'autolemetry';
-import { Analytics } from 'autolemetry/analytics';
+import { Event } from 'autolemetry/event';
 import { trace } from 'autolemetry/functional';
-import { WebhookAdapter } from 'autolemetry-adapters/webhook';
+import { WebhookSubscriber } from 'autolemetry-subscribers/webhook';
 
 const logger = pino({
   name: 'example-webhook-server',
@@ -66,15 +66,15 @@ init({
   logger,
 });
 
-const webhookAdapter = new WebhookAdapter({
+const webhookSubscriber = new WebhookSubscriber({
   url: webhookReceiverUrl,
   headers: {
     'x-example-webhook-secret': webhookSecret,
   },
 });
 
-const analytics = new Analytics('example-adapters-webhook', {
-  adapters: [webhookAdapter],
+const events = new Event('example-adapters-webhook', {
+  subscribers: [webhookSubscriber],
   logger,
 });
 
@@ -108,7 +108,7 @@ async function parseJson<T>(req: IncomingMessage): Promise<T | undefined> {
   }
 }
 
-// Webhook Receiver Server - receives webhook POSTs from the WebhookAdapter
+// Webhook Receiver Server - receives webhook POSTs from the WebhookSubscriber
 const receiverServer = createServer(async (req, res) => {
   const method = req.method ?? 'GET';
   const url = (req.url ?? '/').split('?')[0];
@@ -148,7 +148,7 @@ const receiverServer = createServer(async (req, res) => {
   res.end(JSON.stringify({ ok: false, error: 'not_found' }));
 });
 
-// Trigger Server - sends analytics events through WebhookAdapter
+// Trigger Server - sends events events through WebhookSubscriber
 const triggerServer = createServer(async (req, res) => {
   const method = req.method ?? 'GET';
   const url = (req.url ?? '/').split('?')[0];
@@ -161,7 +161,7 @@ const triggerServer = createServer(async (req, res) => {
   }
 
   if (method === 'POST' && url === triggerPath) {
-    // Wrap in traced function to automatically capture traceId/spanId in analytics events
+    // Wrap in traced function to automatically capture traceId/spanId in events events
     await trace('webhook.trigger', async () => {
       const payload = (await parseJson<TriggerPayload>(req)) ?? {};
       const name =
@@ -182,17 +182,17 @@ const triggerServer = createServer(async (req, res) => {
           event: name,
           attributes,
         },
-        '📤 Trigger Server: Sending analytics event via WebhookAdapter',
+        '📤 Trigger Server: Sending events event via WebhookSubscriber',
       );
 
-      analytics.trackEvent(name, {
+      events.trackEvent(name, {
         ...attributes,
         triggerSource: 'example-basic-webhook',
       });
 
-      // Flush the analytics queue to ensure the event is sent immediately
-      // The analytics queue processes events asynchronously, so we need to wait
-      await analytics.flush();
+      // Flush the events queue to ensure the event is sent immediately
+      // The events queue processes events asynchronously, so we need to wait
+      await events.flush();
 
       res.statusCode = 202;
       res.setHeader('Content-Type', 'application/json');
@@ -243,8 +243,8 @@ triggerServer.listen(triggerPort, () => {
   // Kick off an initial demo event after both servers are ready
   setTimeout(() => {
     void trace('webhook.demo.init', async () => {
-      logger.info('📤 Sending initial demo analytics event...');
-      analytics.trackEvent('webhook.demo.started', {
+      logger.info('📤 Sending initial demo events event...');
+      events.trackEvent('webhook.demo.started', {
         startedAt: new Date().toISOString(),
       });
     });
@@ -254,7 +254,7 @@ triggerServer.listen(triggerPort, () => {
 async function closeGracefully(signal: NodeJS.Signals): Promise<void> {
   logger.info({ signal }, 'Received shutdown signal');
 
-  await webhookAdapter.shutdown();
+  await webhookSubscriber.shutdown();
   await shutdown().catch((error) => {
     logger.warn({ error }, 'Failed to flush autolemetry on shutdown');
   });

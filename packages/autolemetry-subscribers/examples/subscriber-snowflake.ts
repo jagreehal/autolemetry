@@ -1,7 +1,7 @@
 /**
- * Snowflake Adapter Example
+ * Snowflake Subscriber Example
  *
- * Sends analytics events to Snowflake data warehouse.
+ * Sends events events to Snowflake data warehouse.
  * This is a complete, production-ready implementation.
  *
  * Installation:
@@ -11,7 +11,7 @@
  *
  * Setup Snowflake table:
  * ```sql
- * CREATE TABLE analytics_events (
+ * CREATE TABLE events_events (
  *   event_id VARCHAR(36) PRIMARY KEY,
  *   event_type VARCHAR(50) NOT NULL,
  *   event_name VARCHAR(255) NOT NULL,
@@ -25,41 +25,41 @@
  *   created_at TIMESTAMP_NTZ DEFAULT CURRENT_TIMESTAMP()
  * );
  *
- * CREATE INDEX idx_event_type ON analytics_events(event_type);
- * CREATE INDEX idx_event_name ON analytics_events(event_name);
- * CREATE INDEX idx_timestamp ON analytics_events(timestamp);
+ * CREATE INDEX idx_event_type ON events_events(event_type);
+ * CREATE INDEX idx_event_name ON events_events(event_name);
+ * CREATE INDEX idx_timestamp ON events_events(timestamp);
  * ```
  *
  * Usage:
  * ```typescript
- * import { Analytics } from 'autolemetry/analytics';
- * import { SnowflakeAdapter } from './adapter-snowflake';
+ * import { Events } from 'autolemetry/events';
+ * import { SnowflakeSubscriber } from './adapter-snowflake';
  *
- * const analytics = new Analytics('app', {
- *   adapters: [
- *     new SnowflakeAdapter({
+ * const events = new Events('app', {
+ *   subscribers: [
+ *     new SnowflakeSubscriber({
  *       account: 'xy12345.us-east-1',
  *       username: process.env.SNOWFLAKE_USER!,
  *       password: process.env.SNOWFLAKE_PASS!,
  *       database: 'ANALYTICS',
  *       schema: 'PUBLIC',
  *       warehouse: 'COMPUTE_WH',
- *       table: 'analytics_events'
+ *       table: 'events_events'
  *     })
  *   ]
  * });
  *
- * analytics.trackEvent('order.completed', { orderId: 'ord_123', amount: 99.99 });
+ * events.trackEvent('order.completed', { orderId: 'ord_123', amount: 99.99 });
  * ```
  */
 
 import {
-  AnalyticsAdapter,
-  type AdapterPayload,
-} from '../src/analytics-adapter-base';
+  EventSubscriber,
+  type EventPayload,
+} from '../src/event-subscriber-base';
 import snowflake from 'snowflake-sdk';
 
-export interface SnowflakeAdapterConfig {
+export interface SnowflakeSubscriberConfig {
   /** Snowflake account (e.g., 'xy12345.us-east-1') */
   account: string;
   /** Username */
@@ -72,9 +72,9 @@ export interface SnowflakeAdapterConfig {
   schema?: string;
   /** Warehouse name (default: 'COMPUTE_WH') */
   warehouse?: string;
-  /** Table name (default: 'analytics_events') */
+  /** Table name (default: 'events_events') */
   table?: string;
-  /** Enable/disable adapter */
+  /** Enable/disable subscriber */
   enabled?: boolean;
   /** Batch size (default: 100) */
   batchSize?: number;
@@ -82,23 +82,23 @@ export interface SnowflakeAdapterConfig {
   flushInterval?: number;
 }
 
-export class SnowflakeAdapter extends AnalyticsAdapter {
-  readonly name = 'SnowflakeAdapter';
+export class SnowflakeSubscriber extends EventSubscriber {
+  readonly name = 'SnowflakeSubscriber';
   readonly version = '1.0.0';
 
   private connection: snowflake.Connection;
-  private config: Required<SnowflakeAdapterConfig>;
-  private buffer: AdapterPayload[] = [];
+  private config: Required<SnowflakeSubscriberConfig>;
+  private buffer: EventPayload[] = [];
   private flushIntervalHandle: NodeJS.Timeout | null = null;
 
-  constructor(config: SnowflakeAdapterConfig) {
+  constructor(config: SnowflakeSubscriberConfig) {
     super();
 
     // Set defaults
     this.config = {
       schema: 'PUBLIC',
       warehouse: 'COMPUTE_WH',
-      table: 'analytics_events',
+      table: 'events_events',
       enabled: true,
       batchSize: 100,
       flushInterval: 10_000,
@@ -126,10 +126,10 @@ export class SnowflakeAdapter extends AnalyticsAdapter {
     // Connect asynchronously
     this.connection.connect((err) => {
       if (err) {
-        console.error('[SnowflakeAdapter] Failed to connect:', err);
+        console.error('[SnowflakeSubscriber] Failed to connect:', err);
         this.enabled = false;
       } else {
-        console.log('[SnowflakeAdapter] Connected successfully');
+        console.log('[SnowflakeSubscriber] Connected successfully');
       }
     });
   }
@@ -140,7 +140,7 @@ export class SnowflakeAdapter extends AnalyticsAdapter {
     }, this.config.flushInterval);
   }
 
-  protected async sendToDestination(payload: AdapterPayload): Promise<void> {
+  protected async sendToDestination(payload: EventPayload): Promise<void> {
     this.buffer.push(payload);
 
     // Auto-flush at batch size
@@ -158,13 +158,13 @@ export class SnowflakeAdapter extends AnalyticsAdapter {
     try {
       await this.insertBatch(batch);
     } catch (error) {
-      console.error('[SnowflakeAdapter] Failed to flush batch:', error);
+      console.error('[SnowflakeSubscriber] Failed to flush batch:', error);
       // Re-add to buffer for retry
       this.buffer.unshift(...batch);
     }
   }
 
-  private async insertBatch(events: AdapterPayload[]): Promise<void> {
+  private async insertBatch(events: EventPayload[]): Promise<void> {
     const sql = `
       INSERT INTO ${this.config.table}
       (event_id, event_type, event_name, attributes, funnel, step, operation, outcome, value, timestamp)
@@ -224,7 +224,7 @@ export class SnowflakeAdapter extends AnalyticsAdapter {
     if (this.connection) {
       this.connection.destroy((err) => {
         if (err) {
-          console.error('[SnowflakeAdapter] Error closing connection:', err);
+          console.error('[SnowflakeSubscriber] Error closing connection:', err);
         }
       });
     }

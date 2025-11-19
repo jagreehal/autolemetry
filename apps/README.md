@@ -34,7 +34,7 @@ Simple working examples demonstrating autolemetry functionality.
 
 ### Basic Example
 
-Demonstrates basic tracing, metrics, and analytics:
+Demonstrates basic tracing, metrics, and events:
 
 ```bash
 cd apps/example-basic
@@ -45,7 +45,7 @@ pnpm start
 **What it does:**
 - Creates traced functions with `trace()`
 - Tracks business metrics
-- Sends analytics events
+- Sends events events
 - Shows nested traces
 - Demonstrates error tracking
 

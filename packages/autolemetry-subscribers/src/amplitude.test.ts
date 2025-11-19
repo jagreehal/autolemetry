@@ -1,22 +1,33 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
-import { AmplitudeAdapter } from './amplitude';
+import { AmplitudeSubscriber } from './amplitude';
 
 // Mock the @amplitude/analytics-node module
-vi.mock('@amplitude/analytics-node', () => ({
-  init: vi.fn().mockReturnValue({
-    track: vi.fn(),
-    flush: vi.fn(() => Promise.resolve()),
-  }),
+const mockTrack = vi.fn();
+const mockTrackEvent = vi.fn();
+const mockFlush = vi.fn(() => Promise.resolve());
+
+// Create a mock init function that returns instances with mocked methods
+const mockInit = vi.fn(() => ({
+  track: mockTrack,
+  trackEvent: mockTrackEvent,
+  flush: mockFlush,
 }));
 
-describe('AmplitudeAdapter', () => {
+vi.mock('@amplitude/analytics-node', () => ({
+  init: mockInit,
+}));
+
+describe('AmplitudeSubscriber', () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    mockTrack.mockClear();
+    mockTrackEvent.mockClear();
+    mockFlush.mockClear();
   });
 
   describe('initialization', () => {
     it('should initialize with valid config', async () => {
-      const adapter = new AmplitudeAdapter({
+      const adapter = new AmplitudeSubscriber({
         apiKey: 'test_api_key',
       });
 
@@ -26,7 +37,7 @@ describe('AmplitudeAdapter', () => {
     });
 
     it('should not initialize when disabled', () => {
-      const adapter = new AmplitudeAdapter({
+      const adapter = new AmplitudeSubscriber({
         apiKey: 'test_api_key',
         enabled: false,
       });
@@ -37,22 +48,20 @@ describe('AmplitudeAdapter', () => {
 
   describe('trackEvent', () => {
     it('should track event with attributes', async () => {
-      const { init } = await import('@amplitude/analytics-node');
-      const adapter = new AmplitudeAdapter({
+      const adapter = new AmplitudeSubscriber({
         apiKey: 'test_api_key',
       });
 
       await new Promise((resolve) => setTimeout(resolve, 100));
 
-      adapter.trackEvent('order.completed', {
+      await adapter.trackEvent('order.completed', {
         userId: 'user-123',
         amount: 99.99,
       });
 
       await new Promise((resolve) => setTimeout(resolve, 100));
 
-      const mockInstance = (init as any).mock.results[0].value;
-      expect(mockInstance.track).toHaveBeenCalledWith({
+      expect(mockTrack).toHaveBeenCalledWith({
         event_type: 'order.completed',
         user_id: 'user-123',
         event_properties: {
@@ -63,21 +72,19 @@ describe('AmplitudeAdapter', () => {
     });
 
     it('should use user_id if userId is not present', async () => {
-      const { init } = await import('@amplitude/analytics-node');
-      const adapter = new AmplitudeAdapter({
+      const adapter = new AmplitudeSubscriber({
         apiKey: 'test_api_key',
       });
 
       await new Promise((resolve) => setTimeout(resolve, 100));
 
-      adapter.trackEvent('order.completed', {
+      await adapter.trackEvent('order.completed', {
         user_id: 'user-456',
       });
 
       await new Promise((resolve) => setTimeout(resolve, 100));
 
-      const mockInstance = (init as any).mock.results[0].value;
-      expect(mockInstance.track).toHaveBeenCalledWith({
+      expect(mockTrack).toHaveBeenCalledWith({
         event_type: 'order.completed',
         user_id: 'user-456',
         event_properties: {
@@ -87,19 +94,17 @@ describe('AmplitudeAdapter', () => {
     });
 
     it('should use anonymous if no userId is present', async () => {
-      const { init } = await import('@amplitude/analytics-node');
-      const adapter = new AmplitudeAdapter({
+      const adapter = new AmplitudeSubscriber({
         apiKey: 'test_api_key',
       });
 
       await new Promise((resolve) => setTimeout(resolve, 100));
 
-      adapter.trackEvent('page.viewed');
+      await adapter.trackEvent('page.viewed');
 
       await new Promise((resolve) => setTimeout(resolve, 100));
 
-      const mockInstance = (init as any).mock.results[0].value;
-      expect(mockInstance.track).toHaveBeenCalledWith({
+      expect(mockTrack).toHaveBeenCalledWith({
         event_type: 'page.viewed',
         user_id: 'anonymous',
         event_properties: undefined,
@@ -107,7 +112,7 @@ describe('AmplitudeAdapter', () => {
     });
 
     it('should not track when disabled', () => {
-      const adapter = new AmplitudeAdapter({
+      const adapter = new AmplitudeSubscriber({
         apiKey: 'test_api_key',
         enabled: false,
       });
@@ -121,22 +126,20 @@ describe('AmplitudeAdapter', () => {
 
   describe('trackFunnelStep', () => {
     it('should track funnel step', async () => {
-      const { init } = await import('@amplitude/analytics-node');
-      const adapter = new AmplitudeAdapter({
+      const adapter = new AmplitudeSubscriber({
         apiKey: 'test_api_key',
       });
 
       await new Promise((resolve) => setTimeout(resolve, 100));
 
-      adapter.trackFunnelStep('checkout', 'started', {
+      await adapter.trackFunnelStep('checkout', 'started', {
         userId: 'user-123',
         cartValue: 150,
       });
 
       await new Promise((resolve) => setTimeout(resolve, 100));
 
-      const mockInstance = (init as any).mock.results[0].value;
-      expect(mockInstance.track).toHaveBeenCalledWith({
+      expect(mockTrackEvent).toHaveBeenCalledWith({
         event_type: 'checkout.started',
         user_id: 'user-123',
         event_properties: {
@@ -151,22 +154,20 @@ describe('AmplitudeAdapter', () => {
 
   describe('trackOutcome', () => {
     it('should track outcome', async () => {
-      const { init } = await import('@amplitude/analytics-node');
-      const adapter = new AmplitudeAdapter({
+      const adapter = new AmplitudeSubscriber({
         apiKey: 'test_api_key',
       });
 
       await new Promise((resolve) => setTimeout(resolve, 100));
 
-      adapter.trackOutcome('payment.processing', 'success', {
+      await adapter.trackOutcome('payment.processing', 'success', {
         userId: 'user-123',
         transactionId: 'txn-789',
       });
 
       await new Promise((resolve) => setTimeout(resolve, 100));
 
-      const mockInstance = (init as any).mock.results[0].value;
-      expect(mockInstance.track).toHaveBeenCalledWith({
+      expect(mockTrackEvent).toHaveBeenCalledWith({
         event_type: 'payment.processing.success',
         user_id: 'user-123',
         event_properties: {
@@ -181,22 +182,20 @@ describe('AmplitudeAdapter', () => {
 
   describe('trackValue', () => {
     it('should track value', async () => {
-      const { init } = await import('@amplitude/analytics-node');
-      const adapter = new AmplitudeAdapter({
+      const adapter = new AmplitudeSubscriber({
         apiKey: 'test_api_key',
       });
 
       await new Promise((resolve) => setTimeout(resolve, 100));
 
-      adapter.trackValue('revenue', 99.99, {
+      await adapter.trackValue('revenue', 99.99, {
         userId: 'user-123',
         currency: 'USD',
       });
 
       await new Promise((resolve) => setTimeout(resolve, 100));
 
-      const mockInstance = (init as any).mock.results[0].value;
-      expect(mockInstance.track).toHaveBeenCalledWith({
+      expect(mockTrackEvent).toHaveBeenCalledWith({
         event_type: 'revenue',
         user_id: 'user-123',
         event_properties: {
@@ -210,20 +209,18 @@ describe('AmplitudeAdapter', () => {
 
   describe('shutdown', () => {
     it('should call flush on Amplitude instance', async () => {
-      const { init } = await import('@amplitude/analytics-node');
-      const adapter = new AmplitudeAdapter({
+      const adapter = new AmplitudeSubscriber({
         apiKey: 'test_api_key',
       });
 
       await new Promise((resolve) => setTimeout(resolve, 100));
       await adapter.shutdown();
 
-      const mockInstance = (init as any).mock.results[0].value;
-      expect(mockInstance.flush).toHaveBeenCalled();
+      expect(mockFlush).toHaveBeenCalled();
     });
 
     it('should not throw when shutting down disabled adapter', async () => {
-      const adapter = new AmplitudeAdapter({
+      const adapter = new AmplitudeSubscriber({
         apiKey: 'test_api_key',
         enabled: false,
       });

@@ -39,17 +39,17 @@ import {
 import { type Logger } from './logger';
 import { configure } from './config';
 
-// Re-export analytics testing utilities
+// Re-export events testing utilities
 export {
-  createAnalyticsCollector,
+  createEventCollector,
   assertEventTracked,
   assertOutcomeTracked,
-  type AnalyticsCollector,
-  type AnalyticsEvent,
-  type AnalyticsFunnelStep,
-  type AnalyticsOutcome,
-  type AnalyticsValue,
-} from './analytics-testing';
+  type EventCollector,
+  type EventData,
+  type EventsFunnelStep,
+  type EventsOutcome,
+  type EventsValue,
+} from './event-testing';
 
 /**
  * Note: OpenTelemetry exporters and processors have moved to dedicated modules

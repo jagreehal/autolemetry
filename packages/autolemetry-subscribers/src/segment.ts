@@ -1,44 +1,44 @@
 /**
- * Segment Adapter for autolemetry
+ * Segment Subscriber for autolemetry
  *
- * Send analytics to Segment (customer data platform).
+ * Send events to Segment (customer data platform).
  *
  * @example
  * ```typescript
- * import { Analytics } from 'autolemetry/analytics';
- * import { SegmentAdapter } from 'autolemetry-adapters/segment';
+ * import { Events } from 'autolemetry/events';
+ * import { SegmentSubscriber } from 'autolemetry-subscribers/segment';
  *
- * const analytics = new Analytics('checkout', {
- *   adapters: [
- *     new SegmentAdapter({
+ * const events = new Events('checkout', {
+ *   subscribers: [
+ *     new SegmentSubscriber({
  *       writeKey: process.env.SEGMENT_WRITE_KEY!
  *     })
  *   ]
  * });
  *
- * analytics.trackEvent('order.completed', { userId: '123', amount: 99.99 });
+ * events.trackEvent('order.completed', { userId: '123', amount: 99.99 });
  * ```
  */
 
 import type {
-  AnalyticsAdapter,
+  EventSubscriber,
   EventAttributes,
   FunnelStatus,
   OutcomeStatus,
-} from 'autolemetry/analytics-adapter';
+} from 'autolemetry/event-subscriber';
 
 export interface SegmentConfig {
   /** Segment write key */
   writeKey: string;
-  /** Enable/disable the adapter */
+  /** Enable/disable the subscriber */
   enabled?: boolean;
 }
 
-export class SegmentAdapter implements AnalyticsAdapter {
-  readonly name = 'SegmentAdapter';
+export class SegmentSubscriber implements EventSubscriber {
+  readonly name = 'SegmentSubscriber';
   readonly version = '1.0.0';
 
-  private analytics: any;
+  private events: any;
   private enabled: boolean;
   private config: SegmentConfig;
   private initPromise: Promise<void> | null = null;
@@ -55,12 +55,12 @@ export class SegmentAdapter implements AnalyticsAdapter {
 
   private async initialize(): Promise<void> {
     try {
-      // Dynamic import to avoid adding @segment/analytics-node as a hard dependency
+      // Dynamic import to avoid adding @segment/events-node as a hard dependency
       const { Analytics } = await import('@segment/analytics-node');
-      this.analytics = new Analytics({ writeKey: this.config.writeKey });
+      this.events = new Analytics({ writeKey: this.config.writeKey });
     } catch (error) {
       console.error(
-        'Segment adapter failed to initialize. Install @segment/analytics-node: pnpm add @segment/analytics-node',
+        'Segment subscriber failed to initialize. Install @segment/events-node: pnpm add @segment/events-node',
         error,
       );
       this.enabled = false;
@@ -78,7 +78,7 @@ export class SegmentAdapter implements AnalyticsAdapter {
     if (!this.enabled) return;
 
     await this.ensureInitialized();
-    this.analytics?.track({
+    this.events?.track({
       userId: attributes?.userId || attributes?.user_id || 'anonymous',
       event: name,
       properties: attributes,
@@ -93,7 +93,7 @@ export class SegmentAdapter implements AnalyticsAdapter {
     if (!this.enabled) return;
 
     await this.ensureInitialized();
-    this.analytics?.track({
+    this.events?.track({
       userId: attributes?.userId || attributes?.user_id || 'anonymous',
       event: `${funnelName}.${step}`,
       properties: {
@@ -112,7 +112,7 @@ export class SegmentAdapter implements AnalyticsAdapter {
     if (!this.enabled) return;
 
     await this.ensureInitialized();
-    this.analytics?.track({
+    this.events?.track({
       userId: attributes?.userId || attributes?.user_id || 'anonymous',
       event: `${operationName}.${outcome}`,
       properties: {
@@ -127,7 +127,7 @@ export class SegmentAdapter implements AnalyticsAdapter {
     if (!this.enabled) return;
 
     await this.ensureInitialized();
-    this.analytics?.track({
+    this.events?.track({
       userId: attributes?.userId || attributes?.user_id || 'anonymous',
       event: name,
       properties: {
@@ -140,8 +140,8 @@ export class SegmentAdapter implements AnalyticsAdapter {
   /** Flush pending events before shutdown */
   async shutdown(): Promise<void> {
     await this.ensureInitialized();
-    if (this.analytics) {
-      await this.analytics.closeAndFlush();
+    if (this.events) {
+      await this.events.closeAndFlush();
     }
   }
 }

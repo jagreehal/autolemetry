@@ -1,5 +1,5 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
-import { MixpanelAdapter } from './mixpanel';
+import { MixpanelSubscriber } from './mixpanel';
 
 // Mock the mixpanel module
 vi.mock('mixpanel', () => ({
@@ -10,14 +10,14 @@ vi.mock('mixpanel', () => ({
   },
 }));
 
-describe('MixpanelAdapter', () => {
+describe('MixpanelSubscriber', () => {
   beforeEach(() => {
     vi.clearAllMocks();
   });
 
   describe('initialization', () => {
     it('should initialize with valid config', async () => {
-      const adapter = new MixpanelAdapter({
+      const adapter = new MixpanelSubscriber({
         token: 'test_token',
       });
 
@@ -27,7 +27,7 @@ describe('MixpanelAdapter', () => {
     });
 
     it('should not initialize when disabled', () => {
-      const adapter = new MixpanelAdapter({
+      const adapter = new MixpanelSubscriber({
         token: 'test_token',
         enabled: false,
       });
@@ -39,7 +39,7 @@ describe('MixpanelAdapter', () => {
   describe('trackEvent', () => {
     it('should track event with attributes', async () => {
       const Mixpanel = await import('mixpanel');
-      const adapter = new MixpanelAdapter({
+      const adapter = new MixpanelSubscriber({
         token: 'test_token',
       });
 
@@ -62,7 +62,7 @@ describe('MixpanelAdapter', () => {
 
     it('should use user_id if userId is not present', async () => {
       const Mixpanel = await import('mixpanel');
-      const adapter = new MixpanelAdapter({
+      const adapter = new MixpanelSubscriber({
         token: 'test_token',
       });
 
@@ -83,7 +83,7 @@ describe('MixpanelAdapter', () => {
 
     it('should use anonymous if no userId is present', async () => {
       const Mixpanel = await import('mixpanel');
-      const adapter = new MixpanelAdapter({
+      const adapter = new MixpanelSubscriber({
         token: 'test_token',
       });
 
@@ -100,7 +100,7 @@ describe('MixpanelAdapter', () => {
     });
 
     it('should not track when disabled', () => {
-      const adapter = new MixpanelAdapter({
+      const adapter = new MixpanelSubscriber({
         token: 'test_token',
         enabled: false,
       });
@@ -115,7 +115,7 @@ describe('MixpanelAdapter', () => {
   describe('trackFunnelStep', () => {
     it('should track funnel step', async () => {
       const Mixpanel = await import('mixpanel');
-      const adapter = new MixpanelAdapter({
+      const adapter = new MixpanelSubscriber({
         token: 'test_token',
       });
 
@@ -142,7 +142,7 @@ describe('MixpanelAdapter', () => {
   describe('trackOutcome', () => {
     it('should track outcome', async () => {
       const Mixpanel = await import('mixpanel');
-      const adapter = new MixpanelAdapter({
+      const adapter = new MixpanelSubscriber({
         token: 'test_token',
       });
 
@@ -169,7 +169,7 @@ describe('MixpanelAdapter', () => {
   describe('trackValue', () => {
     it('should track value', async () => {
       const Mixpanel = await import('mixpanel');
-      const adapter = new MixpanelAdapter({
+      const adapter = new MixpanelSubscriber({
         token: 'test_token',
       });
 

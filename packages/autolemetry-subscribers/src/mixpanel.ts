@@ -1,41 +1,41 @@
 /**
- * Mixpanel Adapter for autolemetry
+ * Mixpanel Subscriber for autolemetry
  *
- * Send analytics to Mixpanel for product analytics.
+ * Send events to Mixpanel for product events.
  *
  * @example
  * ```typescript
- * import { Analytics } from 'autolemetry/analytics';
- * import { MixpanelAdapter } from 'autolemetry-adapters/mixpanel';
+ * import { Events } from 'autolemetry/events';
+ * import { MixpanelSubscriber } from 'autolemetry-subscribers/mixpanel';
  *
- * const analytics = new Analytics('checkout', {
- *   adapters: [
- *     new MixpanelAdapter({
+ * const events = new Events('checkout', {
+ *   subscribers: [
+ *     new MixpanelSubscriber({
  *       token: process.env.MIXPANEL_TOKEN!
  *     })
  *   ]
  * });
  *
- * analytics.trackEvent('order.completed', { userId: '123', amount: 99.99 });
+ * events.trackEvent('order.completed', { userId: '123', amount: 99.99 });
  * ```
  */
 
 import type {
-  AnalyticsAdapter,
+  EventSubscriber,
   EventAttributes,
   FunnelStatus,
   OutcomeStatus,
-} from 'autolemetry/analytics-adapter';
+} from 'autolemetry/event-subscriber';
 
 export interface MixpanelConfig {
   /** Mixpanel project token */
   token: string;
-  /** Enable/disable the adapter */
+  /** Enable/disable the subscriber */
   enabled?: boolean;
 }
 
-export class MixpanelAdapter implements AnalyticsAdapter {
-  readonly name = 'MixpanelAdapter';
+export class MixpanelSubscriber implements EventSubscriber {
+  readonly name = 'MixpanelSubscriber';
   readonly version = '1.0.0';
 
   private mixpanel: any;
@@ -60,7 +60,7 @@ export class MixpanelAdapter implements AnalyticsAdapter {
       this.mixpanel = Mixpanel.default.init(this.config.token);
     } catch (error) {
       console.error(
-        'Mixpanel adapter failed to initialize. Install mixpanel: pnpm add mixpanel',
+        'Mixpanel subscriber failed to initialize. Install mixpanel: pnpm add mixpanel',
         error,
       );
       this.enabled = false;

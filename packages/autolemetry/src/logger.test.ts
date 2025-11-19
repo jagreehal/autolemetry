@@ -1,40 +1,34 @@
 import { describe, it, expect, vi } from 'vitest';
-import { createLogger, LoggedOperation, type Logger } from './logger';
+import { LoggedOperation, type Logger } from './logger';
 
-describe('Logger', () => {
-  it('should create logger with service name', () => {
-    const logger = createLogger('test');
-    expect(logger).toBeDefined();
-  });
+describe('Logger interface', () => {
+  it('should work with custom logger implementations', () => {
+    const mockLogger: Logger = {
+      info: vi.fn(),
+      warn: vi.fn(),
+      error: vi.fn(),
+      debug: vi.fn(),
+    };
 
-  it('should log info messages', () => {
-    const spy = vi.spyOn(console, 'log').mockImplementation(() => {});
-
-    const logger = createLogger('test', { pretty: false });
-    logger.info('Test message', { key: 'value' });
-
-    spy.mockRestore();
-  });
-
-  it('should have redaction capability', () => {
-    // Just verify logger is created and has redaction logic
-    const logger = createLogger('test', { pretty: false });
-
-    // Verify logger methods exist
-    expect(typeof logger.info).toBe('function');
-    expect(typeof logger.warn).toBe('function');
-    expect(typeof logger.error).toBe('function');
-    expect(typeof logger.debug).toBe('function');
-
-    // Log with sensitive data (redaction happens internally)
-    logger.info('Test', {
-      email: 'test@example.com',
-      password: 'secret123',
-      normalField: 'value',
+    mockLogger.info('Test message', { key: 'value' });
+    expect(mockLogger.info).toHaveBeenCalledWith('Test message', {
+      key: 'value',
     });
+  });
 
-    // If it doesn't throw, redaction works
-    expect(true).toBe(true);
+  it('should support error method with optional error parameter', () => {
+    const mockLogger: Logger = {
+      info: vi.fn(),
+      warn: vi.fn(),
+      error: vi.fn(),
+      debug: vi.fn(),
+    };
+
+    const error = new Error('Test error');
+    mockLogger.error('Error occurred', error, { context: 'test' });
+    expect(mockLogger.error).toHaveBeenCalledWith('Error occurred', error, {
+      context: 'test',
+    });
   });
 });
 

@@ -1,15 +1,15 @@
 import { describe, it, expect, beforeEach, vi, afterEach } from 'vitest';
-import { Analytics, getAnalytics, resetAnalytics } from './analytics';
+import { Event, getEvents, resetEvents } from './event';
 import { type Logger } from './logger';
 import { init } from './init';
 import { shutdown } from './shutdown';
 import { trace } from './functional';
 
-describe('Analytics', () => {
+describe('Events', () => {
   let mockLogger: Logger;
 
   beforeEach(() => {
-    resetAnalytics();
+    resetEvents();
     mockLogger = {
       info: vi.fn(),
       warn: vi.fn(),
@@ -20,25 +20,25 @@ describe('Analytics', () => {
 
   describe('trackEvent', () => {
     it('should track business events', () => {
-      const analytics = new Analytics('test-service', { logger: mockLogger });
+      const event = new Event('test-service', { logger: mockLogger });
 
-      analytics.trackEvent('application.submitted', {
+      event.trackEvent('application.submitted', {
         jobId: '123',
         userId: '456',
       });
 
-      expect(mockLogger.info).toHaveBeenCalledWith('Analytics event tracked', {
+      expect(mockLogger.info).toHaveBeenCalledWith('Event tracked', {
         event: 'application.submitted',
         attributes: { service: 'test-service', jobId: '123', userId: '456' },
       });
     });
 
     it('should track events without attributes', () => {
-      const analytics = new Analytics('test-service', { logger: mockLogger });
+      const event = new Event('test-service', { logger: mockLogger });
 
-      analytics.trackEvent('user.login');
+      event.trackEvent('user.login');
 
-      expect(mockLogger.info).toHaveBeenCalledWith('Analytics event tracked', {
+      expect(mockLogger.info).toHaveBeenCalledWith('Event tracked', {
         event: 'user.login',
         attributes: { service: 'test-service' },
       });
@@ -47,10 +47,10 @@ describe('Analytics', () => {
 
   describe('trackFunnelStep', () => {
     it('should track funnel progression', () => {
-      const analytics = new Analytics('test-service', { logger: mockLogger });
+      const event = new Event('test-service', { logger: mockLogger });
 
-      analytics.trackFunnelStep('checkout', 'started', { cartValue: 99.99 });
-      analytics.trackFunnelStep('checkout', 'completed', { cartValue: 99.99 });
+      event.trackFunnelStep('checkout', 'started', { cartValue: 99.99 });
+      event.trackFunnelStep('checkout', 'completed', { cartValue: 99.99 });
 
       expect(mockLogger.info).toHaveBeenCalledTimes(2);
       expect(mockLogger.info).toHaveBeenCalledWith('Funnel step tracked', {
@@ -61,9 +61,9 @@ describe('Analytics', () => {
     });
 
     it('should track funnel abandonment', () => {
-      const analytics = new Analytics('test-service', { logger: mockLogger });
+      const event = new Event('test-service', { logger: mockLogger });
 
-      analytics.trackFunnelStep('checkout', 'abandoned', { reason: 'timeout' });
+      event.trackFunnelStep('checkout', 'abandoned', { reason: 'timeout' });
 
       expect(mockLogger.info).toHaveBeenCalledWith('Funnel step tracked', {
         funnel: 'checkout',
@@ -75,9 +75,9 @@ describe('Analytics', () => {
 
   describe('trackOutcome', () => {
     it('should track successful outcomes', () => {
-      const analytics = new Analytics('test-service', { logger: mockLogger });
+      const event = new Event('test-service', { logger: mockLogger });
 
-      analytics.trackOutcome('email.delivery', 'success', {
+      event.trackOutcome('email.delivery', 'success', {
         recipientType: 'school',
       });
 
@@ -89,9 +89,9 @@ describe('Analytics', () => {
     });
 
     it('should track failed outcomes', () => {
-      const analytics = new Analytics('test-service', { logger: mockLogger });
+      const event = new Event('test-service', { logger: mockLogger });
 
-      analytics.trackOutcome('email.delivery', 'failure', {
+      event.trackOutcome('email.delivery', 'failure', {
         error: 'invalid_email',
       });
 
@@ -103,9 +103,9 @@ describe('Analytics', () => {
     });
 
     it('should track partial outcomes', () => {
-      const analytics = new Analytics('test-service', { logger: mockLogger });
+      const event = new Event('test-service', { logger: mockLogger });
 
-      analytics.trackOutcome('batch.process', 'partial', {
+      event.trackOutcome('batch.process', 'partial', {
         successCount: 8,
         failureCount: 2,
       });
@@ -124,9 +124,9 @@ describe('Analytics', () => {
 
   describe('trackValue', () => {
     it('should track revenue metrics', () => {
-      const analytics = new Analytics('test-service', { logger: mockLogger });
+      const event = new Event('test-service', { logger: mockLogger });
 
-      analytics.trackValue('order.revenue', 149.99, {
+      event.trackValue('order.revenue', 149.99, {
         currency: 'USD',
         productCategory: 'electronics',
       });
@@ -144,9 +144,9 @@ describe('Analytics', () => {
     });
 
     it('should track processing time', () => {
-      const analytics = new Analytics('test-service', { logger: mockLogger });
+      const event = new Event('test-service', { logger: mockLogger });
 
-      analytics.trackValue('application.processing_time', 2500, {
+      event.trackValue('application.processing_time', 2500, {
         unit: 'ms',
       });
 
@@ -162,48 +162,48 @@ describe('Analytics', () => {
     });
   });
 
-  describe('getAnalytics', () => {
+  describe('getEvents', () => {
     it('should return singleton instance', () => {
-      const analytics1 = getAnalytics('test-service');
-      const analytics2 = getAnalytics('test-service');
+      const events1 = getEvents('test-service');
+      const events2 = getEvents('test-service');
 
-      expect(analytics1).toBe(analytics2);
+      expect(events1).toBe(events2);
     });
 
     it('should return different instances for different services', () => {
-      const analytics1 = getAnalytics('service-1');
-      const analytics2 = getAnalytics('service-2');
+      const events1 = getEvents('service-1');
+      const events2 = getEvents('service-2');
 
-      expect(analytics1).not.toBe(analytics2);
+      expect(events1).not.toBe(events2);
     });
 
     it('should reset instances', () => {
-      const analytics1 = getAnalytics('test-service');
-      resetAnalytics();
-      const analytics2 = getAnalytics('test-service');
+      const events1 = getEvents('test-service');
+      resetEvents();
+      const events2 = getEvents('test-service');
 
-      expect(analytics1).not.toBe(analytics2);
+      expect(events1).not.toBe(events2);
     });
   });
 
   describe('real-world usage example', () => {
     it('should track job application flow', () => {
-      const analytics = new Analytics('job-application', {
+      const event = new Event('job-application', {
         logger: mockLogger,
       });
 
       // User starts application
-      analytics.trackFunnelStep('application', 'started', { jobId: '123' });
+      event.trackFunnelStep('application', 'started', { jobId: '123' });
 
       // User submits application
-      analytics.trackEvent('application.submitted', {
+      event.trackEvent('application.submitted', {
         jobId: '123',
         userId: '456',
       });
-      analytics.trackFunnelStep('application', 'completed', { jobId: '123' });
+      event.trackFunnelStep('application', 'completed', { jobId: '123' });
 
       // Email sent successfully
-      analytics.trackOutcome('email.sent', 'success', {
+      event.trackOutcome('email.sent', 'success', {
         recipientType: 'school',
         jobId: '123',
       });
@@ -212,16 +212,16 @@ describe('Analytics', () => {
     });
 
     it('should track email delivery failures', () => {
-      const analytics = new Analytics('email-service', { logger: mockLogger });
+      const event = new Event('email-service', { logger: mockLogger });
 
       // Failed email delivery
-      analytics.trackOutcome('email.delivery', 'failure', {
+      event.trackOutcome('email.delivery', 'failure', {
         error: 'invalid_email',
         recipientEmail: 'redacted',
       });
 
       // Track event for alerting
-      analytics.trackEvent('email.bounce', {
+      event.trackEvent('email.bounce', {
         bounceType: 'permanent',
       });
 
@@ -231,7 +231,7 @@ describe('Analytics', () => {
 
   describe('automatic telemetry context enrichment', () => {
     beforeEach(() => {
-      resetAnalytics();
+      resetEvents();
     });
 
     afterEach(async () => {
@@ -241,12 +241,12 @@ describe('Analytics', () => {
     // Test without config first (before any init() is called)
     it('should still work without config (graceful degradation)', () => {
       // Don't initialize - no config available
-      const analytics = new Analytics('test-service', { logger: mockLogger });
+      const event = new Event('test-service', { logger: mockLogger });
 
-      analytics.trackEvent('user.login');
+      event.trackEvent('user.login');
 
       expect(mockLogger.info).toHaveBeenCalledWith(
-        'Analytics event tracked',
+        'Event tracked',
         expect.objectContaining({
           attributes: {
             service: 'test-service',
@@ -264,12 +264,12 @@ describe('Analytics', () => {
         environment: 'production',
       });
 
-      const analytics = new Analytics('test-service', { logger: mockLogger });
+      const event = new Event('test-service', { logger: mockLogger });
 
-      analytics.trackEvent('user.signup', { userId: '123' });
+      event.trackEvent('user.signup', { userId: '123' });
 
       expect(mockLogger.info).toHaveBeenCalledWith(
-        'Analytics event tracked',
+        'Event tracked',
         expect.objectContaining({
           attributes: expect.objectContaining({
             service: 'test-service',
@@ -284,10 +284,10 @@ describe('Analytics', () => {
     it('should auto-capture trace context (traceId, spanId, correlationId) when inside a trace', async () => {
       init({ service: 'test-service' });
 
-      const analytics = new Analytics('test-service', { logger: mockLogger });
+      const event = new Event('test-service', { logger: mockLogger });
 
       const tracedOperation = trace('test.operation', async () => {
-        analytics.trackEvent('operation.started', { step: 1 });
+        event.trackEvent('operation.started', { step: 1 });
       });
 
       await tracedOperation();
@@ -313,10 +313,10 @@ describe('Analytics', () => {
         environment: 'staging',
       });
 
-      const analytics = new Analytics('test-service', { logger: mockLogger });
+      const event = new Event('test-service', { logger: mockLogger });
 
       const tracedOperation = trace('checkout.flow', async () => {
-        analytics.trackFunnelStep('checkout', 'started', { cartValue: 99.99 });
+        event.trackFunnelStep('checkout', 'started', { cartValue: 99.99 });
       });
 
       await tracedOperation();
@@ -344,10 +344,10 @@ describe('Analytics', () => {
         environment: 'development',
       });
 
-      const analytics = new Analytics('test-service', { logger: mockLogger });
+      const event = new Event('test-service', { logger: mockLogger });
 
       const tracedOperation = trace('email.send', async () => {
-        analytics.trackOutcome('email.delivery', 'success', {
+        event.trackOutcome('email.delivery', 'success', {
           recipientType: 'user',
         });
       });
@@ -377,10 +377,10 @@ describe('Analytics', () => {
         environment: 'production',
       });
 
-      const analytics = new Analytics('test-service', { logger: mockLogger });
+      const event = new Event('test-service', { logger: mockLogger });
 
       const tracedOperation = trace('order.process', async () => {
-        analytics.trackValue('order.revenue', 149.99, { currency: 'USD' });
+        event.trackValue('order.revenue', 149.99, { currency: 'USD' });
       });
 
       await tracedOperation();
@@ -409,13 +409,13 @@ describe('Analytics', () => {
         environment: 'test',
       });
 
-      const analytics = new Analytics('test-service', { logger: mockLogger });
+      const event = new Event('test-service', { logger: mockLogger });
 
       // Call outside a trace
-      analytics.trackEvent('background.job.completed', { jobId: 'job-123' });
+      event.trackEvent('background.job.completed', { jobId: 'job-123' });
 
       expect(mockLogger.info).toHaveBeenCalledWith(
-        'Analytics event tracked',
+        'Event tracked',
         expect.objectContaining({
           attributes: {
             service: 'test-service',
@@ -431,7 +431,7 @@ describe('Analytics', () => {
 
   describe('automatic operation context enrichment', () => {
     beforeEach(() => {
-      resetAnalytics();
+      resetEvents();
     });
 
     afterEach(async () => {
@@ -441,16 +441,16 @@ describe('Analytics', () => {
     it('should auto-capture operation.name when inside trace() with string name', async () => {
       init({ service: 'test-service' });
 
-      const analytics = new Analytics('test-service', { logger: mockLogger });
+      const event = new Event('test-service', { logger: mockLogger });
 
       const operation = trace('user.create', async () => {
-        analytics.trackEvent('user.created', { userId: '123' });
+        event.trackEvent('user.created', { userId: '123' });
       });
 
       await operation();
 
       expect(mockLogger.info).toHaveBeenCalledWith(
-        'Analytics event tracked',
+        'Event tracked',
         expect.objectContaining({
           attributes: expect.objectContaining({
             'operation.name': 'user.create',
@@ -463,16 +463,16 @@ describe('Analytics', () => {
     it('should auto-capture operation.name when inside trace() with named function', async () => {
       init({ service: 'test-service' });
 
-      const analytics = new Analytics('test-service', { logger: mockLogger });
+      const event = new Event('test-service', { logger: mockLogger });
 
       const createUser = trace(async function createUser() {
-        analytics.trackEvent('user.created', { userId: '456' });
+        event.trackEvent('user.created', { userId: '456' });
       });
 
       await createUser();
 
       expect(mockLogger.info).toHaveBeenCalledWith(
-        'Analytics event tracked',
+        'Event tracked',
         expect.objectContaining({
           attributes: expect.objectContaining({
             // Function name might be inferred with slight variations (e.g., 'createUser2')
@@ -487,12 +487,12 @@ describe('Analytics', () => {
     it('should reliably infer function names in both factory and non-factory patterns', async () => {
       init({ service: 'test-service' });
 
-      const analytics = new Analytics('test-service', { logger: mockLogger });
+      const event = new Event('test-service', { logger: mockLogger });
 
       // Test 1: Named function declaration (non-factory pattern)
       // Should infer name from function declaration
       const updateUser = trace(async function updateUser(userId: string) {
-        analytics.trackEvent('user.updated', { userId });
+        event.trackEvent('user.updated', { userId });
       });
       await updateUser('user-123');
 
@@ -503,7 +503,7 @@ describe('Analytics', () => {
         (ctx) =>
           async function deleteUser(userId: string) {
             ctx.setAttribute('user.id', userId);
-            analytics.trackEvent('user.deleted', { userId });
+            event.trackEvent('user.deleted', { userId });
           },
       );
       await deleteUser('user-456');
@@ -513,7 +513,7 @@ describe('Analytics', () => {
         (ctx) =>
           async function createOrder(orderId: string) {
             ctx.setAttribute('order.id', orderId);
-            analytics.trackEvent('order.created', { orderId });
+            event.trackEvent('order.created', { orderId });
           },
       );
       await createOrder('order-789');
@@ -534,20 +534,20 @@ describe('Analytics', () => {
     it('should auto-capture operation.name in nested spans', async () => {
       init({ service: 'test-service' });
 
-      const analytics = new Analytics('test-service', { logger: mockLogger });
+      const event = new Event('test-service', { logger: mockLogger });
       const { span } = await import('./functional');
 
       const operation = trace('order.process', async () => {
         await span({ name: 'order.validate' }, async () => {
           // Should capture the innermost operation name
-          analytics.trackEvent('order.validated', { orderId: 'ord_123' });
+          event.trackEvent('order.validated', { orderId: 'ord_123' });
         });
       });
 
       await operation();
 
       expect(mockLogger.info).toHaveBeenCalledWith(
-        'Analytics event tracked',
+        'Event tracked',
         expect.objectContaining({
           attributes: expect.objectContaining({
             'operation.name': 'order.validate',
@@ -560,10 +560,10 @@ describe('Analytics', () => {
     it('should auto-capture operation.name in trackFunnelStep', async () => {
       init({ service: 'test-service' });
 
-      const analytics = new Analytics('test-service', { logger: mockLogger });
+      const event = new Event('test-service', { logger: mockLogger });
 
       const checkout = trace('checkout.flow', async () => {
-        analytics.trackFunnelStep('checkout', 'started', {
+        event.trackFunnelStep('checkout', 'started', {
           cartValue: 99.99,
         });
       });
@@ -584,10 +584,10 @@ describe('Analytics', () => {
     it('should auto-capture operation.name in trackOutcome', async () => {
       init({ service: 'test-service' });
 
-      const analytics = new Analytics('test-service', { logger: mockLogger });
+      const event = new Event('test-service', { logger: mockLogger });
 
       const sendEmail = trace('email.send', async () => {
-        analytics.trackOutcome('email.delivery', 'success', {
+        event.trackOutcome('email.delivery', 'success', {
           recipientType: 'user',
         });
       });
@@ -608,10 +608,10 @@ describe('Analytics', () => {
     it('should auto-capture operation.name in trackValue', async () => {
       init({ service: 'test-service' });
 
-      const analytics = new Analytics('test-service', { logger: mockLogger });
+      const event = new Event('test-service', { logger: mockLogger });
 
       const processOrder = trace('order.process', async () => {
-        analytics.trackValue('order.revenue', 149.99, { currency: 'USD' });
+        event.trackValue('order.revenue', 149.99, { currency: 'USD' });
       });
 
       await processOrder();
@@ -630,13 +630,13 @@ describe('Analytics', () => {
     it('should handle missing operation.name gracefully (outside trace)', () => {
       init({ service: 'test-service' });
 
-      const analytics = new Analytics('test-service', { logger: mockLogger });
+      const event = new Event('test-service', { logger: mockLogger });
 
       // Call outside any trace
-      analytics.trackEvent('background.job', { jobId: 'job-123' });
+      event.trackEvent('background.job', { jobId: 'job-123' });
 
       expect(mockLogger.info).toHaveBeenCalledWith(
-        'Analytics event tracked',
+        'Event tracked',
         expect.objectContaining({
           attributes: {
             service: 'test-service',
@@ -652,16 +652,16 @@ describe('Analytics', () => {
     it('should capture parent operation.name when not in nested span', async () => {
       init({ service: 'test-service' });
 
-      const analytics = new Analytics('test-service', { logger: mockLogger });
+      const event = new Event('test-service', { logger: mockLogger });
 
       const parentOperation = trace('parent.operation', async () => {
         // Track event in parent context (not in a nested span)
-        analytics.trackEvent('parent.event', { step: 1 });
+        event.trackEvent('parent.event', { step: 1 });
 
         // Then create a nested span
         const { span } = await import('./functional');
         await span({ name: 'child.operation' }, async () => {
-          analytics.trackEvent('child.event', { step: 2 });
+          event.trackEvent('child.event', { step: 2 });
         });
       });
 
@@ -670,7 +670,7 @@ describe('Analytics', () => {
       // Check parent event has parent operation name
       expect(mockLogger.info).toHaveBeenNthCalledWith(
         1,
-        'Analytics event tracked',
+        'Event tracked',
         expect.objectContaining({
           attributes: expect.objectContaining({
             'operation.name': 'parent.operation',
@@ -682,7 +682,7 @@ describe('Analytics', () => {
       // Check child event has child operation name
       expect(mockLogger.info).toHaveBeenNthCalledWith(
         2,
-        'Analytics event tracked',
+        'Event tracked',
         expect.objectContaining({
           attributes: expect.objectContaining({
             'operation.name': 'child.operation',
@@ -695,17 +695,17 @@ describe('Analytics', () => {
     it('should work with trace() factory pattern', async () => {
       init({ service: 'test-service' });
 
-      const analytics = new Analytics('test-service', { logger: mockLogger });
+      const event = new Event('test-service', { logger: mockLogger });
 
       const operation = trace('factory.operation', (ctx) => async () => {
         ctx.setAttribute('custom', 'attribute');
-        analytics.trackEvent('factory.event', { data: 'test' });
+        event.trackEvent('factory.event', { data: 'test' });
       });
 
       await operation();
 
       expect(mockLogger.info).toHaveBeenCalledWith(
-        'Analytics event tracked',
+        'Event tracked',
         expect.objectContaining({
           attributes: expect.objectContaining({
             'operation.name': 'factory.operation',

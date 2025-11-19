@@ -1,10 +1,10 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
-import { WebhookAdapter } from './webhook';
+import { WebhookSubscriber } from './webhook';
 
 // Mock fetch globally
 globalThis.fetch = vi.fn();
 
-describe('WebhookAdapter', () => {
+describe('WebhookSubscriber', () => {
   beforeEach(() => {
     vi.clearAllMocks();
     (globalThis.fetch as any).mockResolvedValue({
@@ -16,7 +16,7 @@ describe('WebhookAdapter', () => {
 
   describe('initialization', () => {
     it('should initialize with valid config', () => {
-      const adapter = new WebhookAdapter({
+      const adapter = new WebhookSubscriber({
         url: 'https://hooks.example.com/webhook',
       });
 
@@ -24,7 +24,7 @@ describe('WebhookAdapter', () => {
     });
 
     it('should initialize with custom headers', () => {
-      const adapter = new WebhookAdapter({
+      const adapter = new WebhookSubscriber({
         url: 'https://hooks.example.com/webhook',
         headers: { 'X-API-Key': 'secret' },
       });
@@ -33,7 +33,7 @@ describe('WebhookAdapter', () => {
     });
 
     it('should not send when disabled', () => {
-      const adapter = new WebhookAdapter({
+      const adapter = new WebhookSubscriber({
         url: 'https://hooks.example.com/webhook',
         enabled: false,
       });
@@ -44,7 +44,7 @@ describe('WebhookAdapter', () => {
 
   describe('trackEvent', () => {
     it('should send event to webhook', async () => {
-      const adapter = new WebhookAdapter({
+      const adapter = new WebhookSubscriber({
         url: 'https://hooks.example.com/webhook',
       });
 
@@ -68,7 +68,7 @@ describe('WebhookAdapter', () => {
     });
 
     it('should include custom headers', async () => {
-      const adapter = new WebhookAdapter({
+      const adapter = new WebhookSubscriber({
         url: 'https://hooks.example.com/webhook',
         headers: { 'X-API-Key': 'secret' },
       });
@@ -89,7 +89,7 @@ describe('WebhookAdapter', () => {
     });
 
     it('should not send when disabled', async () => {
-      const adapter = new WebhookAdapter({
+      const adapter = new WebhookSubscriber({
         url: 'https://hooks.example.com/webhook',
         enabled: false,
       });
@@ -104,7 +104,7 @@ describe('WebhookAdapter', () => {
 
   describe('trackFunnelStep', () => {
     it('should send funnel step to webhook', async () => {
-      const adapter = new WebhookAdapter({
+      const adapter = new WebhookSubscriber({
         url: 'https://hooks.example.com/webhook',
       });
 
@@ -134,7 +134,7 @@ describe('WebhookAdapter', () => {
 
   describe('trackOutcome', () => {
     it('should send outcome to webhook', async () => {
-      const adapter = new WebhookAdapter({
+      const adapter = new WebhookSubscriber({
         url: 'https://hooks.example.com/webhook',
       });
 
@@ -164,7 +164,7 @@ describe('WebhookAdapter', () => {
 
   describe('trackValue', () => {
     it('should send value to webhook', async () => {
-      const adapter = new WebhookAdapter({
+      const adapter = new WebhookSubscriber({
         url: 'https://hooks.example.com/webhook',
       });
 
@@ -205,7 +205,7 @@ describe('WebhookAdapter', () => {
             statusText: 'OK',
           });
 
-        const adapter = new WebhookAdapter({
+        const adapter = new WebhookSubscriber({
           url: 'https://hooks.example.com/webhook',
           maxRetries: 3,
         });
@@ -224,7 +224,7 @@ describe('WebhookAdapter', () => {
       async () => {
         (globalThis.fetch as any).mockRejectedValue(new Error('Network error'));
 
-        const adapter = new WebhookAdapter({
+        const adapter = new WebhookSubscriber({
           url: 'https://hooks.example.com/webhook',
           maxRetries: 2,
         });
@@ -241,7 +241,7 @@ describe('WebhookAdapter', () => {
 
   describe('shutdown', () => {
     it('should wait for pending requests', async () => {
-      const adapter = new WebhookAdapter({
+      const adapter = new WebhookSubscriber({
         url: 'https://hooks.example.com/webhook',
       });
 
@@ -254,7 +254,7 @@ describe('WebhookAdapter', () => {
     });
 
     it('should not throw when no pending requests', async () => {
-      const adapter = new WebhookAdapter({
+      const adapter = new WebhookSubscriber({
         url: 'https://hooks.example.com/webhook',
       });
 

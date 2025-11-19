@@ -159,7 +159,7 @@ These queries leverage the custom attributes set in the application:
 > "Show me the full trace for a failed payment including all attributes and child spans"
 
 **Slow endpoint investigation:**
-> "For the /api/analytics/report endpoint, show me the span breakdown to identify bottlenecks"
+> "For the /api/events/report endpoint, show me the span breakdown to identify bottlenecks"
 
 **Error context:**
 > "Find the trace with the most recent error and show me all the span attributes leading up to the error"

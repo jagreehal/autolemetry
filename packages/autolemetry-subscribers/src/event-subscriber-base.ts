@@ -1,30 +1,30 @@
 /**
- * AnalyticsAdapter - Standard base class for building custom adapters
+ * EventSubscriber - Standard base class for building custom subscribers
  *
- * This is the recommended base class for creating custom analytics adapters.
+ * This is the recommended base class for creating custom events subscribers.
  * It provides production-ready features out of the box:
  *
  * **Built-in Features:**
  * - **Error Handling**: Automatic error catching with customizable handlers
  * - **Pending Request Tracking**: Ensures all requests complete during shutdown
  * - **Graceful Shutdown**: Drains pending requests before closing
- * - **Enable/Disable**: Runtime control to turn adapter on/off
+ * - **Enable/Disable**: Runtime control to turn subscriber on/off
  * - **Normalized Payload**: Consistent event structure across all event types
  *
  * **When to use:**
- * - Building custom adapters for any platform
+ * - Building custom subscribers for any platform
  * - Production deployments requiring reliability
  * - Need graceful shutdown and error handling
  *
  * @example Basic usage
  * ```typescript
- * import { AnalyticsAdapter, AdapterPayload } from 'autolemetry-adapters';
+ * import { EventSubscriber, EventPayload } from 'autolemetry-subscribers';
  *
- * class SnowflakeAdapter extends AnalyticsAdapter {
- *   name = 'SnowflakeAdapter';
+ * class SnowflakeSubscriber extends EventSubscriber {
+ *   name = 'SnowflakeSubscriber';
  *   version = '1.0.0';
  *
- *   protected async sendToDestination(payload: AdapterPayload): Promise<void> {
+ *   protected async sendToDestination(payload: EventPayload): Promise<void> {
  *     await snowflakeClient.execute(
  *       `INSERT INTO events VALUES (?, ?, ?)`,
  *       [payload.type, payload.name, JSON.stringify(payload.attributes)]
@@ -35,11 +35,11 @@
  *
  * @example With buffering
  * ```typescript
- * class BufferedAdapter extends AnalyticsAdapter {
- *   name = 'BufferedAdapter';
- *   private buffer: AdapterPayload[] = [];
+ * class BufferedSubscriber extends EventSubscriber {
+ *   name = 'BufferedSubscriber';
+ *   private buffer: EventPayload[] = [];
  *
- *   protected async sendToDestination(payload: AdapterPayload): Promise<void> {
+ *   protected async sendToDestination(payload: EventPayload): Promise<void> {
  *     this.buffer.push(payload);
  *
  *     if (this.buffer.length >= 100) {
@@ -65,11 +65,11 @@
  */
 
 import type {
-  AnalyticsAdapter as IAnalyticsAdapter,
+  EventSubscriber as IEventSubscriber,
   EventAttributes,
   FunnelStatus,
   OutcomeStatus,
-} from 'autolemetry/analytics-adapter';
+} from 'autolemetry/event-subscriber';
 
 // Re-export types for convenience
 
@@ -77,7 +77,7 @@ import type {
 /**
  * Payload sent to destination
  */
-export interface AdapterPayload {
+export interface EventPayload {
   /** Event type: 'event', 'funnel', 'outcome', or 'value' */
   type: 'event' | 'funnel' | 'outcome' | 'value';
 
@@ -107,7 +107,7 @@ export interface AdapterPayload {
 }
 
 /**
- * Standard base class for building custom analytics adapters
+ * Standard base class for building custom events subscribers
  *
  * **What it provides:**
  * - Consistent payload structure (normalized across all event types)
@@ -120,21 +120,21 @@ export interface AdapterPayload {
  * Extend this class and implement `sendToDestination()`. All other methods
  * (trackEvent, trackFunnelStep, trackOutcome, trackValue, shutdown) are handled automatically.
  *
- * For high-throughput streaming platforms (Kafka, Kinesis, Pub/Sub), use `StreamingAnalyticsAdapter` instead.
+ * For high-throughput streaming platforms (Kafka, Kinesis, Pub/Sub), use `StreamingEventSubscriber` instead.
  */
-export abstract class AnalyticsAdapter implements IAnalyticsAdapter {
+export abstract class EventSubscriber implements IEventSubscriber {
   /**
-   * Adapter name (required for debugging)
+   * Subscriber name (required for debugging)
    */
   abstract readonly name: string;
 
   /**
-   * Adapter version (optional)
+   * Subscriber version (optional)
    */
   readonly version?: string;
 
   /**
-   * Enable/disable the adapter (default: true)
+   * Enable/disable the subscriber (default: true)
    */
   protected enabled: boolean = true;
 
@@ -151,7 +151,7 @@ export abstract class AnalyticsAdapter implements IAnalyticsAdapter {
    *
    * @param payload - Normalized event payload
    */
-  protected abstract sendToDestination(payload: AdapterPayload): Promise<void>;
+  protected abstract sendToDestination(payload: EventPayload): Promise<void>;
 
   /**
    * Optional: Handle errors
@@ -162,7 +162,7 @@ export abstract class AnalyticsAdapter implements IAnalyticsAdapter {
    * @param error - Error that occurred
    * @param payload - Event payload that failed
    */
-  protected handleError(error: Error, payload: AdapterPayload): void {
+  protected handleError(error: Error, payload: EventPayload): void {
     console.error(
       `[${this.name}] Failed to send ${payload.type}:`,
       error,
@@ -176,7 +176,7 @@ export abstract class AnalyticsAdapter implements IAnalyticsAdapter {
   async trackEvent(name: string, attributes?: EventAttributes): Promise<void> {
     if (!this.enabled) return;
 
-    const payload: AdapterPayload = {
+    const payload: EventPayload = {
       type: 'event',
       name,
       attributes,
@@ -196,7 +196,7 @@ export abstract class AnalyticsAdapter implements IAnalyticsAdapter {
   ): Promise<void> {
     if (!this.enabled) return;
 
-    const payload: AdapterPayload = {
+    const payload: EventPayload = {
       type: 'funnel',
       name: `${funnelName}.${step}`,
       funnel: funnelName,
@@ -218,7 +218,7 @@ export abstract class AnalyticsAdapter implements IAnalyticsAdapter {
   ): Promise<void> {
     if (!this.enabled) return;
 
-    const payload: AdapterPayload = {
+    const payload: EventPayload = {
       type: 'outcome',
       name: `${operationName}.${outcome}`,
       operation: operationName,
@@ -240,7 +240,7 @@ export abstract class AnalyticsAdapter implements IAnalyticsAdapter {
   ): Promise<void> {
     if (!this.enabled) return;
 
-    const payload: AdapterPayload = {
+    const payload: EventPayload = {
       type: 'value',
       name,
       value,
@@ -255,7 +255,7 @@ export abstract class AnalyticsAdapter implements IAnalyticsAdapter {
    * Flush pending requests and clean up
    *
    * CRITICAL: Prevents race condition during shutdown
-   * 1. Disables adapter to stop new events
+   * 1. Disables subscriber to stop new events
    * 2. Drains all pending requests (with retry logic)
    * 3. Ensures flush guarantee
    *
@@ -289,7 +289,7 @@ export abstract class AnalyticsAdapter implements IAnalyticsAdapter {
     if (this.pendingRequests.size > 0) {
       console.warn(
         `[${this.name}] Shutdown completed with ${this.pendingRequests.size} pending requests still in-flight. ` +
-        `This may indicate a bug in the adapter or extremely slow destination.`
+        `This may indicate a bug in the subscriber or extremely slow destination.`
       );
     }
   }
@@ -297,7 +297,7 @@ export abstract class AnalyticsAdapter implements IAnalyticsAdapter {
   /**
    * Internal: Send payload and track request
    */
-  private async send(payload: AdapterPayload): Promise<void> {
+  private async send(payload: EventPayload): Promise<void> {
     const request = this.sendWithErrorHandling(payload);
     this.pendingRequests.add(request);
 
@@ -312,7 +312,7 @@ export abstract class AnalyticsAdapter implements IAnalyticsAdapter {
    * Internal: Send with error handling
    */
   private async sendWithErrorHandling(
-    payload: AdapterPayload,
+    payload: EventPayload,
   ): Promise<void> {
     try {
       await this.sendToDestination(payload);
@@ -322,4 +322,4 @@ export abstract class AnalyticsAdapter implements IAnalyticsAdapter {
   }
 }
 
-export {type EventAttributes, type FunnelStatus, type OutcomeStatus} from 'autolemetry/analytics-adapter';
+export {type EventAttributes, type FunnelStatus, type OutcomeStatus} from 'autolemetry/event-subscriber';

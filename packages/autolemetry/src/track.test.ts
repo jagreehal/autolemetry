@@ -4,7 +4,7 @@
 
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 import { trace } from '@opentelemetry/api';
-import { track, getAnalyticsQueue } from './track';
+import { track, getEventQueue } from './track';
 import { init, getLogger } from './init';
 
 type TrackedEvent = {
@@ -72,7 +72,7 @@ describe('track() function', () => {
         track('test.event', { foo: 'bar' });
       }).not.toThrow();
 
-      const queue = getAnalyticsQueue();
+      const queue = getEventQueue();
       expect(queue).toBeNull();
     });
   });
@@ -81,14 +81,14 @@ describe('track() function', () => {
     beforeEach(() => {
       init({
         service: 'test-app',
-        adapters: [mockAdapter],
+        subscribers: [mockAdapter],
       });
     });
 
     it('should enqueue events', () => {
       track('user.signup', { userId: '123', plan: 'pro' });
 
-      const queue = getAnalyticsQueue();
+      const queue = getEventQueue();
       expect(queue).not.toBeNull();
       expect(queue?.size()).toBeGreaterThan(0);
     });
@@ -105,7 +105,7 @@ describe('track() function', () => {
     beforeEach(() => {
       init({
         service: 'test-app',
-        adapters: [mockAdapter],
+        subscribers: [mockAdapter],
       });
     });
 
@@ -116,7 +116,7 @@ describe('track() function', () => {
         track('user.signup', { userId: '123' });
 
         // Verify event was enqueued with trace context
-        const queue = getAnalyticsQueue();
+        const queue = getEventQueue();
         expect(queue).not.toBeNull();
 
         span.end();
@@ -134,7 +134,7 @@ describe('track() function', () => {
     beforeEach(() => {
       init({
         service: 'test-app',
-        adapters: [mockAdapter],
+        subscribers: [mockAdapter],
       });
     });
 
@@ -146,7 +146,7 @@ describe('track() function', () => {
       // Type-safe call (TypeScript would catch errors here)
       track<Events>('user.signup', { userId: '123', plan: 'pro' });
 
-      const queue = getAnalyticsQueue();
+      const queue = getEventQueue();
       expect(queue!.size()).toBeGreaterThan(0);
     });
   });

@@ -1,7 +1,7 @@
 /**
- * Slack Adapter for autolemetry
+ * Slack Subscriber for autolemetry
  *
- * Send analytics events as notifications to Slack channels via webhooks.
+ * Send events events as notifications to Slack channels via webhooks.
  *
  * Perfect for:
  * - Critical business events (orders, payments, signups)
@@ -11,12 +11,12 @@
  *
  * @example Basic usage
  * ```typescript
- * import { Analytics } from 'autolemetry/analytics';
- * import { SlackAdapter } from 'autolemetry-adapters/slack';
+ * import { Events } from 'autolemetry/events';
+ * import { SlackSubscriber } from 'autolemetry-subscribers/slack';
  *
- * const analytics = new Analytics('app', {
- *   adapters: [
- *     new SlackAdapter({
+ * const events = new Events('app', {
+ *   subscribers: [
+ *     new SlackSubscriber({
  *       webhookUrl: process.env.SLACK_WEBHOOK_URL!,
  *       channel: '#order-events'
  *     })
@@ -24,7 +24,7 @@
  * });
  *
  * // Sends to Slack
- * analytics.trackEvent('order.completed', {
+ * events.trackEvent('order.completed', {
  *   orderId: 'ord_123',
  *   userId: 'user_456',
  *   amount: 99.99
@@ -33,9 +33,9 @@
  *
  * @example Filter critical events only
  * ```typescript
- * const analytics = new Analytics('app', {
- *   adapters: [
- *     new SlackAdapter({
+ * const events = new Events('app', {
+ *   subscribers: [
+ *     new SlackSubscriber({
  *       webhookUrl: process.env.SLACK_WEBHOOK_URL!,
  *       channel: '#alerts',
  *       filter: (payload) => {
@@ -61,18 +61,18 @@
  */
 
 import {
-  AnalyticsAdapter,
-  type AdapterPayload,
-} from './analytics-adapter-base';
+  EventSubscriber,
+  type EventPayload,
+} from './event-subscriber-base';
 
-export interface SlackAdapterConfig {
+export interface SlackSubscriberConfig {
   /** Slack webhook URL (https://hooks.slack.com/services/...) */
   webhookUrl: string;
 
   /** Default channel to post to (optional, overrides webhook default) */
   channel?: string;
 
-  /** Custom username for bot (default: 'Analytics Bot') */
+  /** Custom username for bot (default: 'Events Bot') */
   username?: string;
 
   /** Custom emoji icon (default: ':chart_with_upwards_trend:') */
@@ -88,9 +88,9 @@ export interface SlackAdapterConfig {
   maxAttributeFields?: number;
 
   /** Filter function - return true to send, false to skip */
-  filter?: (payload: AdapterPayload) => boolean;
+  filter?: (payload: EventPayload) => boolean;
 
-  /** Enable/disable adapter */
+  /** Enable/disable subscriber */
   enabled?: boolean;
 }
 
@@ -118,22 +118,22 @@ interface SlackField {
   short: boolean;
 }
 
-export class SlackAdapter extends AnalyticsAdapter {
-  readonly name = 'SlackAdapter';
+export class SlackSubscriber extends EventSubscriber {
+  readonly name = 'SlackSubscriber';
   readonly version = '1.0.0';
 
-  private config: Required<Omit<SlackAdapterConfig, 'channel' | 'filter'>> & {
+  private config: Required<Omit<SlackSubscriberConfig, 'channel' | 'filter'>> & {
     channel?: string;
-    filter?: (payload: AdapterPayload) => boolean;
+    filter?: (payload: EventPayload) => boolean;
   };
 
-  constructor(config: SlackAdapterConfig) {
+  constructor(config: SlackSubscriberConfig) {
     super();
 
     this.config = {
       webhookUrl: config.webhookUrl,
       channel: config.channel,
-      username: config.username ?? 'Analytics Bot',
+      username: config.username ?? 'Events Bot',
       iconEmoji: config.iconEmoji ?? ':chart_with_upwards_trend:',
       includeTimestamp: config.includeTimestamp ?? true,
       includeAttributes: config.includeAttributes ?? true,
@@ -146,13 +146,13 @@ export class SlackAdapter extends AnalyticsAdapter {
 
     if (!this.config.webhookUrl) {
       console.error(
-        '[SlackAdapter] No webhook URL provided - adapter disabled'
+        '[SlackSubscriber] No webhook URL provided - subscriber disabled'
       );
       this.enabled = false;
     }
   }
 
-  protected async sendToDestination(payload: AdapterPayload): Promise<void> {
+  protected async sendToDestination(payload: EventPayload): Promise<void> {
     // Apply filter if provided
     if (this.config.filter) {
       const filterFn = this.config.filter;
@@ -179,9 +179,9 @@ export class SlackAdapter extends AnalyticsAdapter {
   }
 
   /**
-   * Format analytics payload as Slack message
+   * Format events payload as Slack message
    */
-  private formatSlackMessage(payload: AdapterPayload): SlackMessage {
+  private formatSlackMessage(payload: EventPayload): SlackMessage {
     const emoji = this.getEventEmoji(payload);
     const color = this.getEventColor(payload);
     const title = `${emoji} ${payload.name}`;
@@ -220,7 +220,7 @@ export class SlackAdapter extends AnalyticsAdapter {
       color,
       title,
       fields,
-      footer: 'Analytics Events',
+      footer: 'Events Events',
       footer_icon: 'https://i.imgur.com/QpCKbNL.png',
     };
 
@@ -242,7 +242,7 @@ export class SlackAdapter extends AnalyticsAdapter {
   /**
    * Get emoji for event type
    */
-  private getEventEmoji(payload: AdapterPayload): string {
+  private getEventEmoji(payload: EventPayload): string {
     switch (payload.type) {
       case 'outcome': {
         return payload.outcome === 'success' ? '✅' : '❌';
@@ -269,7 +269,7 @@ export class SlackAdapter extends AnalyticsAdapter {
   /**
    * Get Slack attachment color for event type
    */
-  private getEventColor(payload: AdapterPayload): string {
+  private getEventColor(payload: EventPayload): string {
     switch (payload.type) {
       case 'outcome': {
         return payload.outcome === 'success' ? 'good' : 'danger';
@@ -293,7 +293,7 @@ export class SlackAdapter extends AnalyticsAdapter {
   /**
    * Format event type for display
    */
-  private formatEventType(payload: AdapterPayload): string {
+  private formatEventType(payload: EventPayload): string {
     switch (payload.type) {
       case 'event': {
         return 'Event';
@@ -372,11 +372,11 @@ export class SlackAdapter extends AnalyticsAdapter {
   }
 
   /**
-   * Handle errors (override from AnalyticsAdapter)
+   * Handle errors (override from EventSubscriber)
    */
-  protected handleError(error: Error, payload: AdapterPayload): void {
+  protected handleError(error: Error, payload: EventPayload): void {
     console.error(
-      `[SlackAdapter] Failed to send ${payload.type} event "${payload.name}":`,
+      `[SlackSubscriber] Failed to send ${payload.type} event "${payload.name}":`,
       error
     );
   }

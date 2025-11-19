@@ -1,50 +1,50 @@
 /**
- * PostHog Adapter for autolemetry
+ * PostHog Subscriber for autolemetry
  *
- * Send analytics to PostHog for product analytics, feature flags, and A/B testing.
+ * Send events to PostHog for product events, feature flags, and A/B testing.
  *
  * @example Basic usage
  * ```typescript
- * import { Analytics } from 'autolemetry/analytics';
- * import { PostHogAdapter } from 'autolemetry-adapters/posthog';
+ * import { Events } from 'autolemetry/events';
+ * import { PostHogSubscriber } from 'autolemetry-subscribers/posthog';
  *
- * const analytics = new Analytics('checkout', {
- *   adapters: [
- *     new PostHogAdapter({
+ * const events = new Events('checkout', {
+ *   subscribers: [
+ *     new PostHogSubscriber({
  *       apiKey: process.env.POSTHOG_API_KEY!,
  *       host: 'https://us.i.posthog.com' // optional, defaults to US cloud
  *     })
  *   ]
  * });
  *
- * // Analytics go to both OpenTelemetry AND PostHog
- * analytics.trackEvent('order.completed', { userId: '123', amount: 99.99 });
+ * // Events go to both OpenTelemetry AND PostHog
+ * events.trackEvent('order.completed', { userId: '123', amount: 99.99 });
  * ```
  *
  * @example Feature flags
  * ```typescript
- * const adapter = new PostHogAdapter({ apiKey: 'phc_...' });
+ * const subscriber = new PostHogSubscriber({ apiKey: 'phc_...' });
  *
  * // Check if feature is enabled
- * const isEnabled = await adapter.isFeatureEnabled('new-checkout', 'user-123');
+ * const isEnabled = await subscriber.isFeatureEnabled('new-checkout', 'user-123');
  *
  * // Get feature flag value (string, boolean, number)
- * const variant = await adapter.getFeatureFlag('experiment-variant', 'user-123');
+ * const variant = await subscriber.getFeatureFlag('experiment-variant', 'user-123');
  *
  * // Get all flags for a user
- * const allFlags = await adapter.getAllFlags('user-123');
+ * const allFlags = await subscriber.getAllFlags('user-123');
  * ```
  *
- * @example Person and group analytics
+ * @example Person and group events
  * ```typescript
  * // Identify user and set properties
- * await adapter.identify('user-123', {
+ * await subscriber.identify('user-123', {
  *   email: 'user@example.com',
  *   plan: 'premium'
  * });
  *
  * // Identify a group (e.g., organization)
- * await adapter.groupIdentify('company', 'acme-corp', {
+ * await subscriber.groupIdentify('company', 'acme-corp', {
  *   industry: 'saas',
  *   employees: 500
  * });
@@ -53,7 +53,7 @@
  * @example Serverless configuration
  * ```typescript
  * // Optimized for AWS Lambda / Vercel Functions
- * const adapter = new PostHogAdapter({
+ * const subscriber = new PostHogSubscriber({
  *   apiKey: 'phc_...',
  *   flushAt: 1,        // Send immediately (don't batch)
  *   flushInterval: 0,  // Disable interval-based flushing
@@ -69,14 +69,14 @@
  *   // ... other PostHog options
  * });
  *
- * const adapter = new PostHogAdapter({
+ * const subscriber = new PostHogSubscriber({
  *   client: customClient
  * });
  * ```
  *
  * @example Error handling
  * ```typescript
- * const adapter = new PostHogAdapter({
+ * const subscriber = new PostHogSubscriber({
  *   apiKey: 'phc_...',
  *   onError: (error) => {
  *     console.error('PostHog error:', error);
@@ -86,8 +86,8 @@
  * ```
  */
 
-import type { EventAttributes } from 'autolemetry/analytics-adapter';
-import { AnalyticsAdapter, type AdapterPayload } from './analytics-adapter-base';
+import type { EventAttributes } from 'autolemetry/event-subscriber';
+import { EventSubscriber, type EventPayload } from './event-subscriber-base';
 
 // Type-only import to avoid runtime dependency
 import type { PostHog } from 'posthog-node';
@@ -99,7 +99,7 @@ export interface PostHogConfig {
   /** PostHog host (defaults to US cloud) */
   host?: string;
 
-  /** Enable/disable the adapter */
+  /** Enable/disable the subscriber */
   enabled?: boolean;
 
   /** Custom PostHog client instance (bypasses apiKey/host) */
@@ -164,8 +164,8 @@ export interface PersonProperties {
   [key: string]: any;
 }
 
-export class PostHogAdapter extends AnalyticsAdapter {
-  readonly name = 'PostHogAdapter';
+export class PostHogSubscriber extends EventSubscriber {
+  readonly name = 'PostHogSubscriber';
   readonly version = '2.0.0';
 
   private posthog: PostHog | null = null;
@@ -176,7 +176,7 @@ export class PostHogAdapter extends AnalyticsAdapter {
     super();
 
     if (!config.apiKey && !config.client) {
-      throw new Error('PostHogAdapter requires either apiKey or client to be provided');
+      throw new Error('PostHogSubscriber requires either apiKey or client to be provided');
     }
 
     this.enabled = config.enabled ?? true;
@@ -212,7 +212,7 @@ export class PostHogAdapter extends AnalyticsAdapter {
       this.setupErrorHandling();
     } catch (error) {
       console.error(
-        'PostHog adapter failed to initialize. Install posthog-node: pnpm add posthog-node',
+        'PostHog subscriber failed to initialize. Install posthog-node: pnpm add posthog-node',
         error,
       );
       this.enabled = false;
@@ -244,7 +244,7 @@ export class PostHogAdapter extends AnalyticsAdapter {
   /**
    * Send payload to PostHog
    */
-  protected async sendToDestination(payload: AdapterPayload): Promise<void> {
+  protected async sendToDestination(payload: EventPayload): Promise<void> {
     await this.ensureInitialized();
 
     // Build properties object, including value if present
@@ -280,10 +280,10 @@ export class PostHogAdapter extends AnalyticsAdapter {
    *
    * @example
    * ```typescript
-   * const isEnabled = await adapter.isFeatureEnabled('new-checkout', 'user-123');
+   * const isEnabled = await subscriber.isFeatureEnabled('new-checkout', 'user-123');
    *
    * // With groups
-   * const isEnabled = await adapter.isFeatureEnabled('beta-features', 'user-123', {
+   * const isEnabled = await subscriber.isFeatureEnabled('beta-features', 'user-123', {
    *   groups: { company: 'acme-corp' }
    * });
    * ```
@@ -314,11 +314,11 @@ export class PostHogAdapter extends AnalyticsAdapter {
    *
    * @example
    * ```typescript
-   * const variant = await adapter.getFeatureFlag('experiment-variant', 'user-123');
+   * const variant = await subscriber.getFeatureFlag('experiment-variant', 'user-123');
    * // Returns: 'control' | 'test' | 'test-2' | undefined
    *
    * // With person properties
-   * const variant = await adapter.getFeatureFlag('premium-feature', 'user-123', {
+   * const variant = await subscriber.getFeatureFlag('premium-feature', 'user-123', {
    *   personProperties: { plan: 'premium' }
    * });
    * ```
@@ -348,7 +348,7 @@ export class PostHogAdapter extends AnalyticsAdapter {
    *
    * @example
    * ```typescript
-   * const flags = await adapter.getAllFlags('user-123');
+   * const flags = await subscriber.getAllFlags('user-123');
    * // Returns: { 'new-checkout': true, 'experiment-variant': 'test', ... }
    * ```
    */
@@ -375,7 +375,7 @@ export class PostHogAdapter extends AnalyticsAdapter {
    *
    * @example
    * ```typescript
-   * await adapter.reloadFeatureFlags();
+   * await subscriber.reloadFeatureFlags();
    * ```
    */
   async reloadFeatureFlags(): Promise<void> {
@@ -389,7 +389,7 @@ export class PostHogAdapter extends AnalyticsAdapter {
     }
   }
 
-  // Person and Group Analytics
+  // Person and Group Events
 
   /**
    * Identify a user and set their properties
@@ -400,7 +400,7 @@ export class PostHogAdapter extends AnalyticsAdapter {
    * @example
    * ```typescript
    * // Set properties (will update existing values)
-   * await adapter.identify('user-123', {
+   * await subscriber.identify('user-123', {
    *   $set: {
    *     email: 'user@example.com',
    *     plan: 'premium'
@@ -408,7 +408,7 @@ export class PostHogAdapter extends AnalyticsAdapter {
    * });
    *
    * // Set properties only once (won't update if already exists)
-   * await adapter.identify('user-123', {
+   * await subscriber.identify('user-123', {
    *   $set_once: {
    *     signup_date: '2025-01-17'
    *   }
@@ -440,7 +440,7 @@ export class PostHogAdapter extends AnalyticsAdapter {
    *
    * @example
    * ```typescript
-   * await adapter.groupIdentify('company', 'acme-corp', {
+   * await subscriber.groupIdentify('company', 'acme-corp', {
    *   $set: {
    *     name: 'Acme Corporation',
    *     industry: 'saas',
@@ -480,9 +480,9 @@ export class PostHogAdapter extends AnalyticsAdapter {
    *
    * @example
    * ```typescript
-   * await adapter.trackEventWithGroups('feature.used', {
+   * await subscriber.trackEventWithGroups('feature.used', {
    *   userId: 'user-123',
-   *   feature: 'advanced-analytics'
+   *   feature: 'advanced-events'
    * }, {
    *   company: 'acme-corp'
    * });
@@ -523,7 +523,7 @@ export class PostHogAdapter extends AnalyticsAdapter {
   /**
    * Handle errors with custom error handler
    */
-  protected handleError(error: Error, payload: AdapterPayload): void {
+  protected handleError(error: Error, payload: EventPayload): void {
     this.config.onError?.(error);
     super.handleError(error, payload);
   }

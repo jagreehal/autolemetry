@@ -1,22 +1,22 @@
 /**
- * PostHog Adapter - Complete Feature Showcase
+ * PostHog Subscriber - Complete Feature Showcase
  *
- * This example demonstrates all PostHog adapter capabilities:
+ * This example demonstrates all PostHog subscriber capabilities:
  * - Basic event tracking
  * - Feature flags and A/B testing
- * - Person and group analytics (B2B SaaS)
+ * - Person and group events (B2B SaaS)
  * - Serverless configuration
  * - Custom client injection
  * - Error handling
  *
  * Install dependencies:
  * ```bash
- * pnpm add autolemetry autolemetry-adapters posthog-node
+ * pnpm add autolemetry autolemetry-subscribers posthog-node
  * ```
  */
 
-import { Analytics } from 'autolemetry/analytics';
-import { PostHogAdapter } from 'autolemetry-adapters/posthog';
+import { Events } from 'autolemetry/events';
+import { PostHogSubscriber } from 'autolemetry-subscribers/posthog';
 import { PostHog } from 'posthog-node';
 
 // ============================================================================
@@ -24,9 +24,9 @@ import { PostHog } from 'posthog-node';
 // ============================================================================
 
 async function basicEventTracking() {
-  const analytics = new Analytics('my-app', {
-    adapters: [
-      new PostHogAdapter({
+  const events = new Events('my-app', {
+    subscribers: [
+      new PostHogSubscriber({
         apiKey: process.env.POSTHOG_API_KEY!,
         host: 'https://us.i.posthog.com', // or 'https://eu.i.posthog.com' for EU cloud
       }),
@@ -34,36 +34,36 @@ async function basicEventTracking() {
   });
 
   // Track events
-  analytics.trackEvent('user.signed_up', {
+  events.trackEvent('user.signed_up', {
     userId: 'user-123',
     plan: 'premium',
     source: 'landing_page',
   });
 
   // Track funnel steps
-  analytics.trackFunnelStep('checkout', 'started', {
+  events.trackFunnelStep('checkout', 'started', {
     userId: 'user-123',
     cartValue: 99.99,
   });
 
-  analytics.trackFunnelStep('checkout', 'completed', {
+  events.trackFunnelStep('checkout', 'completed', {
     userId: 'user-123',
     orderId: 'order-456',
   });
 
   // Track outcomes
-  analytics.trackOutcome('payment.processing', 'success', {
+  events.trackOutcome('payment.processing', 'success', {
     userId: 'user-123',
     amount: 99.99,
   });
 
   // Track values/metrics
-  analytics.trackValue('revenue', 99.99, {
+  events.trackValue('revenue', 99.99, {
     userId: 'user-123',
     currency: 'USD',
   });
 
-  await analytics.shutdown();
+  await events.shutdown();
 }
 
 // ============================================================================
@@ -71,14 +71,14 @@ async function basicEventTracking() {
 // ============================================================================
 
 async function featureFlagsExample() {
-  const adapter = new PostHogAdapter({
+  const _subscriber = new PostHogSubscriber({
     apiKey: process.env.POSTHOG_API_KEY!,
   });
 
   const userId = 'user-123';
 
   // Check if a feature is enabled (boolean)
-  const hasNewCheckout = await adapter.isFeatureEnabled('new-checkout', userId);
+  const hasNewCheckout = await subscriber.isFeatureEnabled('new-checkout', userId);
 
   if (hasNewCheckout) {
     console.log('Show new checkout UI');
@@ -87,7 +87,7 @@ async function featureFlagsExample() {
   }
 
   // Get feature flag value (for multivariate tests)
-  const experimentVariant = await adapter.getFeatureFlag('pricing-experiment', userId);
+  const experimentVariant = await subscriber.getFeatureFlag('pricing-experiment', userId);
 
   switch (experimentVariant) {
     case 'control': {
@@ -108,21 +108,21 @@ async function featureFlagsExample() {
   }
 
   // Get all flags for a user (useful for client-side rendering)
-  const allFlags = await adapter.getAllFlags(userId);
+  const allFlags = await subscriber.getAllFlags(userId);
   console.log('All feature flags:', allFlags);
   // { 'new-checkout': true, 'pricing-experiment': 'test-1', ... }
 
   // Feature flags with person properties
-  const isPremiumFeatureEnabled = await adapter.getFeatureFlag('premium-analytics', userId, {
+  const isPremiumFeatureEnabled = await subscriber.getFeatureFlag('premium-events', userId, {
     personProperties: {
       plan: 'premium',
       signupDate: '2025-01-01',
     },
   });
-  console.log('Premium analytics enabled:', isPremiumFeatureEnabled);
+  console.log('Premium events enabled:', isPremiumFeatureEnabled);
 
   // Feature flags with group context (for B2B features)
-  const isBetaEnabled = await adapter.isFeatureEnabled('beta-features', userId, {
+  const isBetaEnabled = await subscriber.isFeatureEnabled('beta-features', userId, {
     groups: { company: 'acme-corp' },
     groupProperties: {
       company: {
@@ -134,22 +134,22 @@ async function featureFlagsExample() {
   console.log('Beta features enabled:', isBetaEnabled);
 
   // Reload feature flags from server (without restarting)
-  await adapter.reloadFeatureFlags();
+  await subscriber.reloadFeatureFlags();
 
-  await adapter.shutdown();
+  await subscriber.shutdown();
 }
 
 // ============================================================================
-// Example 3: Person and Group Analytics (B2B SaaS)
+// Example 3: Person and Group Events (B2B SaaS)
 // ============================================================================
 
-async function personAndGroupAnalytics() {
-  const adapter = new PostHogAdapter({
+async function personAndGroupEvents() {
+  const _subscriber = new PostHogSubscriber({
     apiKey: process.env.POSTHOG_API_KEY!,
   });
 
   // Identify a user and set their properties
-  await adapter.identify('user-123', {
+  await subscriber.identify('user-123', {
     $set: {
       email: 'user@acme-corp.com',
       name: 'John Doe',
@@ -159,7 +159,7 @@ async function personAndGroupAnalytics() {
   });
 
   // Set properties only once (won't update if already exists)
-  await adapter.identify('user-123', {
+  await subscriber.identify('user-123', {
     $set_once: {
       signup_date: '2025-01-17',
       first_utm_source: 'google',
@@ -167,7 +167,7 @@ async function personAndGroupAnalytics() {
   });
 
   // Identify a group (e.g., company/organization)
-  await adapter.groupIdentify('company', 'acme-corp', {
+  await subscriber.groupIdentify('company', 'acme-corp', {
     $set: {
       name: 'Acme Corporation',
       industry: 'SaaS',
@@ -178,11 +178,11 @@ async function personAndGroupAnalytics() {
   });
 
   // Track events with group context
-  await adapter.trackEventWithGroups(
+  await subscriber.trackEventWithGroups(
     'feature.used',
     {
       userId: 'user-123',
-      feature: 'advanced-analytics',
+      feature: 'advanced-events',
     },
     {
       company: 'acme-corp',
@@ -195,7 +195,7 @@ async function personAndGroupAnalytics() {
   // 2. Enable features for specific companies
   // 3. Track company-level metrics
 
-  await adapter.shutdown();
+  await subscriber.shutdown();
 }
 
 // ============================================================================
@@ -204,7 +204,7 @@ async function personAndGroupAnalytics() {
 
 async function serverlessConfiguration() {
   // For serverless environments, optimize for immediate sending
-  const adapter = new PostHogAdapter({
+  const _subscriber = new PostHogSubscriber({
     apiKey: process.env.POSTHOG_API_KEY!,
 
     // Send events immediately (don't batch)
@@ -222,20 +222,20 @@ async function serverlessConfiguration() {
 
   // In a Lambda handler:
   // exports.handler = async (event) => {
-  //   const analytics = new Analytics('my-lambda', {
-  //     adapters: [adapter]
+  //   const events = new Events('my-lambda', {
+  //     subscribers: [adapter]
   //   });
   //
-  //   analytics.trackEvent('lambda.invoked', { userId: event.userId });
+  //   events.trackEvent('lambda.invoked', { userId: event.userId });
   //
   //   // IMPORTANT: Always call shutdown in serverless!
   //   // This ensures events are flushed before function terminates
-  //   await analytics.shutdown();
+  //   await events.shutdown();
   //
   //   return { statusCode: 200 };
   // }
 
-  await adapter.shutdown();
+  await subscriber.shutdown();
 }
 
 // ============================================================================
@@ -252,19 +252,19 @@ async function customClientExample() {
     // Any other PostHog client options...
   });
 
-  // Pass the custom client to the adapter
-  const adapter = new PostHogAdapter({
+  // Pass the custom client to the subscriber
+  const _subscriber = new PostHogSubscriber({
     client: customClient,
   });
 
-  // Now you can use the adapter with your custom client configuration
-  const analytics = new Analytics('my-app', {
-    adapters: [adapter],
+  // Now you can use the subscriber with your custom client configuration
+  const events = new Events('my-app', {
+    subscribers: [adapter],
   });
 
-  analytics.trackEvent('custom.event', { userId: 'user-123' });
+  events.trackEvent('custom.event', { userId: 'user-123' });
 
-  await analytics.shutdown();
+  await events.shutdown();
 }
 
 // ============================================================================
@@ -272,7 +272,7 @@ async function customClientExample() {
 // ============================================================================
 
 async function errorHandlingExample() {
-  const adapter = new PostHogAdapter({
+  const _subscriber = new PostHogSubscriber({
     apiKey: process.env.POSTHOG_API_KEY!,
 
     // Enable debug logging
@@ -289,15 +289,15 @@ async function errorHandlingExample() {
     },
   });
 
-  const analytics = new Analytics('my-app', {
-    adapters: [adapter],
+  const events = new Events('my-app', {
+    subscribers: [adapter],
   });
 
   // If PostHog API is down, errors will be caught and logged
   // but won't crash your application
-  analytics.trackEvent('test.event', { userId: 'user-123' });
+  events.trackEvent('test.event', { userId: 'user-123' });
 
-  await analytics.shutdown();
+  await events.shutdown();
 }
 
 // ============================================================================
@@ -305,20 +305,20 @@ async function errorHandlingExample() {
 // ============================================================================
 
 async function completeSaaSExample() {
-  const adapter = new PostHogAdapter({
+  const _subscriber = new PostHogSubscriber({
     apiKey: process.env.POSTHOG_API_KEY!,
     onError: (error) => console.error('PostHog error:', error),
   });
 
-  const analytics = new Analytics('my-saas-app', {
-    adapters: [adapter],
+  const events = new Events('my-saas-app', {
+    subscribers: [adapter],
   });
 
   const userId = 'user-123';
   const companyId = 'acme-corp';
 
   // 1. User signs up
-  await adapter.identify(userId, {
+  await subscriber.identify(userId, {
     $set: {
       email: 'john@acme-corp.com',
       name: 'John Doe',
@@ -329,13 +329,13 @@ async function completeSaaSExample() {
     },
   });
 
-  analytics.trackEvent('user.signed_up', {
+  events.trackEvent('user.signed_up', {
     userId,
     plan: 'trial',
   });
 
   // 2. Identify the company
-  await adapter.groupIdentify('company', companyId, {
+  await subscriber.groupIdentify('company', companyId, {
     $set: {
       name: 'Acme Corporation',
       plan: 'trial',
@@ -344,46 +344,46 @@ async function completeSaaSExample() {
   });
 
   // 3. Check if company has access to beta features
-  const hasBetaAccess = await adapter.isFeatureEnabled('beta-features', userId, {
+  const hasBetaAccess = await subscriber.isFeatureEnabled('beta-features', userId, {
     groups: { company: companyId },
   });
 
   if (hasBetaAccess) {
     // 4. Track feature usage with company context
-    await adapter.trackEventWithGroups(
+    await subscriber.trackEventWithGroups(
       'beta_feature.used',
       {
         userId,
-        feature: 'advanced-analytics',
+        feature: 'advanced-events',
       },
       { company: companyId },
     );
   }
 
   // 5. User upgrades to premium
-  await adapter.identify(userId, {
+  await subscriber.identify(userId, {
     $set: { plan: 'premium' },
   });
 
-  await adapter.groupIdentify('company', companyId, {
+  await subscriber.groupIdentify('company', companyId, {
     $set: {
       plan: 'premium',
       upgraded_at: new Date().toISOString(),
     },
   });
 
-  analytics.trackOutcome('upgrade.flow', 'success', {
+  events.trackOutcome('upgrade.flow', 'success', {
     userId,
     plan: 'premium',
     amount: 99.99,
   });
 
-  analytics.trackValue('revenue', 99.99, {
+  events.trackValue('revenue', 99.99, {
     userId,
     plan: 'premium',
   });
 
-  await analytics.shutdown();
+  await events.shutdown();
 }
 
 // ============================================================================
@@ -391,12 +391,12 @@ async function completeSaaSExample() {
 // ============================================================================
 
 async function main() {
-  console.log('PostHog Adapter Examples\n');
+  console.log('PostHog Subscriber Examples\n');
 
   // Uncomment the examples you want to run:
   // await basicEventTracking();
   // await featureFlagsExample();
-  // await personAndGroupAnalytics();
+  // await personAndGroupEvents();
   // await serverlessConfiguration();
   // await customClientExample();
   // await errorHandlingExample();
@@ -413,7 +413,7 @@ if (require.main === module) {
 export {
   basicEventTracking,
   featureFlagsExample,
-  personAndGroupAnalytics,
+  personAndGroupEvents,
   serverlessConfiguration,
   customClientExample,
   errorHandlingExample,

@@ -63,23 +63,23 @@ export {
   instrumentBindings,
 } from './instrumentation/bindings';
 
-// Adapters hook
+// Subscribers hook
 export {
-  createEdgeAdapters,
-  getEdgeAdapters,
+  createEdgeSubscribers,
+  getEdgeSubscribers,
   getEventName,
-  type EdgeAdapters,
-  type EdgeAdaptersEvent,
-  type EdgeAdaptersFunnelStepEvent,
-  type EdgeAdaptersOutcomeEvent,
-  type EdgeAdaptersTrackEvent,
-  type EdgeAdaptersValueEvent,
-  type EdgeAdaptersTransport,
-  type EdgeAdaptersDispatchOptions,
-  type AdaptersDeliveryMode,
+  type EdgeSubscribers,
+  type EdgeEvent,
+  type EdgeFunnelStepEvent,
+  type EdgeOutcomeEvent,
+  type EdgeTrackEvent,
+  type EdgeValueEvent,
+  type EdgeTransport,
+  type EdgeDispatchOptions,
+  type SubscriberDeliveryMode,
   type FunnelStepStatus,
   type OutcomeStatus,
-} from './api/adapters';
+} from './api/subscribers';
 
 // Logger (zero dependencies!)
 export {
@@ -106,7 +106,7 @@ export type {
   TraceFlushableSpanProcessor,
   InitialSpanInfo,
   HandlerInstrumentation,
-  EdgeAdaptersAdapter,
+  EdgeSubscriber,
 } from './types';
 
 // Re-export OpenTelemetry APIs for convenience

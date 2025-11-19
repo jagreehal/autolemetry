@@ -17,17 +17,17 @@ The main package providing OpenTelemetry instrumentation with an ergonomic funct
   - `getConfig()` provides runtime configuration for sampling, rate limiting, circuit breakers
 - **Production Hardening**: Built-in rate limiters, circuit breakers, and PII redaction
 - **Adaptive Sampling**: Defaults to 10% baseline sampling, 100% for errors/slow operations (tail sampling)
-- **Analytics Integration**: Unified API to send product analytics events to any platform via adapters
+- **Events Integration**: Unified API to send product events events to any platform via adapters
 - **Multiple Entry Points**: Package uses explicit exports (check `package.json` exports field) for tree-shaking:
   - `autolemetry` - Core trace/span/init functions
   - `autolemetry/logger` - Pino integration
-  - `autolemetry/analytics` - Analytics API
+  - `autolemetry/events` - Events API
   - `autolemetry/metrics` - Metrics helpers
   - `autolemetry/testing` - Test utilities
   - And more (see package.json exports)
 
-### `packages/autolemetry-adapters`
-Analytics adapters for product analytics platforms (PostHog, Mixpanel, Amplitude, Segment, webhooks). All adapters extend `AnalyticsAdapter` base class which provides:
+### `packages/autolemetry-subscribers`
+Event subscribers for product events platforms (PostHog, Mixpanel, Amplitude, Segment, webhooks). All adapters extend `EventSubscriber` base class which provides:
 - Error handling and retry logic
 - Graceful shutdown with pending request tracking
 - Consistent payload normalization
@@ -162,7 +162,7 @@ pnpm release            # Build and publish to npm
 ```
 
 When creating changesets:
-- Select affected packages (autolemetry, autolemetry-adapters, autolemetry-edge)
+- Select affected packages (autolemetry, autolemetry-subscribers, autolemetry-edge)
 - Choose semver bump: patch (bug fixes), minor (new features), major (breaking changes)
 - Write clear summary for CHANGELOG
 
@@ -216,8 +216,8 @@ export const processDocuments = trace((ctx) => async function processData(data: 
 - Edge runtimes without file system access will fall back to unnamed spans
 - Results are cached per source location for performance
 
-### Analytics Queue Pattern (`packages/autolemetry/src/analytics-queue.ts`)
-Analytics events use an async queue to prevent blocking the main execution path:
+### Events Queue Pattern (`packages/autolemetry/src/events-queue.ts`)
+Events events use an async queue to prevent blocking the main execution path:
 - Events are queued immediately and returned
 - Background worker processes queue and sends to all configured adapters
 - Adapters can implement batching/buffering independently
@@ -254,7 +254,7 @@ Autolemetry re-exports commonly-needed OpenTelemetry utilities in semantically-o
 **`autolemetry/testing`** - High-level testing utilities with assertions:
 - `createTraceCollector()` - Auto-configured trace collector with helpers
 - `assertTraceCreated()`, `assertTraceSucceeded()`, `assertTraceFailed()`, etc.
-- Analytics and metrics testing utilities
+- Events and metrics testing utilities
 
 **Why re-export?** Achieves "one install is all you need" DX without bundle size impact (these are from `@opentelemetry/sdk-trace-base`, already a dependency).
 
@@ -293,10 +293,10 @@ expect(spans).toHaveLength(1)
 Use provided test harnesses for consistent testing:
 
 ```typescript
-// Analytics adapters
-import { AdapterTestHarness } from 'autolemetry-adapters/testing'
+// Event subscribers
+import { SubscriberTestHarness } from 'autolemetry-subscribers/testing'
 
-const harness = new AdapterTestHarness(new MyAdapter(config))
+const harness = new SubscriberTestHarness(new MySubscriber(config))
 await harness.testBasicEvent()
 await harness.testErrorHandling()
 
@@ -340,19 +340,19 @@ The library uses standard OpenTelemetry context propagation:
 ### Graceful Shutdown
 All components implement graceful shutdown:
 - `shutdown()` function flushes pending spans/metrics/logs
-- Analytics queue drains before shutdown completes
+- Events queue drains before shutdown completes
 - Adapters track pending requests and wait for completion
 - Use `flush()` for intermediate flushing without shutdown
 
 ## Common Development Workflows
 
-### Adding a New Analytics Adapter
-1. Create new file in `packages/autolemetry-adapters/src/`
-2. Extend `AnalyticsAdapter` base class
-3. Implement `sendToDestination(payload: AdapterPayload)` method
-4. Add export to `packages/autolemetry-adapters/src/index.ts`
+### Adding a New Event Subscriber
+1. Create new file in `packages/autolemetry-subscribers/src/`
+2. Extend `EventSubscriber` base class
+3. Implement `sendToDestination(payload: EventPayload)` method
+4. Add export to `packages/autolemetry-subscribers/src/index.ts`
 5. Add entry point to `package.json` exports field
-6. Add tests using `AdapterTestHarness`
+6. Add tests using `SubscriberTestHarness`
 7. Create changeset with `pnpm changeset`
 
 ### Adding a New Instrumentation Integration

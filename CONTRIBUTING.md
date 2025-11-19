@@ -44,7 +44,7 @@ Thank you for your interest in contributing to Autolemetry! This guide will help
 autolemetry/
 ├── packages/
 │   ├── autolemetry/          # Core library
-│   ├── autolemetry-adapters/ # Analytics adapters (PostHog, Mixpanel, etc.)
+│   ├── autolemetry-subscribers/ # Events adapters (PostHog, Mixpanel, etc.)
 │   └── autolemetry-edge/     # Edge runtime support (Cloudflare Workers, etc.)
 ├── apps/
 │   ├── example-basic/        # Basic usage example
@@ -113,7 +113,7 @@ git commit -m "docs(readme): update installation instructions"
 
 **Scope examples:**
 - `core` - autolemetry package
-- `adapters` - autolemetry-adapters package
+- `adapters` - autolemetry-subscribers package
 - `edge` - autolemetry-edge package
 - `examples` - example apps
 
@@ -126,7 +126,7 @@ pnpm changeset
 ```
 
 Follow the prompts:
-1. Select which packages changed (autolemetry, autolemetry-adapters, autolemetry-edge)
+1. Select which packages changed (autolemetry, autolemetry-subscribers, autolemetry-edge)
 2. Choose the semver bump type:
    - **Patch** (0.0.x) - Bug fixes, docs
    - **Minor** (0.x.0) - New features, backwards-compatible
@@ -137,10 +137,10 @@ Follow the prompts:
 ```markdown
 ---
 "autolemetry": minor
-"autolemetry-adapters": minor
+"autolemetry-subscribers": minor
 ---
 
-Add Slack webhook adapter for sending analytics to Slack channels
+Add Slack webhook adapter for sending events to Slack channels
 ```
 
 ### 6. Push and Create a Pull Request
@@ -210,15 +210,15 @@ describe('trace()', () => {
 - Maintain backwards compatibility
 - Test in both Node.js and edge environments
 
-### autolemetry-adapters
+### autolemetry-subscribers
 
 - Each adapter should be **tree-shakeable**
-- Follow the `AnalyticsAdapter` interface
+- Follow the `EventsAdapter` interface
 - Include tests using `AdapterTestHarness`
 - Document adapter-specific configuration
 
 ```typescript
-export class MyAdapter extends AnalyticsAdapter {
+export class MyAdapter extends EventsAdapter {
   readonly name = 'MyAdapter'
 
   protected async sendToDestination(payload: AdapterPayload): Promise<void> {

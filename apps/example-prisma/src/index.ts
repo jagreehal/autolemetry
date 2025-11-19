@@ -25,9 +25,7 @@ init({
   service: 'prisma-example',
   endpoint: process.env.OTLP_ENDPOINT || 'http://localhost:4318',
   instrumentations: [
-    new PrismaInstrumentation({
-      middleware: true, // Enable middleware tracing
-    }),
+    new PrismaInstrumentation(),
   ],
 });
 

@@ -1,10 +1,10 @@
 /**
- * Example: Send analytics to PostHog with the official adapter.
+ * Example: Send events to PostHog with the official adapter.
  *
  * Requirements:
  * - POSTHOG_KEY (Project API key that starts with phc_)
  * - POSTHOG_HOST (optional, defaults to https://us.i.posthog.com)
- * - POSTHOG_ENV_ID (optional, tagged on each analytics payload)
+ * - POSTHOG_ENV_ID (optional, tagged on each events payload)
  *
  * The script simulates a checkout flow and demonstrates:
  * - Tracking lifecycle events (view, add_to_cart, checkout)
@@ -19,9 +19,9 @@ import 'dotenv/config';
 import pino from 'pino';
 
 import { init, shutdown } from 'autolemetry';
-import { Analytics } from 'autolemetry/analytics';
+import { Event } from 'autolemetry/event';
 import { trace } from 'autolemetry/functional';
-import { PostHogAdapter } from 'autolemetry-adapters/posthog';
+import { PostHogSubscriber } from 'autolemetry-subscribers/posthog';
 
 const logger = pino({
   name: 'example-posthog',
@@ -52,13 +52,13 @@ init({
   logger,
 });
 
-const posthogAdapter = new PostHogAdapter({
+const posthogSubscriber = new PostHogSubscriber({
   apiKey: posthogKey,
   host: posthogHost,
 });
 
-const analytics = new Analytics('example-adapters-posthog', {
-  adapters: [posthogAdapter],
+const events = new Event('example-adapters-posthog', {
+  subscribers: [posthogSubscriber],
   logger,
 });
 
@@ -92,7 +92,7 @@ async function runDemo(): Promise<void> {
       posthogHost,
       posthogEnvId,
     },
-    'Sending sample analytics to PostHog',
+    'Sending sample events to PostHog',
   );
 
   for (let i = 0; i < 3; i++) {
@@ -103,18 +103,18 @@ async function runDemo(): Promise<void> {
       ctx.setAttribute('demo.iteration', i + 1);
       ctx.setAttribute('demo.userId', userId);
 
-      analytics.trackEvent('posthog.demo.product_viewed', {
+      events.trackEvent('posthog.demo.product_viewed', {
         userId,
         productId: `prod_${(i + 1).toString().padStart(2, '0')}`,
         environmentId: posthogEnvId,
       });
 
-      analytics.trackFunnelStep('posthog.checkout', 'started', {
+      events.trackFunnelStep('posthog.checkout', 'started', {
         userId,
         environmentId: posthogEnvId,
       });
 
-      analytics.trackEvent('posthog.demo.add_to_cart', {
+      events.trackEvent('posthog.demo.add_to_cart', {
         userId,
         orderId: order.id,
         amount: order.amount,
@@ -126,7 +126,7 @@ async function runDemo(): Promise<void> {
       const paymentSucceeded = Math.random() > 0.2;
 
       if (!paymentSucceeded) {
-        analytics.trackOutcome('posthog.payment', 'failure', {
+        events.trackOutcome('posthog.payment', 'failure', {
           userId,
           orderId: order.id,
           reason: 'insufficient_funds',
@@ -135,27 +135,27 @@ async function runDemo(): Promise<void> {
         return;
       }
 
-      analytics.trackOutcome('posthog.payment', 'success', {
+      events.trackOutcome('posthog.payment', 'success', {
         userId,
         orderId: order.id,
         paymentProvider: 'stripe',
         environmentId: posthogEnvId,
       });
 
-      analytics.trackFunnelStep('posthog.checkout', 'completed', {
+      events.trackFunnelStep('posthog.checkout', 'completed', {
         userId,
         orderId: order.id,
         environmentId: posthogEnvId,
       });
 
-      analytics.trackValue('posthog.revenue', order.amount, {
+      events.trackValue('posthog.revenue', order.amount, {
         orderId: order.id,
         userId,
         currency: order.currency,
         environmentId: posthogEnvId,
       });
 
-      analytics.trackEvent('posthog.demo.order_completed', {
+      events.trackEvent('posthog.demo.order_completed', {
         ...order,
         environmentId: posthogEnvId,
       });
@@ -176,7 +176,7 @@ async function closeGracefully(signal?: NodeJS.Signals): Promise<void> {
     logger.info({ signal }, 'Received shutdown signal');
   }
 
-  await posthogAdapter.shutdown().catch((error) => {
+  await posthogSubscriber.shutdown().catch((error) => {
     logger.warn({ error }, 'Failed to flush PostHog adapter');
   });
 

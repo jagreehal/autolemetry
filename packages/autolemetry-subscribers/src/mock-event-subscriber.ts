@@ -1,30 +1,30 @@
 /**
- * Mock Analytics Adapter for Testing
+ * Mock Events Subscriber for Testing
  *
- * In-memory adapter that captures all analytics events for testing assertions.
- * Useful for unit testing code that uses Analytics without making real API calls.
+ * In-memory subscriber that captures all events events for testing assertions.
+ * Useful for unit testing code that uses Events without making real API calls.
  *
  * @example Basic testing
  * ```typescript
- * import { Analytics } from 'autolemetry/analytics';
- * import { MockAnalyticsAdapter } from 'autolemetry-adapters/mock-analytics-adapter';
+ * import { Events } from 'autolemetry/events';
+ * import { MockEventSubscriber } from 'autolemetry-subscribers/mock-event-subscriber';
  * import { describe, it, expect, beforeEach } from 'vitest';
  *
  * describe('CheckoutService', () => {
- *   let mockAdapter: MockAnalyticsAdapter;
- *   let analytics: Analytics;
+ *   let mockSubscriber: MockEventSubscriber;
+ *   let events: Events;
  *
  *   beforeEach(() => {
- *     mockAdapter = new MockAnalyticsAdapter();
- *     analytics = new Analytics('checkout', { adapters: [mockAdapter] });
+ *     mockSubscriber = new MockEventSubscriber();
+ *     events = new Events('checkout', { subscribers: [mockSubscriber] });
  *   });
  *
  *   it('should track order completion', async () => {
- *     const service = new CheckoutService(analytics);
+ *     const service = new CheckoutService(events);
  *     await service.completeOrder('ord_123', 99.99);
  *
- *     expect(mockAdapter.events).toHaveLength(1);
- *     expect(mockAdapter.events[0]).toMatchObject({
+ *     expect(mockSubscriber.events).toHaveLength(1);
+ *     expect(mockSubscriber.events[0]).toMatchObject({
  *       type: 'event',
  *       name: 'order.completed',
  *       attributes: { orderId: 'ord_123', amount: 99.99 }
@@ -32,10 +32,10 @@
  *   });
  *
  *   it('should track checkout funnel', () => {
- *     analytics.trackFunnelStep('checkout', 'started', { cartValue: 99.99 });
- *     analytics.trackFunnelStep('checkout', 'completed', { cartValue: 99.99 });
+ *     events.trackFunnelStep('checkout', 'started', { cartValue: 99.99 });
+ *     events.trackFunnelStep('checkout', 'completed', { cartValue: 99.99 });
  *
- *     const funnelEvents = mockAdapter.getFunnelEvents('checkout');
+ *     const funnelEvents = mockSubscriber.getFunnelEvents('checkout');
  *     expect(funnelEvents).toHaveLength(2);
  *     expect(funnelEvents[0].step).toBe('started');
  *     expect(funnelEvents[1].step).toBe('completed');
@@ -48,9 +48,9 @@
  * import { createPublisher } from 'autolemetry-outbox';
  * import { MockOutboxStorage } from 'autolemetry-outbox/testing';
  *
- * it('should broadcast events to all adapters', async () => {
+ * it('should broadcast events to all subscribers', async () => {
  *   const mockOutbox = new MockOutboxStorage();
- *   const mockAdapter = new MockAnalyticsAdapter();
+ *   const mockSubscriber = new MockEventSubscriber();
  *
  *   // Add events to outbox
  *   await mockOutbox.writeEvent({
@@ -64,22 +64,22 @@
  *   });
  *
  *   // Run publisher
- *   const publisher = createPublisher(mockOutbox, [mockAdapter]);
+ *   const publisher = createPublisher(mockOutbox, [mockSubscriber]);
  *   await publisher();
  *
  *   // Assert event was broadcast
- *   expect(mockAdapter.events).toHaveLength(1);
- *   expect(mockAdapter.events[0].name).toBe('order.completed');
+ *   expect(mockSubscriber.events).toHaveLength(1);
+ *   expect(mockSubscriber.events[0].name).toBe('order.completed');
  * });
  * ```
  */
 
 import type {
-  AnalyticsAdapter,
+  EventSubscriber,
   EventAttributes,
   FunnelStatus,
   OutcomeStatus,
-} from 'autolemetry/analytics-adapter';
+} from 'autolemetry/event-subscriber';
 
 /**
  * Captured event data
@@ -97,13 +97,13 @@ export interface CapturedEvent {
 }
 
 /**
- * Mock adapter for testing
+ * Mock subscriber for testing
  *
- * Captures all analytics calls in memory for test assertions.
+ * Captures all events calls in memory for test assertions.
  * Does not make any real API calls.
  */
-export class MockAnalyticsAdapter implements AnalyticsAdapter {
-  readonly name = 'MockAnalyticsAdapter';
+export class MockEventSubscriber implements EventSubscriber {
+  readonly name = 'MockEventSubscriber';
   readonly version = '1.0.0';
 
   /**

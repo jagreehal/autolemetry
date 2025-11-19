@@ -1,9 +1,9 @@
 /**
- * Tests for analytics queue guardrails
+ * Tests for events queue guardrails
  */
 
 import { describe, it, expect, beforeEach } from 'vitest';
-import { AnalyticsQueue } from './analytics-queue';
+import { EventQueue } from './event-queue';
 
 // Mock adapter for testing
 type MockEvent = {
@@ -32,13 +32,13 @@ class MockAdapter {
   async trackValue(): Promise<void> {}
 }
 
-describe('AnalyticsQueue', () => {
+describe('EventQueue', () => {
   let mockAdapter: MockAdapter;
-  let queue: AnalyticsQueue;
+  let queue: EventQueue;
 
   beforeEach(() => {
     mockAdapter = new MockAdapter();
-    queue = new AnalyticsQueue([mockAdapter], {
+    queue = new EventQueue([mockAdapter], {
       maxSize: 10,
       batchSize: 3,
       flushInterval: 100,
@@ -186,7 +186,7 @@ describe('AnalyticsQueue', () => {
     it('should send to all adapters', async () => {
       const adapter1 = new MockAdapter();
       const adapter2 = new MockAdapter();
-      const multiQueue = new AnalyticsQueue([adapter1, adapter2]);
+      const multiQueue = new EventQueue([adapter1, adapter2]);
 
       multiQueue.enqueue({
         name: 'test1',
@@ -205,7 +205,7 @@ describe('AnalyticsQueue', () => {
       const adapter2 = new MockAdapter();
       adapter1.shouldFail = true; // One adapter fails
 
-      const multiQueue = new AnalyticsQueue([adapter1, adapter2], {
+      const multiQueue = new EventQueue([adapter1, adapter2], {
         maxRetries: 1,
       });
 

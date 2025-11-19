@@ -1,19 +1,19 @@
 /**
  * MockWebhookServer - In-Memory HTTP Server for Testing
  *
- * Perfect for testing webhook adapters without real HTTP calls.
+ * Perfect for testing webhook subscribers without real HTTP calls.
  * Records all requests for easy assertions in tests.
  *
  * @example
  * ```typescript
- * import { MockWebhookServer } from 'autolemetry-adapters/testing';
+ * import { MockWebhookServer } from 'autolemetry-subscribers/testing';
  *
  * const server = new MockWebhookServer();
  * const url = await server.start();
  *
- * // Test your webhook adapter
- * const adapter = new WebhookAdapter({ url });
- * await adapter.trackEvent('test.event', { foo: 'bar' });
+ * // Test your webhook subscriber
+ * const subscriber = new WebhookSubscriber({ url });
+ * await subscriber.trackEvent('test.event', { foo: 'bar' });
  *
  * // Assert
  * const requests = server.getRequests();
@@ -49,7 +49,7 @@ export interface MockServerOptions {
 }
 
 /**
- * In-memory HTTP server for testing webhook adapters.
+ * In-memory HTTP server for testing webhook subscribers.
  *
  * Records all incoming requests so you can assert on them in tests.
  */
@@ -192,12 +192,12 @@ export class MockWebhookServer {
   /**
    * Wait for a specific number of requests.
    *
-   * Useful when testing async adapters.
+   * Useful when testing async subscribers.
    *
    * @example
    * ```typescript
-   * await adapter.trackEvent('event1', {});
-   * await adapter.trackEvent('event2', {});
+   * await subscriber.trackEvent('event1', {});
+   * await subscriber.trackEvent('event2', {});
    * await server.waitForRequests(2, 1000); // Wait max 1 second
    * ```
    */

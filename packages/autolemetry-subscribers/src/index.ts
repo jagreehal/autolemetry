@@ -1,50 +1,50 @@
 /**
- * autolemetry-adapters
+ * autolemetry-subscribers
  *
- * Send analytics to multiple platforms:
- * - PostHog (product analytics)
- * - Mixpanel (product analytics)
- * - Amplitude (product analytics)
+ * Send events to multiple platforms:
+ * - PostHog (product events)
+ * - Mixpanel (product events)
+ * - Amplitude (product events)
  * - Segment (customer data platform)
  * - Slack (team notifications)
  * - Webhook (custom integrations, Zapier, Make.com)
  *
  * @example Multi-platform tracking
  * ```typescript
- * import { Analytics } from 'autolemetry/analytics';
- * import { PostHogAdapter, MixpanelAdapter } from 'autolemetry-adapters';
+ * import { Events } from 'autolemetry/events';
+ * import { PostHogSubscriber, MixpanelSubscriber } from 'autolemetry-subscribers';
  *
- * const analytics = new Analytics('checkout', {
- *   adapters: [
- *     new PostHogAdapter({ apiKey: 'phc_...' }),
- *     new MixpanelAdapter({ token: '...' })
+ * const events = new Events('checkout', {
+ *   subscribers: [
+ *     new PostHogSubscriber({ apiKey: 'phc_...' }),
+ *     new MixpanelSubscriber({ token: '...' })
  *   ]
  * });
  *
  * // Sent to: OpenTelemetry + PostHog + Mixpanel
- * analytics.trackEvent('order.completed', { userId: '123', amount: 99.99 });
+ * events.trackEvent('order.completed', { userId: '123', amount: 99.99 });
  * ```
  *
  */
 
 // ============================================================================
-// Destination Adapters (where events go)
+// Destination Subscribers (where events go)
 // ============================================================================
 
-export { PostHogAdapter, type PostHogConfig } from './posthog';
-export { MixpanelAdapter, type MixpanelConfig } from './mixpanel';
-export { SegmentAdapter, type SegmentConfig } from './segment';
-export { AmplitudeAdapter, type AmplitudeConfig } from './amplitude';
-export { SlackAdapter, type SlackAdapterConfig } from './slack';
-export { WebhookAdapter, type WebhookConfig } from './webhook';
+export { PostHogSubscriber, type PostHogConfig } from './posthog';
+export { MixpanelSubscriber, type MixpanelConfig } from './mixpanel';
+export { SegmentSubscriber, type SegmentConfig } from './segment';
+export { AmplitudeSubscriber, type AmplitudeConfig } from './amplitude';
+export { SlackSubscriber, type SlackSubscriberConfig } from './slack';
+export { WebhookSubscriber, type WebhookConfig } from './webhook';
 
 // ============================================================================
-// Base Classes for Building Custom Adapters
+// Base Classes for Building Custom Subscribers
 // ============================================================================
 
-// Standard base class - extend this for custom adapters
-export { AnalyticsAdapter, type AdapterPayload } from './analytics-adapter-base';
+// Standard base class - extend this for custom subscribers
+export { EventSubscriber, type EventPayload } from './event-subscriber-base';
 
 // Specialized base class for streaming platforms (Kafka, Kinesis, Pub/Sub)
-export { StreamingAnalyticsAdapter } from './streaming-analytics-adapter';
+export { StreamingEventSubscriber } from './streaming-event-subscriber';
 

@@ -1,5 +1,5 @@
 /**
- * Input validation for analytics events and attributes
+ * Input validation for events events and attributes
  *
  * Prevents:
  * - Invalid event names
@@ -8,7 +8,7 @@
  * - Sensitive data leaks
  */
 
-import type { EventAttributes } from './analytics-adapter';
+import type { EventAttributes } from './event-subscriber';
 
 export interface ValidationConfig {
   /** Max event name length (default: 100) */
@@ -215,7 +215,7 @@ function sanitizeValue(
 }
 
 /**
- * Validate and sanitize an analytics event
+ * Validate and sanitize an events event
  * Returns { eventName, attributes } with sanitized values
  */
 export function validateEvent(

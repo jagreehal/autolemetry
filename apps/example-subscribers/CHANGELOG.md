@@ -5,7 +5,7 @@
 ### Patch Changes
 
 - Updated dependencies [feb78b4]
-  - autolemetry-adapters@1.1.0
+  - autolemetry-subscribers@1.1.0
 
 ## 1.0.0
 
