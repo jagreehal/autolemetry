@@ -8,7 +8,7 @@
     "noEmit": true,
     "paths": {
       // "autolemetry": ["../../packages/autolemetry/src"],
-      // "autolemetry-adapters": ["../../packages/autolemetry-adapters/src/*"]
+      // "autolemetry-subscribers": ["../../packages/autolemetry-subscribers/src/*"]
     }
   },
   "include": ["src/**/*"]

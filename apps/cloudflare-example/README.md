@@ -21,7 +21,7 @@ This example demonstrates all features of `autolemetry-edge` for Cloudflare Work
 - ✅ **Disable Flag** - Option to disable instrumentation for local dev
 - ✅ **Traced Functions** - Custom business logic tracing
 - ✅ **Edge Logger** - Structured logging with trace correlation
-- ✅ **Edge Adapters** - Analytics event tracking
+- ✅ **Edge Adapters** - Events event tracking
 
 ## Usage
 
@@ -293,5 +293,5 @@ This example is more comprehensive than basic OpenTelemetry examples because it 
 6. **Distributed Tracing** - Automatic context propagation
 7. **Multiple Handler Types** - Fetch, Scheduled, Queue, Email
 8. **Auto-instrumentation** - KV, R2, D1, Service Bindings, Fetch, Cache
-9. **Edge Adapters** - Analytics event tracking
+9. **Edge Adapters** - Events event tracking
 10. **Production Best Practices** - Environment-based configuration, proper error handling

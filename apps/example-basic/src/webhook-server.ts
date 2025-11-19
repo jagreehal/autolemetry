@@ -1,10 +1,10 @@
 /**
- * Minimal Node.js server that demonstrates the autolemetry WebhookAdapter.
+ * Minimal Node.js server that demonstrates the autolemetry WebhookSubscriber.
  *
  * Features:
  * - Starts a local webhook receiver (`POST /webhook`)
- * - Exposes a trigger endpoint (`POST /trigger`) that sends analytics events
- *   through the WebhookAdapter and immediately posts back to the receiver
+ * - Exposes a trigger endpoint (`POST /trigger`) that sends events events
+ *   through the WebhookSubscriber and immediately posts back to the receiver
  * - Logs the received webhook payloads so you can verify the full round-trip
  *
  * Run: pnpm --filter @jagreehal/example-basic start:webhook
@@ -21,9 +21,9 @@ import 'dotenv/config';
 import pino from 'pino';
 
 import { init, shutdown } from 'autolemetry';
-import { Analytics } from 'autolemetry/analytics';
+import { Event } from 'autolemetry/event';
 import { trace } from 'autolemetry/functional';
-import { WebhookAdapter } from 'autolemetry-adapters/webhook';
+import { WebhookSubscriber } from 'autolemetry-subscribers/webhook';
 
 const logger = pino({
   name: 'example-webhook-server',
@@ -54,15 +54,15 @@ init({
   logger,
 });
 
-const webhookAdapter = new WebhookAdapter({
+const webhookSubscriber = new WebhookSubscriber({
   url: `${baseUrl}${webhookPath}`,
   headers: {
     'x-example-webhook-secret': webhookSecret,
   },
 });
 
-const analytics = new Analytics('example-basic', {
-  adapters: [webhookAdapter],
+const events = new Event('example-basic', {
+  subscribers: [webhookSubscriber],
   logger,
 });
 
@@ -131,7 +131,7 @@ const server = createServer(async (req, res) => {
   }
 
   if (method === 'POST' && url === triggerPath) {
-    // Wrap in traced function to automatically capture traceId/spanId in analytics events
+    // Wrap in traced function to automatically capture traceId/spanId in events events
     const handleTrigger = trace('webhook.trigger', async () => {
       const payload = (await parseJson<TriggerPayload>(req)) ?? {};
       const name =
@@ -152,10 +152,10 @@ const server = createServer(async (req, res) => {
           event: name,
           attributes,
         },
-        'Sending analytics event via WebhookAdapter',
+        'Sending events event via WebhookSubscriber',
       );
 
-      analytics.trackEvent(name, {
+      events.trackEvent(name, {
         ...attributes,
         triggerSource: 'example-basic-webhook',
       });
@@ -165,7 +165,7 @@ const server = createServer(async (req, res) => {
       res.end(JSON.stringify({ ok: true, event: name }));
     });
 
-    await handleTrigger();
+    await handleTrigger;
     return;
   }
 
@@ -196,13 +196,13 @@ server.listen(port, () => {
   setTimeout(() => {
     // Wrap in traced function to automatically capture traceId/spanId
     const sendDemoEvent = trace('webhook.demo.init', async () => {
-      logger.info('Sending initial demo analytics event');
-      analytics.trackEvent('webhook.demo.started', {
+      logger.info('Sending initial demo events event');
+      events.trackEvent('webhook.demo.started', {
         startedAt: new Date().toISOString(),
       });
     });
 
-    void sendDemoEvent();
+    void sendDemoEvent;
   }, 1_000).unref();
 
   logger.info(
@@ -213,7 +213,7 @@ server.listen(port, () => {
 
 async function closeGracefully(signal: NodeJS.Signals): Promise<void> {
   logger.info({ signal }, 'Received shutdown signal');
-  await webhookAdapter.shutdown();
+  await webhookSubscriber.shutdown();
   await shutdown().catch((error) => {
     logger.warn({ error }, 'Failed to flush autolemetry on shutdown');
   });

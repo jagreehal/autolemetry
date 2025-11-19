@@ -1,15 +1,15 @@
 # 🔭 autolemetry
 
 [![npm version](https://img.shields.io/npm/v/autolemetry.svg?label=autolemetry)](https://www.npmjs.com/package/autolemetry)
-[![npm adapters](https://img.shields.io/npm/v/autolemetry-adapters.svg?label=adapters)](https://www.npmjs.com/package/autolemetry-adapters)
+[![npm subscribers](https://img.shields.io/npm/v/autolemetry-subscribers.svg?label=subscribers)](https://www.npmjs.com/package/autolemetry-subscribers)
 [![License: MIT](https://img.shields.io/badge/license-MIT-green.svg)](LICENSE)
 
-**Write once, observe everywhere.** Instrument your Node.js code a single time, keep the DX you love, and stream traces, metrics, logs, and product analytics to **any** observability stack without vendor lock-in.
+**Write once, observe everywhere.** Instrument your Node.js code a single time, keep the DX you love, and stream traces, metrics, logs, and product events to **any** observability stack without vendor lock-in.
 
 - **Drop-in DX** – one `init()` and ergonomic helpers like `trace()`, `span()`, `withTracing()`, decorators, and batch instrumentation.
-- **Platform freedom** – OTLP-first design plus adapters for PostHog, Mixpanel, Amplitude, and anything else via custom exporters/readers.
+- **Platform freedom** – OTLP-first design plus subscribers for PostHog, Mixpanel, Amplitude, and anything else via custom exporters/readers.
 - **Production hardening** – adaptive sampling (10% baseline, 100% errors/slow paths), rate limiting, circuit breakers, payload validation, and automatic sensitive-field redaction.
-- **Auto enrichment** – service metadata, deployment info, and AsyncLocalStorage-powered correlation IDs automatically flow into spans, metrics, logs, and analytics events.
+- **Auto enrichment** – service metadata, deployment info, and AsyncLocalStorage-powered correlation IDs automatically flow into spans, metrics, logs, and events.
 
 > Raw OpenTelemetry is verbose, and vendor SDKs create lock-in. Autolemetry gives you the best parts of both: clean ergonomics **and** total ownership of your telemetry.
 
@@ -43,9 +43,9 @@ Replace `NODE_OPTIONS` and 30+ lines of SDK boilerplate with `init()`, wrap func
     - [Reusable Middleware Helpers](#reusable-middleware-helpers)
     - [Decorators (TypeScript 5+)](#decorators-typescript-5)
     - [Database Instrumentation](#database-instrumentation)
-  - [Business Metrics \& Product Analytics](#business-metrics--product-analytics)
-    - [OpenTelemetry Metrics (Metrics class + helpers)](#opentelemetry-metrics-metrics-class--helpers)
-    - [Product Analytics (PostHog, Mixpanel, Amplitude, …)](#product-analytics-posthog-mixpanel-amplitude-)
+  - [Business Metrics \& Product Events](#business-metrics--product-events)
+    - [OpenTelemetry Metrics (Metric class + helpers)](#opentelemetry-metrics-metrics-class--helpers)
+    - [Product Events (PostHog, Mixpanel, Amplitude, …)](#product-events-posthog-mixpanel-amplitude-)
   - [Logging with Trace Context](#logging-with-trace-context)
   - [Auto Instrumentation \& Advanced Configuration](#auto-instrumentation--advanced-configuration)
   - [Operational Safety \& Runtime Controls](#operational-safety--runtime-controls)
@@ -53,7 +53,7 @@ Replace `NODE_OPTIONS` and 30+ lines of SDK boilerplate with `init()`, wrap func
   - [Building Custom Instrumentation](#building-custom-instrumentation)
     - [Instrumenting Queue Consumers](#instrumenting-queue-consumers)
     - [Instrumenting Scheduled Jobs / Cron](#instrumenting-scheduled-jobs--cron)
-    - [Creating Custom Analytics Adapters](#creating-custom-analytics-adapters)
+    - [Creating Custom Event Subscribers](#creating-custom-events-adapters)
     - [Low-Level Span Manipulation](#low-level-span-manipulation)
     - [Custom Metrics](#custom-metrics)
   - [Serverless \& Short-lived Processes](#serverless--short-lived-processes)
@@ -90,7 +90,7 @@ Replace `NODE_OPTIONS` and 30+ lines of SDK boilerplate with `init()`, wrap func
 | ---------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------ |
 | Writing raw OpenTelemetry spans/metrics takes dozens of lines and manual lifecycle management. | Wrap any function in `trace()` or `span()` and get automatic span lifecycle, error capture, attributes, and adaptive sampling.       |
 | Vendor SDKs simplify setup but trap your data in a single platform.                            | Autolemetry is OTLP-native and works with Grafana Cloud, Datadog, New Relic, Tempo, Honeycomb, Elasticsearch, or your own collector. |
-| Teams need both observability **and** product analytics.                                       | Ship technical telemetry and funnel/behavior events through the same API with contextual enrichment.                                 |
+| Teams need both observability **and** product events.                                          | Ship technical telemetry and funnel/behavior events through the same API with contextual enrichment.                                 |
 | Production readiness requires redaction, rate limiting, and circuit breakers.                  | Those guardrails are on by default so you can safely enable telemetry everywhere.                                                    |
 
 ## Quick Start
@@ -122,7 +122,7 @@ Defaults:
 - Metrics: on in every environment
 - Sampler: adaptive (10% baseline, 100% for errors/slow spans)
 - Version: auto-detected from `package.json`
-- Analytics auto-flush when the root span finishes
+- Events auto-flush when the root span finishes
 
 ### 3. Instrument code with `trace()`
 
@@ -148,7 +148,7 @@ import { init, track } from 'autolemetry';
 init({
   service: 'checkout-api',
   endpoint: 'https://otlp-gateway-prod.grafana.net/otlp',
-  adapters: [new PostHogAdapter({ apiKey: process.env.POSTHOG_KEY! })],
+  subscribers: [new PostHogSubscriber({ apiKey: process.env.POSTHOG_KEY! })],
 });
 
 export const processOrder = trace(async function processOrder(order) {
@@ -157,7 +157,7 @@ export const processOrder = trace(async function processOrder(order) {
 });
 ```
 
-Every span, metric, log line, and analytics event includes `traceId`, `spanId`, `operation.name`, `service.version`, and `deployment.environment` automatically.
+Every span, metric, log line, and event includes `traceId`, `spanId`, `operation.name`, `service.version`, and `deployment.environment` automatically.
 
 ## Choose Any Destination
 
@@ -208,10 +208,10 @@ init({
 
 init({
   service: 'my-app',
-  // Product analytics adapters (ship alongside OTLP)
-  adapters: [
-    new PostHogAdapter({ apiKey: process.env.POSTHOG_KEY! }),
-    new MixpanelAdapter({ projectToken: process.env.MIXPANEL_TOKEN! }),
+  // Product events subscribers (ship alongside OTLP)
+  subscribers: [
+    new PostHogSubscriber({ apiKey: process.env.POSTHOG_KEY! }),
+    new MixpanelSubscriber({ projectToken: process.env.MIXPANEL_TOKEN! }),
   ],
 });
 
@@ -326,7 +326,7 @@ function timed<T>(operation: string, fn: () => Promise<T>): Promise<T> {
 2. **Immediate execution** `trace(ctx => result)` – Executes once immediately, returns the result directly
 
 - Automatic span lifecycle (`start`, `end`, status, and error recording).
-- Function names feed `operation.name`, `code.function`, and analytics enrichment.
+- Function names feed `operation.name`, `code.function`, and events enrichment.
 - Works with promises, async/await, or sync functions.
 
 ### span()
@@ -461,16 +461,16 @@ instrumentDatabase(db, {
 await db.select().from(users); // queries emit spans automatically
 ```
 
-## Business Metrics & Product Analytics
+## Business Metrics & Product Events
 
-Autolemetry treats metrics and analytics as first-class citizens so engineers and product teams share the same context.
+Autolemetry treats metrics and events as first-class citizens so engineers and product teams share the same context.
 
-### OpenTelemetry Metrics (Metrics class + helpers)
+### OpenTelemetry Metrics (Metric class + helpers)
 
 ```typescript
-import { Metrics, createHistogram } from 'autolemetry';
+import { Metric, createHistogram } from 'autolemetry';
 
-const metrics = new Metrics('checkout');
+const metrics = new Metric('checkout');
 const revenue = createHistogram('checkout.revenue');
 
 export const processOrder = trace((ctx) => async (order) => {
@@ -486,59 +486,150 @@ export const processOrder = trace((ctx) => async (order) => {
 - Emits OpenTelemetry counters/histograms via the OTLP endpoint configured in `init()`.
 - Infrastructure metrics are enabled by default in **every** environment.
 
-### Product Analytics (PostHog, Mixpanel, Amplitude, …)
+### Product Events (PostHog, Mixpanel, Amplitude, …)
+
+Track user behavior, conversion funnels, and business outcomes alongside your OpenTelemetry traces.
+
+**Recommended: Configure subscribers in `init()`, use global `track()` function:**
 
 ```typescript
-import { Analytics, track } from 'autolemetry';
-import { PostHogAdapter } from 'autolemetry-adapters';
+import { init, track, trace } from 'autolemetry';
+import { PostHogSubscriber } from 'autolemetry-subscribers/posthog';
 
-const analytics = new Analytics('checkout', {
-  adapters: [new PostHogAdapter({ apiKey: process.env.POSTHOG_KEY! })],
+init({
+  service: 'checkout',
+  subscribers: [new PostHogSubscriber({ apiKey: process.env.POSTHOG_KEY! })],
 });
 
 export const signup = trace('user.signup', async (user) => {
-  analytics.trackEvent('user.signup', { userId: user.id, plan: user.plan });
-  analytics.trackFunnelStep('checkout', 'completed', {
-    cartValue: user.cartTotal,
-  });
-  analytics.trackValue('lifetimeValue', user.cartTotal, { currency: 'USD' });
-  analytics.trackOutcome('user.signup', 'success', { cohort: user.cohort });
-
-  track('user.signup.global', { userId: user.id }); // global helper shares the same enrichment
+  // All events use subscribers from init() automatically
+  track('user.signup', { userId: user.id, plan: user.plan });
+  track.funnelStep('checkout', 'completed', { cartValue: user.cartTotal });
+  track.value('lifetimeValue', user.cartTotal, { currency: 'USD' });
+  track.outcome('user.signup', 'success', { cohort: user.cohort });
 });
 ```
 
-Auto-enrichment adds `traceId`, `spanId`, `correlationId`, `operation.name`, `service.version`, and `deployment.environment` to every analytics payload without manual wiring.
+**Event instance (inherits subscribers from `init()`):**
+
+```typescript
+import { Event } from 'autolemetry/event';
+
+// Uses subscribers configured in init() - no need to pass them again
+const events = new Event('checkout');
+
+events.trackEvent('order.completed', { amount: 99.99 });
+events.trackFunnelStep('checkout', 'started', { cartValue: 99.99 });
+```
+
+**Override subscribers for specific Event instance:**
+
+```typescript
+import { Event } from 'autolemetry/event';
+import { MixpanelSubscriber } from 'autolemetry-subscribers/mixpanel';
+
+// Override: use different subscribers for this instance (multi-tenant, A/B testing, etc.)
+const marketingEvents = new Event('marketing', {
+  subscribers: [new MixpanelSubscriber({ token: process.env.MIXPANEL_TOKEN! })],
+});
+
+marketingEvents.trackEvent('campaign.viewed', { campaignId: '123' });
+```
+
+**Subscriber Resolution:**
+
+- If `subscribers` passed to Event constructor → uses those (instance override)
+- If no `subscribers` passed → falls back to `init()` subscribers (global config)
+- If neither configured → events logged only (graceful degradation)
+
+Auto-enrichment adds `traceId`, `spanId`, `correlationId`, `operation.name`, `service.version`, and `deployment.environment` to every event payload without manual wiring.
 
 ## Logging with Trace Context
 
-Structured logs use the same context as traces.
+**Bring your own logger** (Pino, Winston, Bunyan, etc.) and autolemetry automatically instruments it to:
+
+- Inject trace context (`traceId`, `spanId`, `correlationId`) into every log record
+- Record errors in the active OpenTelemetry span
+- Bridge logs to the OpenTelemetry Logs API for OTLP export to Grafana, Datadog, etc.
+
+### Using Pino (recommended)
+
+```bash
+npm install pino
+```
 
 ```typescript
-import { createLogger, init, trace } from 'autolemetry';
+import pino from 'pino';
+import { init, trace } from 'autolemetry';
 
-const logger = createLogger('user-service', {
+const logger = pino({
   level: process.env.LOG_LEVEL || 'info',
-  pretty: process.env.NODE_ENV !== 'production',
 });
 
 init({ service: 'user-service', logger });
 
 export const createUser = trace(async (data: UserData) => {
-  logger.info('Creating user', { userId: data.id });
+  logger.info({ userId: data.id }, 'Creating user');
   try {
     const user = await db.users.create(data);
-    logger.info('User created', { userId: user.id });
+    logger.info({ userId: user.id }, 'User created');
     return user;
   } catch (error) {
-    logger.error('Create failed', error as Error, { userId: data.id });
+    logger.error({ err: error, userId: data.id }, 'Create failed');
     throw error;
   }
 });
 ```
 
-- Logs automatically include `traceId`, `spanId`, and `correlationId`.
-- Send logs through OTLP via `logRecordProcessors` or forward them anywhere with adapter support.
+### Using Winston
+
+```bash
+npm install winston
+```
+
+```typescript
+import winston from 'winston';
+import { init } from 'autolemetry';
+
+const logger = winston.createLogger({
+  level: 'info',
+  format: winston.format.json(),
+  transports: [new winston.transports.Console()],
+});
+
+init({ service: 'user-service', logger });
+```
+
+### Using Bunyan (or other loggers)
+
+Autolemetry auto-detects Pino and Winston. For other loggers like Bunyan, manually add the instrumentation:
+
+```bash
+npm install bunyan @opentelemetry/instrumentation-bunyan
+```
+
+```typescript
+import bunyan from 'bunyan';
+import { init } from 'autolemetry';
+import { BunyanInstrumentation } from '@opentelemetry/instrumentation-bunyan';
+
+const logger = bunyan.createLogger({ name: 'user-service' });
+
+init({
+  service: 'user-service',
+  logger,
+  instrumentations: [new BunyanInstrumentation()], // Manual instrumentation
+});
+```
+
+**Can't find your logger?** Check [OpenTelemetry JS Contrib](https://github.com/open-telemetry/opentelemetry-js-contrib/tree/main/packages) for available instrumentations, or [open an issue](https://github.com/jagreehal/autolemetry/issues) to request official support!
+
+### What you get automatically
+
+- ✅ Logs include `traceId`, `spanId`, `correlationId` for correlation with traces
+- ✅ Errors are automatically recorded in the active span
+- ✅ Logs export via OTLP to your observability backend (Grafana, Datadog, etc.)
+- ✅ Zero configuration for Pino/Winston - just pass your logger to `init()`
 
 ## Auto Instrumentation & Advanced Configuration
 
@@ -563,7 +654,7 @@ init({
   integrations: ['http', 'express', 'pino'],
   instrumentations: [new HttpInstrumentation()],
   otlpHeaders: 'Authorization=Basic ...',
-  adapters: [new PostHogAdapter({ apiKey: 'phc_xxx' })],
+  subscribers: [new PostHogSubscriber({ apiKey: 'phc_xxx' })],
 });
 ```
 
@@ -573,7 +664,7 @@ init({
 - **Rate limiting & circuit breakers** – Prevent telemetry storms when backends misbehave.
 - **Validation** – Configurable attribute/event name lengths, maximum counts, and nesting depth.
 - **Sensitive data redaction** – Passwords, tokens, API keys, and any custom regex you provide are automatically masked before export.
-- **Auto-flush** – Analytics buffers drain when root spans end (disable with `autoFlushAnalytics: false`).
+- **Auto-flush** – Events buffers drain when root spans end (disable with `autoFlushEvents: false`).
 - **Runtime flags** – Toggle metrics or swap endpoints via env vars without code edits.
 
 ```bash
@@ -589,14 +680,14 @@ OTLP_ENDPOINT=https://otel.mycompany.com node server.js
 ```typescript
 init({
   service: string; // required
-  adapters?: AnalyticsAdapter[];
+  subscribers?: EventSubscriber[];
   endpoint?: string;
   protocol?: 'http' | 'grpc'; // OTLP protocol (default: 'http')
   metrics?: boolean | 'auto';
   sampler?: Sampler;
   version?: string;
   environment?: string;
-  autoFlushAnalytics?: boolean;  // Auto-flush analytics (default: true)
+  autoFlushEvents?: boolean;  // Auto-flush events (default: true)
   autoFlush?: boolean;           // Auto-flush spans (default: false)
   integrations?: string[] | boolean | Record<string, { enabled?: boolean }>;
   instrumentations?: NodeSDKConfiguration['instrumentations'];
@@ -615,6 +706,22 @@ init({
   };
 });
 ```
+
+**Event Subscribers:**
+
+Configure event subscribers globally to send product events to PostHog, Mixpanel, Amplitude, etc.:
+
+```typescript
+import { init } from 'autolemetry';
+import { PostHogSubscriber } from 'autolemetry-subscribers/posthog';
+
+init({
+  service: 'my-app',
+  subscribers: [new PostHogSubscriber({ apiKey: process.env.POSTHOG_KEY! })],
+});
+```
+
+Event instances automatically inherit these subscribers unless you explicitly override them. See [Product Events](#product-events-posthog-mixpanel-amplitude-) for details.
 
 **Protocol Configuration:**
 
@@ -751,7 +858,7 @@ export const processMessage = trace(async function processMessage(
     return handleMessage(message);
   });
 
-  // Track analytics events
+  // Track events
   track('message.processed', {
     messageType: message.type,
     processingTime: Date.now() - message.timestamp,
@@ -797,14 +904,14 @@ export const dailyReportJob = trace(async function dailyReportJob() {
 cron.schedule('0 0 * * *', () => dailyReportJob());
 ```
 
-### Creating Custom Analytics Adapters
+### Creating Custom Event Subscribers
 
-Implement the `AnalyticsAdapter` interface to send events to any analytics platform:
+Implement the `EventSubscriber` interface to send events to any events platform:
 
 ```typescript
-import { type AnalyticsAdapter, type EventAttributes } from 'autolemetry';
+import { type EventSubscriber, type EventAttributes } from 'autolemetry';
 
-export class CustomAnalyticsAdapter implements AnalyticsAdapter {
+export class CustomEventSubscriber implements EventSubscriber {
   constructor(private config: { apiKey: string; endpoint: string }) {}
 
   async track(
@@ -835,7 +942,7 @@ export class CustomAnalyticsAdapter implements AnalyticsAdapter {
 // Use it in init()
 init({
   service: 'my-app',
-  adapters: [new CustomAnalyticsAdapter({ apiKey: '...', endpoint: '...' })],
+  subscribers: [new CustomEventSubscriber({ apiKey: '...', endpoint: '...' })],
 });
 ```
 
@@ -935,7 +1042,7 @@ export async function handleRequest(req: Request) {
 }
 ```
 
-**Key Principle:** All these primitives work together - spans automatically capture context, metrics and analytics events inherit trace IDs, and everything flows through the same configured exporters and adapters. Build what you need, when you need it.
+**Key Principle:** All these primitives work together - spans automatically capture context, metrics and events inherit trace IDs, and everything flows through the same configured exporters and adapters. Build what you need, when you need it.
 
 ## Serverless & Short-lived Processes
 
@@ -966,7 +1073,7 @@ export const handler = async (event) => {
 
 The `flush()` function:
 
-- Flushes analytics events from the queue
+- Flushes events from the queue
 - Force-flushes OpenTelemetry spans to exporters
 - Includes timeout protection (default: 2000ms)
 - Safe to call multiple times
@@ -984,7 +1091,7 @@ Enable automatic span flushing on root span completion:
 ```typescript
 init({
   service: 'my-lambda',
-  autoFlushAnalytics: true, // enabled by default (analytics only)
+  autoFlushEvents: true, // enabled by default (events only)
   autoFlush: true, // flush spans on root completion
 });
 
@@ -1028,17 +1135,17 @@ The `autolemetry-edge` package is optimized for edge runtimes with automatic flu
 - `instrument(target, options)` – Batch-wraps an object of functions.
 - `Trace` decorator – Adds tracing to class methods (TypeScript 5+).
 - `instrumentDatabase(db, options)` – Adds automatic DB spans (Drizzle, etc.).
-- `Metrics` class & helpers (`createHistogram`, etc.) – Emit OpenTelemetry metrics.
-- `Analytics` class & `track()` helper – Send product analytics events/funnels/outcomes/values via adapters.
-- `createLogger(name, options)` – Build a logger that automatically includes trace context.
-- `PostHogAdapter`, `MixpanelAdapter`, … – Provided in `autolemetry-adapters`; create your own by implementing the `AnalyticsAdapter` interface.
+- `Metric` class & helpers (`createHistogram`, etc.) – Emit OpenTelemetry metrics.
+- `Event` class & `track()` helper – Send product events/funnels/outcomes/values via subscribers.
+- `Logger` interface – Bring your own Pino/Winston logger; autolemetry auto-instruments it for trace context and OTLP export.
+- `PostHogSubscriber`, `MixpanelSubscriber`, … – Provided in `autolemetry-subscribers`; create your own by implementing the `EventSubscriber` interface.
 
 Each API is type-safe, works in both ESM and CJS, and is designed to minimize boilerplate while staying close to OpenTelemetry primitives.
 
 ## FAQ & Next Steps
 
 - **Do I need to abandon my current tooling?** No. Autolemetry layers on top of OpenTelemetry and forwards to whatever you already use (Datadog, Grafana, Tempo, Honeycomb, etc.).
-- **Is this just for traces?** No. Spans, metrics, logs, and analytics all share the same context and exporters.
+- **Is this just for traces?** No. Spans, metrics, logs, and events all share the same context and exporters.
 - **Can I customize everything?** Yes. Override exporters, readers, resources, validation, or even the full NodeSDK via `sdkFactory`.
 - **Does it work in production?** Yes. Adaptive sampling, redaction, validation, rate limiting, and circuit breakers are enabled out of the box.
 - **What about frameworks?** Use decorators, `withTracing()`, or `instrument()` for NestJS, Fastify, Express, Next.js actions, queues, workers, anything in Node.js.
@@ -1047,7 +1154,7 @@ Each API is type-safe, works in both ESM and CJS, and is designed to minimize bo
 
 1. `npm install autolemetry` and call `init()` at startup.
 2. Wrap your critical paths with `trace()` (or `Trace` decorators if you prefer classes).
-3. Point the OTLP endpoint at your favorite observability backend and optionally add analytics adapters.
+3. Point the OTLP endpoint at your favorite observability backend and optionally add events adapters.
 4. Expand coverage with `instrumentDatabase()`, `withTracing()`, metrics, logging, and auto-instrumentations.
 
 ## Troubleshooting & Debugging

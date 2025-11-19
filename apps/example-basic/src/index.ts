@@ -4,14 +4,14 @@
  * This example shows:
  * - Basic tracing with trace()
  * - Metrics tracking
- * - Analytics events
+ * - Events events
  * - Custom attributes
  * 
  * Run: pnpm start
  */
 
 import 'dotenv/config';
-import { init, trace, Metrics, track, type TraceContext } from 'autolemetry';
+import { init, trace, Metric, track, type TraceContext } from 'autolemetry';
 
 // Initialize autolemetry
 init({
@@ -21,7 +21,7 @@ init({
 });
 
 // Create a metrics instance
-const metrics = new Metrics('example');
+const metrics = new Metric('example');
 
 // Example: Basic traced function
 export const createUser = trace((ctx) => async (name: string, email: string) => {
@@ -38,7 +38,7 @@ export const createUser = trace((ctx) => async (name: string, email: string) => 
   // Track business metrics
   metrics.trackEvent('user.created', { name, email });
   
-  // Track analytics event
+  // Track events event
   track('user.signup', { 
     userId: `user-${Date.now()}`, 
     name, 

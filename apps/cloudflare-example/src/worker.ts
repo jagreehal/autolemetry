@@ -4,7 +4,7 @@ import {
   trace,
   span,
   createEdgeLogger,
-  getEdgeAdapters,
+  getEdgeSubscribers,
 } from 'autolemetry-edge';
 import { SamplingPresets } from 'autolemetry-edge/sampling';
 import { SpanStatusCode } from '@opentelemetry/api';
@@ -256,10 +256,10 @@ const handler: ExportedHandler<typeof worker.Env> = {
       }
     }
 
-    // Use edge adapters if available
-    const adapters = getEdgeAdapters(ctx);
-    if (adapters) {
-      adapters.trackEvent('request.processed', { path: url.pathname });
+    // Use edge subscribers if available
+    const subscribers = getEdgeSubscribers(ctx);
+    if (subscribers) {
+      subscribers.trackEvent('request.processed', { path: url.pathname });
     }
 
     const result = await processRequest(request);

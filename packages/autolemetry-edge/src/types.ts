@@ -102,7 +102,7 @@ export type OutcomeStatus =
   | 'partial'
   | (string & {});
 
-export interface EdgeAdaptersEventBase {
+export interface EdgeEventBase {
   [key: string]: unknown;
   service: string;
   timestamp: number;
@@ -113,36 +113,36 @@ export interface EdgeAdaptersEventBase {
   name: string; // Normalized event name for easy access
 }
 
-export interface EdgeAdaptersTrackEvent extends EdgeAdaptersEventBase {
+export interface EdgeTrackEvent extends EdgeEventBase {
   type: 'event';
   event: string;
 }
 
-export interface EdgeAdaptersFunnelStepEvent extends EdgeAdaptersEventBase {
+export interface EdgeFunnelStepEvent extends EdgeEventBase {
   type: 'funnel-step';
   funnel: string;
   status: FunnelStepStatus;
 }
 
-export interface EdgeAdaptersOutcomeEvent extends EdgeAdaptersEventBase {
+export interface EdgeOutcomeEvent extends EdgeEventBase {
   type: 'outcome';
   operation: string;
   outcome: OutcomeStatus;
 }
 
-export interface EdgeAdaptersValueEvent extends EdgeAdaptersEventBase {
+export interface EdgeValueEvent extends EdgeEventBase {
   type: 'value';
   metric: string;
   value: number;
 }
 
-export type EdgeAdaptersEvent =
-  | EdgeAdaptersTrackEvent
-  | EdgeAdaptersFunnelStepEvent
-  | EdgeAdaptersOutcomeEvent
-  | EdgeAdaptersValueEvent;
+export type EdgeEvent =
+  | EdgeTrackEvent
+  | EdgeFunnelStepEvent
+  | EdgeOutcomeEvent
+  | EdgeValueEvent;
 
-export type EdgeAdaptersAdapter = (event: EdgeAdaptersEvent) => OrPromise<void>;
+export type EdgeSubscriber = (event: EdgeEvent) => OrPromise<void>;
 
 export interface FetcherConfig {
   includeTraceContext?: boolean | ((request: Request) => boolean);
@@ -188,7 +188,7 @@ interface EdgeConfigBase {
   sampling?: SamplingConfig;
   propagator?: TextMapPropagator;
   instrumentation?: InstrumentationOptions;
-  adapters?: EdgeAdaptersAdapter[];
+  subscribers?: EdgeSubscriber[];
 }
 
 interface EdgeConfigExporter extends EdgeConfigBase {
@@ -215,7 +215,7 @@ export interface ResolvedEdgeConfig extends EdgeConfigBase {
   spanProcessors: SpanProcessor[];
   propagator: TextMapPropagator;
   instrumentation: InstrumentationOptions;
-  adapters: EdgeAdaptersAdapter[];
+  subscribers: EdgeSubscriber[];
 }
 
 /**

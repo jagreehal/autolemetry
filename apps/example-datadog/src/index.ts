@@ -20,7 +20,7 @@
  */
 
 import 'dotenv/config';
-import { init, trace, shutdown, Metrics, type TraceContext } from 'autolemetry';
+import { init, trace, shutdown, Metric, type TraceContext } from 'autolemetry';
 import { createLogger, LOG_LEVEL, type LogLevel } from 'autolemetry/logger';
 import { createDatadogConfig, type DatadogSite } from 'autolemetry/presets/datadog';
 
@@ -144,7 +144,7 @@ logger.info(
 // This reduces costs while ensuring you capture all important traces
 
 // Create metrics instance for tracking business metrics
-const metrics = new Metrics('datadog-example', { logger });
+const metrics = new Metric('datadog-example', { logger });
 
 // ============================================================================
 // Example Functions with Tracing

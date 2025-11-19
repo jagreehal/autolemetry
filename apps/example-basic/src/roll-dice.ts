@@ -4,7 +4,7 @@
  * This example shows:
  * - Basic tracing with trace()
  * - Metrics tracking
- * - Analytics events
+ * - Events events
  * - Custom attributes
  * 
  * Run: pnpm start
@@ -28,7 +28,7 @@ const logger = pino({
 });
 
 import 'dotenv/config';
-import { init, trace, Metrics, track, shutdown, span, SpanStatusCode, createCounter, getMeter } from 'autolemetry';
+import { init, trace, Metric, track, shutdown, span, SpanStatusCode, createCounter, getMeter } from 'autolemetry';
 
 // Initialize autolemetry
 init({
@@ -48,7 +48,7 @@ init({
 });
 
 // Create a metrics instance
-const metrics = new Metrics('example');
+const metrics = new Metric('example');
 const rollCounter = createCounter('example.roll.once', {
   description: 'Count of dice roll attempts',
   unit: '1',
@@ -124,7 +124,7 @@ async function main() {
   console.log('🚀 Starting autolemetry example...\n');
 
   // Call the traced function
-  await increment();
+  await increment;
   logger.info('Increment completed');
   
   // Test rollTheDice (sync function - no await needed!)

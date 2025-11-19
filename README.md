@@ -1,26 +1,26 @@
 # 🔭 autolemetry
 
 [![npm version](https://img.shields.io/npm/v/autolemetry.svg?label=autolemetry)](https://www.npmjs.com/package/autolemetry)
-[![npm adapters](https://img.shields.io/npm/v/autolemetry-adapters.svg?label=adapters)](https://www.npmjs.com/package/autolemetry-adapters)
+[![npm subscribers](https://img.shields.io/npm/v/autolemetry-subscribers.svg?label=adapters)](https://www.npmjs.com/package/autolemetry-subscribers)
 [![License: MIT](https://img.shields.io/badge/license-MIT-green.svg)](LICENSE)
 
 **Write once, observe everywhere.**
 
-Instrument your Node.js code a single time, keep the DX you love, and stream traces, metrics, logs, and product analytics to **any** observability stack without vendor lock-in.
+Instrument your Node.js code a single time, keep the DX you love, and stream traces, metrics, logs, and product events to **any** observability stack without vendor lock-in.
 
-**One `init()`, wrap functions with `trace()`, and get automatic traces, metrics, and analytics:**
+**One `init()`, wrap functions with `trace()`, and get automatic traces, metrics, and events:**
 
 ```typescript
 import { init, trace, track } from 'autolemetry';
-import { PostHogAdapter, SlackAdapter } from 'autolemetry-adapters';
+import { PostHogSubscriber, SlackSubscriber } from 'autolemetry-subscribers';
 
 // Initialize once at startup
 init({
   service: 'checkout-api',
   endpoint: process.env.OTEL_EXPORTER_OTLP_ENDPOINT, // Grafana, Datadog, Tempo, etc.
-  adapters: [
-    new PostHogAdapter({ apiKey: process.env.POSTHOG_KEY! }),
-    new SlackAdapter({ webhookUrl: process.env.SLACK_WEBHOOK! }),
+  subscribers: [
+    new PostHogSubscriber({ apiKey: process.env.POSTHOG_KEY! }),
+    new SlackSubscriber({ webhookUrl: process.env.SLACK_WEBHOOK! }),
   ],
 });
 
@@ -32,7 +32,7 @@ export const processOrder = trace(async function processOrder(
   const user = await db.users.findById(orderId);
   const payment = await chargeCard(user.cardId, amount);
 
-  // Product analytics automatically enriched with trace context
+  // Product events automatically enriched with trace context
   // Sent to: OTLP + PostHog + Slack (all in one call!)
   track('order.completed', { orderId, amount, userId: user.id });
 
@@ -44,7 +44,7 @@ export const processOrder = trace(async function processOrder(
 
 - ✅ Creates a span with automatic error handling
 - ✅ Tracks metrics (duration, success rate)
-- ✅ Sends analytics events with `traceId` and `spanId` to **all** adapters
+- ✅ Sends events with `traceId` and `spanId` to **all** adapters
 - ✅ Works with **any** OTLP-compatible backend (Grafana, Datadog, New Relic, Tempo, etc.)
 
 **[→ See complete examples and API docs](./packages/autolemetry/README.md#quick-start)**
@@ -68,11 +68,11 @@ Core library providing ergonomic OpenTelemetry instrumentation with:
 
 **[→ View full documentation](./packages/autolemetry/README.md)**
 
-### [autolemetry-adapters](./packages/autolemetry-adapters)
+### [autolemetry-subscribers](./packages/autolemetry-subscribers)
 
-[![npm](https://img.shields.io/npm/v/autolemetry-adapters.svg)](https://www.npmjs.com/package/autolemetry-adapters)
+[![npm](https://img.shields.io/npm/v/autolemetry-subscribers.svg)](https://www.npmjs.com/package/autolemetry-subscribers)
 
-Product analytics adapters for:
+Product events subscribers for:
 
 - PostHog
 - Mixpanel
@@ -80,7 +80,7 @@ Product analytics adapters for:
 - Slack webhooks
 - Custom webhooks
 
-**[→ View adapters documentation](./packages/autolemetry-adapters/README.md)**
+**[→ View subscribers documentation](./packages/autolemetry-subscribers/README.md)**
 
 ### [autolemetry-edge](./packages/autolemetry-edge)
 
@@ -110,11 +110,11 @@ Typical migration: Replace `NODE_OPTIONS` and 30+ lines of SDK boilerplate with 
 
 ```bash
 npm install autolemetry
-# Optional: Add analytics adapters (PostHog, Slack, Mixpanel, etc.)
-npm install autolemetry-adapters
+# Optional: Add event subscribers (PostHog, Slack, Mixpanel, etc.)
+npm install autolemetry-subscribers
 # or
 pnpm add autolemetry
-pnpm add autolemetry-adapters  # Optional
+pnpm add autolemetry-subscribers  # Optional
 ```
 
 ### Quick Debug Mode
@@ -203,7 +203,7 @@ pnpm --filter @jagreehal/example-http start
 autolemetry/
 ├── packages/
 │   ├── autolemetry/          # Core library
-│   ├── autolemetry-adapters/ # Analytics adapters
+│   ├── autolemetry-subscribers/ # Event subscribers
 │   └── autolemetry-edge/     # Edge runtime support
 ├── apps/
 │   ├── example-basic/        # Basic usage example
@@ -297,7 +297,7 @@ Autolemetry is built on top of OpenTelemetry and provides:
 | ----------------------------------- | --------------------------------------------------- |
 | Raw OpenTelemetry is verbose        | One-line `trace()` wrapper with automatic lifecycle |
 | Vendor SDKs create lock-in          | OTLP-native, works with any backend                 |
-| Need both observability & analytics | Unified API for traces, metrics, logs, and events   |
+| Need both observability & events | Unified API for traces, metrics, logs, and events   |
 | Production safety concerns          | Built-in sampling, rate limiting, redaction         |
 
 ## Troubleshooting
@@ -309,7 +309,7 @@ Having issues seeing your traces? Use `ConsoleSpanExporter` for visual debugging
 - [x] Core tracing API
 - [x] Metrics support
 - [x] Log correlation
-- [x] Product analytics adapters
+- [x] Product events subscribers
 - [x] Edge runtime support
 - [x] LLM observability (OpenLLMetry)
 

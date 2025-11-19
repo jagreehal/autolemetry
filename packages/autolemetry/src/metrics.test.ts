@@ -1,5 +1,5 @@
 import { describe, it, expect, beforeEach, vi } from 'vitest';
-import { Metrics, getMetrics, resetMetrics } from './metrics';
+import { Metric, getMetrics, resetMetrics } from './metric';
 import { type ILogger } from './logger';
 import { init } from './init';
 import { configure } from './config';
@@ -23,7 +23,7 @@ describe('Metrics', () => {
 
   describe('trackEvent', () => {
     it('should track business events as metrics', () => {
-      const metrics = new Metrics('test-service', { logger: mockLogger });
+      const metrics = new Metric('test-service', { logger: mockLogger });
 
       metrics.trackEvent('order.completed', {
         orderId: '123',
@@ -37,7 +37,7 @@ describe('Metrics', () => {
     });
 
     it('should track events without attributes', () => {
-      const metrics = new Metrics('test-service', { logger: mockLogger });
+      const metrics = new Metric('test-service', { logger: mockLogger });
 
       metrics.trackEvent('user.login');
 
@@ -50,7 +50,7 @@ describe('Metrics', () => {
 
   describe('trackFunnelStep', () => {
     it('should track funnel progression as metrics', () => {
-      const metrics = new Metrics('test-service', { logger: mockLogger });
+      const metrics = new Metric('test-service', { logger: mockLogger });
 
       metrics.trackFunnelStep('checkout', 'started', { cartValue: 99.99 });
       metrics.trackFunnelStep('checkout', 'completed', { cartValue: 99.99 });
@@ -64,7 +64,7 @@ describe('Metrics', () => {
     });
 
     it('should track funnel abandonment', () => {
-      const metrics = new Metrics('test-service', { logger: mockLogger });
+      const metrics = new Metric('test-service', { logger: mockLogger });
 
       metrics.trackFunnelStep('checkout', 'abandoned', { reason: 'timeout' });
 
@@ -78,7 +78,7 @@ describe('Metrics', () => {
 
   describe('trackOutcome', () => {
     it('should track successful outcomes as metrics', () => {
-      const metrics = new Metrics('test-service', { logger: mockLogger });
+      const metrics = new Metric('test-service', { logger: mockLogger });
 
       metrics.trackOutcome('payment.process', 'success', {
         amount: 99.99,
@@ -92,7 +92,7 @@ describe('Metrics', () => {
     });
 
     it('should track failed outcomes', () => {
-      const metrics = new Metrics('test-service', { logger: mockLogger });
+      const metrics = new Metric('test-service', { logger: mockLogger });
 
       metrics.trackOutcome('payment.process', 'failure', {
         error: 'insufficient_funds',
@@ -106,7 +106,7 @@ describe('Metrics', () => {
     });
 
     it('should track partial outcomes', () => {
-      const metrics = new Metrics('test-service', { logger: mockLogger });
+      const metrics = new Metric('test-service', { logger: mockLogger });
 
       metrics.trackOutcome('batch.process', 'partial', {
         successCount: 8,
@@ -123,7 +123,7 @@ describe('Metrics', () => {
 
   describe('trackValue', () => {
     it('should track revenue metrics', () => {
-      const metrics = new Metrics('test-service', { logger: mockLogger });
+      const metrics = new Metric('test-service', { logger: mockLogger });
 
       metrics.trackValue('order.revenue', 149.99, {
         currency: 'USD',
@@ -138,7 +138,7 @@ describe('Metrics', () => {
     });
 
     it('should track processing time', () => {
-      const metrics = new Metrics('test-service', { logger: mockLogger });
+      const metrics = new Metric('test-service', { logger: mockLogger });
 
       metrics.trackValue('application.processing_time', 2500, {
         unit: 'ms',
@@ -178,7 +178,7 @@ describe('Metrics', () => {
 
   describe('real-world usage example', () => {
     it('should track checkout flow', () => {
-      const metrics = new Metrics('checkout', { logger: mockLogger });
+      const metrics = new Metric('checkout', { logger: mockLogger });
 
       // User starts checkout
       metrics.trackFunnelStep('checkout', 'started', { cartValue: 99.99 });

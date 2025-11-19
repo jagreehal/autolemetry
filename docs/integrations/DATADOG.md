@@ -820,7 +820,7 @@ Track important business metrics:
 ```typescript
 import { Metrics } from 'autolemetry/metrics';
 
-const metrics = new Metrics('checkout');
+const metrics = new Metric('checkout');
 
 const processCheckout = trace(async (items) => {
   const total = calculateTotal(items);

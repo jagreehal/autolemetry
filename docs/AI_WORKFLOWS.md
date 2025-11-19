@@ -33,7 +33,7 @@ Autolemetry provides all the building blocks needed for comprehensive AI/LLM obs
 - **Workflow orchestration** via nested `trace()` calls
 - **Context propagation** via AsyncLocalStorage (correlation IDs, user context, etc.)
 - **Business event tracking** via `ctx.setAttribute()` and `track()`
-- **Multi-destination analytics** via adapters (PostHog, Mixpanel, etc.)
+- **Multi-destination events** via adapters (PostHog, Mixpanel, etc.)
 
 **Key Insight**: Autolemetry's functional API patterns work perfectly for AI workflows - no special "AI-specific" APIs needed!
 
@@ -129,7 +129,7 @@ const triageAgent = trace('agent.triage', ctx => async (input: string) => {
 - ✅ Business attributes (agent roles, workflow state, custom logic)
 - ✅ Correlation IDs automatically propagated
 - ✅ Parent-child span relationships for complex workflows
-- ✅ Integration with analytics via `track()` events
+- ✅ Integration with events via `track()` events
 - ✅ Works with ANY code (LLM or non-LLM)
 
 ### Best Practice: Use Both Together
@@ -221,7 +221,7 @@ workflow.customer_query (trace)
    │  └─ llm.prompts.0.content: "Expert response needed: ..."
    └─ escalated: true
 
-Analytics Event:
+Events Event:
 escalation_occurred
 ├─ category: "billing_issue"
 ├─ userId: "user123"
@@ -234,7 +234,7 @@ escalation_occurred
 2. **Business context**: `trace()` adds workflow meaning and business logic
 3. **Perfect correlation**: All spans and events share the same correlation ID
 4. **Complete picture**: See both "what the LLM did" (OpenLLMetry) and "why it did it" (your trace spans)
-5. **Analytics integration**: Business events automatically correlated with technical traces
+5. **Events integration**: Business events automatically correlated with technical traces
 
 ### Setup Guide
 
@@ -329,7 +329,7 @@ See `apps/example-ai-agent/src/multi-agent-workflow-with-openllmetry.ts` for a c
 - Multi-agent workflow using `trace()` for business context
 - @openai/agents framework for agent orchestration
 - Real OpenAI SDK calls (via Ollama) auto-instrumented by OpenLLMetry
-- Business metrics and analytics integration
+- Business metrics and events integration
 - Full correlation across all spans and events
 
 Compare with `apps/example-ai-agent/src/multi-agent-workflow.ts` which uses simulated LLM calls (no OpenLLMetry needed).
@@ -455,7 +455,7 @@ const operation = trace('operation', ctx => async () => {
 
   // Automatically propagates to:
   // - All nested trace() calls
-  // - Analytics events via track()
+  // - Events events via track()
   // - Structured logs
 
   console.log('Correlation:', correlationId);
@@ -508,7 +508,7 @@ ctx.setAttributes({
 // Span attributes
 ctx.setAttribute('specialist.engaged', true);
 
-// Analytics events
+// Events events
 import { track } from 'autolemetry';
 
 track('workflow.completed', {
@@ -547,7 +547,7 @@ export const processUserRequest = trace('ai.user_request', ctx => async (userId:
   const analysis = await analyzeIntent(message);
   const response = await generateResponse(analysis);
 
-  // Analytics events automatically include correlation IDs
+  // Events events automatically include correlation IDs
   track('ai.request_completed', {
     userId,
     intent: analysis.intent,
@@ -563,7 +563,7 @@ export const processUserRequest = trace('ai.user_request', ctx => async (userId:
 - ✅ `ctx.correlationId` - Short correlation ID (first 16 chars)
 - ✅ `ctx.spanId` - Current span ID
 - ✅ Automatic propagation to all nested `trace()` calls
-- ✅ Enrichment of all `track()` analytics events
+- ✅ Enrichment of all `track()` events events
 - ✅ Inclusion in structured logs (via `autolemetry/logger`)
 
 ### Multi-Step Workflows
@@ -610,7 +610,7 @@ document.processing (parent)
 
 ### Domain Events
 
-Track business-level events alongside technical telemetry using `ctx.setAttribute()` for span attributes and `track()` for analytics events.
+Track business-level events alongside technical telemetry using `ctx.setAttribute()` for span attributes and `track()` for events events.
 
 ```typescript
 import { trace, track } from 'autolemetry';
@@ -772,7 +772,7 @@ export const runMultiAgentWorkflow = trace('workflow.multi_agent_escalation', ct
 - ✅ Full trace tree showing agent handoffs
 - ✅ Correlation ID tracks request across all agents
 - ✅ Each agent's LLM calls auto-instrumented by OpenLLMetry
-- ✅ Business events (handoffs, approvals) tracked in analytics
+- ✅ Business events (handoffs, approvals) tracked in events
 - ✅ Agent roles and models tagged for filtering
 
 ## Pattern: RAG Pipelines
@@ -1310,7 +1310,7 @@ export const generateABTestContent = trace('content.ab_test', ctx => async (
 1. **Review OpenLLMetry Integration**: See the main [README.md](../packages/autolemetry/README.md#llm-observability-with-openllmetry) for setup instructions
 2. **Explore Examples**: Check out the working examples in `apps/` directory
 3. **Configure Observability Backend**: Connect to Grafana, Datadog, Langfuse, or any OTLP-compatible backend
-4. **Add Analytics**: Configure adapters for PostHog, Mixpanel, or custom webhooks
+4. **Add Events**: Configure adapters for PostHog, Mixpanel, or custom webhooks
 5. **Monitor Production**: Use adaptive sampling and rate limiting for production deployments
 
 ## Summary
@@ -1322,6 +1322,6 @@ export const generateABTestContent = trace('content.ab_test', ctx => async (
 - ✅ Business event tracking alongside technical metrics
 - ✅ Full compatibility with any LLM provider/SDK
 - ✅ OTLP-native output to any observability backend
-- ✅ Product analytics integration
+- ✅ Product events integration
 
 No special "AI-specific" APIs required - just familiar, composable patterns that work for any workflow!

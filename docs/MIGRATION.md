@@ -1137,7 +1137,7 @@ Use this checklist for a smooth migration:
 ### Phase 2: Installation
 
 - [ ] Install autolemetry: `npm install autolemetry`
-- [ ] Install adapters if needed: `npm install autolemetry-adapters`
+- [ ] Install adapters if needed: `npm install autolemetry-subscribers`
 - [ ] For edge runtimes: `npm install autolemetry-edge`
 - [ ] Keep/install auto-instrumentations: `npm install @opentelemetry/auto-instrumentations-node`
 

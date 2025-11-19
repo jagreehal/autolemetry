@@ -118,7 +118,7 @@ curl -X POST http://localhost:3000/api/orders \
   -d '{"userId":"user-123","items":[{"id":"item-1"}],"total":99.99}'
 
 # Slow endpoint (always > 500ms)
-curl http://localhost:3000/api/analytics/report
+curl http://localhost:3000/api/events/report
 
 # Error endpoint
 curl http://localhost:3000/api/error
@@ -223,7 +223,7 @@ The demo app provides several endpoints with different trace patterns:
 | `/api/users` | GET | List users | Fast, single DB span |
 | `/api/users/:id/orders` | GET | User orders | Variable speed, sometimes slow |
 | `/api/orders` | POST | Create order | Complex nested spans (validation → payment → DB → notification) |
-| `/api/analytics/report` | GET | Generate report | Always slow (> 500ms) |
+| `/api/events/report` | GET | Generate report | Always slow (> 500ms) |
 | `/api/error` | GET | Test errors | Intentional error with stack trace |
 | `/api/flaky` | GET | Random behavior | 50% chance of failure |
 

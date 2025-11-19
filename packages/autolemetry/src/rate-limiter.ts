@@ -1,7 +1,7 @@
 /**
- * Token bucket rate limiter for analytics adapters
+ * Token bucket rate limiter for event subscribers
  *
- * Prevents overwhelming downstream analytics platforms with too many events.
+ * Prevents overwhelming downstream events platforms with too many events.
  * Uses token bucket algorithm for smooth rate limiting with burst capacity.
  */
 

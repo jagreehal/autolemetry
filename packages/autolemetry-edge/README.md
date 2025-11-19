@@ -19,7 +19,7 @@ npm install autolemetry-edge @opentelemetry/api
 ### Complete Example: API Worker with Tracing
 
 ```typescript
-import { trace, createEdgeLogger, instrument, getEdgeAdapters } from 'autolemetry-edge'
+import { trace, createEdgeLogger, instrument, getEdgeSubscribers } from 'autolemetry-edge'
 import { SamplingPresets } from 'autolemetry-edge/sampling'
 
 export interface Env {
@@ -401,16 +401,16 @@ function timed<T>(operation: string, fn: () => Promise<T>): Promise<T> {
 1. **Factory pattern** `trace(ctx => (...args) => result)` – Returns a wrapped function for reuse
 2. **Immediate execution** `trace(ctx => result)` – Executes once immediately, returns the result directly
 
-### Edge Analytics Hook
+### Edge Events Hook
 
-Use `createEdgeAdapters` to plug in your own lightweight adapter for product analytics platforms from edge runtimes. You provide a transport function (PostHog HTTP API, Segment webhook, Durable Object, etc.) and decide whether to `await` it or fire-and-forget via `ctx.waitUntil()`.
+Use `createEdgeSubscribers` to plug in your own lightweight adapter for product events platforms from edge runtimes. You provide a transport function (PostHog HTTP API, Segment webhook, Durable Object, etc.) and decide whether to `await` it or fire-and-forget via `ctx.waitUntil()`.
 
 ```typescript
-import { createEdgeAdapters } from 'autolemetry-edge'
+import { createEdgeSubscribers } from 'autolemetry-edge'
 
-const analytics = createEdgeAdapters({
+const events = createEdgeSubscribers({
   transport: async (event) => {
-    await fetch('https://analytics.example.com/events', {
+    await fetch('https://events.example.com/events', {
       method: 'POST',
       headers: { 'content-type': 'application/json' },
       body: JSON.stringify(event)
@@ -420,15 +420,15 @@ const analytics = createEdgeAdapters({
 
 export default {
   async fetch(request: Request, env: Env, ctx: ExecutionContext) {
-    const requestAnalytics = analytics.bind({
+    const requestEvents = events.bind({
       waitUntil: (promise) => ctx.waitUntil(promise) // optional convenience
     })
 
     // Fire-and-forget delivery (default)
-    requestAnalytics.trackEvent('user.signup', { plan: 'pro' })
+    requestEvents.trackEvent('user.signup', { plan: 'pro' })
 
     // Opt-in to await completion for tests or control-plane paths
-    await requestAnalytics.trackEvent('billing.invoice.sent', { userId: '123' }, { delivery: 'await' })
+    await requestEvents.trackEvent('billing.invoice.sent', { userId: '123' }, { delivery: 'await' })
 
     return new Response('ok')
   }
@@ -437,7 +437,7 @@ export default {
 
 The hook automatically enriches events with the active service name and trace context (`traceId`, `spanId`, `correlationId`) when available.
 
-Create the analytics instance once (outside the handler) and use `.bind()` inside your handler to reuse the transport while layering on per-request helpers like `ctx.waitUntil`.
+Create the events instance once (outside the handler) and use `.bind()` inside your handler to reuse the transport while layering on per-request helpers like `ctx.waitUntil`.
 
 ### Trace Specific Code Blocks
 
@@ -528,7 +528,7 @@ export const updateUser = withUserTracing(async function updateUser(id, data) {
 Instrument Cloudflare Workers fetch handlers to automatically create HTTP spans:
 
 ```typescript
-import { trace, createEdgeLogger, instrument, getEdgeAdapters, type EdgeAdaptersAdapter, type EdgeAdaptersEvent } from 'autolemetry-edge'
+import { trace, createEdgeLogger, instrument, getEdgeSubscribers, type EdgeSubscriber, type EdgeEvent } from 'autolemetry-edge'
 
 export interface Env {
   OTLP_ENDPOINT: string
@@ -552,8 +552,8 @@ export const createUser = trace({
 })
 
 // Reusable adapter factory functions
-function createPostHogAdapter(apiKey: string | undefined): EdgeAdaptersAdapter {
-  return async (event: EdgeAdaptersEvent) => {
+function createPostHogSubscriber(apiKey: string | undefined): EdgeSubscriber {
+  return async (event: EdgeEvent) => {
     if (!apiKey) return
     
     await fetch('https://us.i.posthog.com/capture/', {
@@ -570,8 +570,8 @@ function createPostHogAdapter(apiKey: string | undefined): EdgeAdaptersAdapter {
   }
 }
 
-function createWebhookAdapter(url: string | undefined): EdgeAdaptersAdapter {
-  return async (event: EdgeAdaptersEvent) => {
+function createWebhookSubscriber(url: string | undefined): EdgeSubscriber {
+  return async (event: EdgeEvent) => {
     if (!url) return
     await fetch(url, {
       method: 'POST',
@@ -592,9 +592,9 @@ const handler: ExportedHandler<Env> = {
     const user = await createUser('test@example.com')
     
     // Use adapters from config - automatically bound to ctx.waitUntil
-    const adapters = getEdgeAdapters(ctx)
+    const subscribers = getEdgeSubscribers(ctx)
     if (adapters) {
-      adapters.trackEvent('user.created', { userId: user.id })
+      subscribers.trackEvent('user.created', { userId: user.id })
     }
     
     return Response.json(user)
@@ -603,8 +603,8 @@ const handler: ExportedHandler<Env> = {
 
 export default instrument(handler, (env: Env) => {
   // Create adapter instances - reusable across handlers
-  const postHogAdapter = createPostHogAdapter(env.POSTHOG_API_KEY)
-  const webhookAdapter = createWebhookAdapter(env.ANALYTICS_WEBHOOK_URL)
+  const postHogSubscriber = createPostHogSubscriber(env.POSTHOG_API_KEY)
+  const webhookSubscriber = createWebhookSubscriber(env.ANALYTICS_WEBHOOK_URL)
 
   return {
     exporter: {
@@ -629,9 +629,9 @@ export default instrument(handler, (env: Env) => {
         }
       }
     },
-    adapters: [
-      postHogAdapter,
-      webhookAdapter,
+    subscribers: [
+      postHogSubscriber,
+      webhookSubscriber,
     ],
   }
 })

@@ -1,11 +1,11 @@
 /**
- * Circuit breaker for analytics adapters
+ * Circuit breaker for event subscribers
  *
- * Prevents cascading failures by fast-failing when an adapter is unhealthy.
+ * Prevents cascading failures by fast-failing when an (subscriber) is unhealthy.
  * Uses the circuit breaker pattern with three states:
- * - CLOSED: Normal operation (adapter working)
- * - OPEN: Fast-fail mode (adapter down)
- * - HALF_OPEN: Testing if adapter recovered
+ * - CLOSED: Normal operation ((subscriber) working)
+ * - OPEN: Fast-fail mode ((subscriber) down)
+ * - HALF_OPEN: Testing if (subscriber) recovered
  */
 
 export interface CircuitBreakerConfig {
@@ -40,7 +40,7 @@ interface FailureRecord {
  * Circuit breaker implementation
  *
  * Tracks failures and automatically opens the circuit to prevent
- * overwhelming failing adapters.
+ * overwhelming failing subscribers.
  */
 export class CircuitBreaker {
   private state: CircuitState = CircuitState.CLOSED;

@@ -20,33 +20,33 @@
       "types": "./dist/logger.d.ts",
       "import": "./dist/logger.js"
     },
-    "./logger-winston": {
-      "types": "./dist/logger-winston.d.ts",
-      "import": "./dist/logger-winston.js"
-    },
     "./sampling": {
       "types": "./dist/sampling.d.ts",
       "import": "./dist/sampling.js"
     },
-    "./analytics": {
-      "types": "./dist/analytics.d.ts",
-      "import": "./dist/analytics.js"
+    "./event": {
+      "types": "./dist/event.d.ts",
+      "import": "./dist/event.js"
     },
-    "./analytics-adapter": {
-      "types": "./dist/analytics-adapter.d.ts",
-      "import": "./dist/analytics-adapter.js"
+    "./event-subscriber": {
+      "types": "./dist/event-subscriber.d.ts",
+      "import": "./dist/event-subscriber.js"
     },
-    "./analytics-testing": {
-      "types": "./dist/analytics-testing.d.ts",
-      "import": "./dist/analytics-testing.js"
+    "./event-testing": {
+      "types": "./dist/event-testing.d.ts",
+      "import": "./dist/event-testing.js"
     },
-    "./metrics": {
-      "types": "./dist/metrics.d.ts",
-      "import": "./dist/metrics.js"
+    "./metric": {
+      "types": "./dist/metric.d.ts",
+      "import": "./dist/metric.js"
     },
-    "./metrics-testing": {
-      "types": "./dist/metrics-testing.d.ts",
-      "import": "./dist/metrics-testing.js"
+    "./metric-testing": {
+      "types": "./dist/metric-testing.d.ts",
+      "import": "./dist/metric-testing.js"
+    },
+    "./metric-helpers": {
+      "types": "./dist/metric-helpers.d.ts",
+      "import": "./dist/metric-helpers.js"
     },
     "./testing": {
       "types": "./dist/testing.d.ts",
@@ -145,6 +145,8 @@
     "@opentelemetry/api-logs": "^0.208.0",
     "@opentelemetry/exporter-metrics-otlp-http": "^0.208.0",
     "@opentelemetry/exporter-trace-otlp-http": "^0.208.0",
+    "@opentelemetry/instrumentation-pino": "^0.55.0",
+    "@opentelemetry/instrumentation-winston": "^0.53.0",
     "@opentelemetry/resources": "^2.2.0",
     "@opentelemetry/sdk-metrics": "^2.2.0",
     "@opentelemetry/sdk-node": "^0.208.0",

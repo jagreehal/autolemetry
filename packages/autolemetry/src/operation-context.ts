@@ -2,7 +2,7 @@
  * Operation context tracking using AsyncLocalStorage
  *
  * This module provides a way to track operation names across async boundaries
- * so they can be automatically captured in analytics events.
+ * so they can be automatically captured in events events.
  *
  * We cannot read span attributes from OpenTelemetry's API (it's write-only),
  * so we maintain our own async context storage.
@@ -16,7 +16,7 @@ import { AsyncLocalStorage } from 'node:async_hooks';
 export interface OperationContext {
   /**
    * The name of the current operation
-   * This is set by trace() or span() and can be read by analytics
+   * This is set by trace() or span() and can be read by events
    */
   name: string;
 }
@@ -56,7 +56,7 @@ export function getOperationContext(): OperationContext | undefined {
  * @example
  * ```typescript
  * const result = await runInOperationContext('user.create', async () => {
- *   // Any analytics.trackEvent() calls here will automatically capture
+ *   // Any events.trackEvent() calls here will automatically capture
  *   // 'operation.name': 'user.create'
  *   await createUser();
  *   return 'success';

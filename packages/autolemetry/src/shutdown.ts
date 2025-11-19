@@ -3,14 +3,14 @@
  */
 
 import { getSdk, getLogger } from './init';
-import { getAnalyticsQueue, resetAnalyticsQueue } from './track';
-import { resetAnalytics } from './analytics';
-import { resetMetrics } from './metrics';
+import { getEventQueue, resetEventQueue } from './track';
+import { resetEvents } from './event';
+import { resetMetrics } from './metric';
 
 /**
  * Flush all pending telemetry
  *
- * Flushes both analytics events and OpenTelemetry spans to their destinations.
+ * Flushes both events events and OpenTelemetry spans to their destinations.
  * Includes timeout protection to prevent hanging in serverless environments.
  *
  * Safe to call multiple times.
@@ -38,10 +38,10 @@ export async function flush(options?: { timeout?: number }): Promise<void> {
   const timeout = options?.timeout ?? 2000;
 
   const doFlush = async () => {
-    // Flush analytics queue
-    const analyticsQueue = getAnalyticsQueue();
-    if (analyticsQueue) {
-      await analyticsQueue.flush();
+    // Flush events queue
+    const eventsQueue = getEventQueue();
+    if (eventsQueue) {
+      await eventsQueue.flush();
     }
 
     // Flush OpenTelemetry spans
@@ -165,9 +165,9 @@ export async function shutdown(): Promise<void> {
   } finally {
     // Clean up singleton Maps and queues to prevent memory leaks
     // This runs even if SDK shutdown fails
-    resetAnalytics();
+    resetEvents();
     resetMetrics();
-    resetAnalyticsQueue();
+    resetEventQueue();
   }
 
   // Rethrow first error after cleanup completes

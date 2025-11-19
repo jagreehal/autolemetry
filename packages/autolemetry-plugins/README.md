@@ -236,13 +236,13 @@ const pgClient = postgres(process.env.PG_URL!)
 const pg = drizzle({ client: pgClient })
 instrumentDrizzleClient(pg, { dbSystem: 'postgresql', dbName: 'orders' })
 
-// MongoDB for analytics (automatically instrumented)
+// MongoDB for events (automatically instrumented)
 const mongoClient = new MongoClient(process.env.MONGO_URL!)
 await mongoClient.connect()
 
 // Both databases are now traced
 await pg.select().from(orders)
-await mongoClient.db('analytics').collection('events').insertOne({ ... })
+await mongoClient.db('events').collection('events').insertOne({ ... })
 ```
 
 ### Conditional Instrumentation

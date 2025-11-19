@@ -12,14 +12,14 @@
  * })
  * ```
  *
- * @example With analytics
+ * @example With events
  * ```typescript
  * import { init, trace, track } from 'autolemetry'
- * import { PostHogAdapter } from 'autolemetry-adapters'
+ * import { PostHogSubscriber } from 'autolemetry-subscribers'
  *
  * init({
  *   service: 'my-app',
- *   adapters: [new PostHogAdapter({ apiKey: '...' })]
+ *   subscribers: [new PostHogSubscriber({ apiKey: '...' })]
  * })
  *
  * export const createUser = trace(ctx => async (data: CreateUserData) => {
@@ -71,21 +71,16 @@ export {
   UserIdSampler,
 } from './sampling';
 
-// Analytics API (product analytics platforms)
-export {
-  Analytics,
-  getAnalytics,
-  resetAnalytics,
-  type AnalyticsOptions,
-} from './analytics';
+// Events API
+export { Event, getEvents, resetEvents, type EventsOptions } from './event';
 
-// Metrics API (OpenTelemetry business metrics)
+// Metrics API
 export {
-  Metrics,
+  Metric,
   getMetrics,
   resetMetrics,
   type MetricsOptions,
-} from './metrics';
+} from './metric';
 
 // Meter helpers for custom metrics
 export {
@@ -94,7 +89,7 @@ export {
   createHistogram,
   createUpDownCounter,
   createObservableGauge,
-} from './metrics-helpers';
+} from './metric-helpers';
 
 // Tracer helpers for custom spans
 export {
@@ -104,13 +99,13 @@ export {
   runWithSpan,
 } from './trace-helpers';
 
-// Re-export analytics types
+// Re-export events types
 export type {
-  AnalyticsAdapter,
+  EventSubscriber,
   EventAttributes,
   FunnelStatus,
   OutcomeStatus,
-} from './analytics-adapter';
+} from './event-subscriber';
 
 // Re-export OpenTelemetry APIs for convenience
 // (Users shouldn't need to import @opentelemetry/api directly)

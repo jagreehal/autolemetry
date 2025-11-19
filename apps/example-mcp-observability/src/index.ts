@@ -210,7 +210,7 @@ app.get('/api/error', async (req, res) => {
 });
 
 // Slow endpoint - always takes > 500ms
-app.get('/api/analytics/report', async (req, res) => {
+app.get('/api/events/report', async (req, res) => {
   await span({ name: 'generate-report' }, async (ctx) => {
     ctx.setAttribute('report.type', 'monthly');
     ctx.setAttribute('report.expensive', true);
@@ -259,7 +259,7 @@ app.listen(PORT, () => {
   console.log(`   GET  /api/users                 - List users (fast)`);
   console.log(`   GET  /api/users/:id/orders      - User orders (variable speed)`);
   console.log(`   POST /api/orders                - Create order (complex trace)`);
-  console.log(`   GET  /api/analytics/report      - Generate report (slow)`);
+  console.log(`   GET  /api/events/report      - Generate report (slow)`);
   console.log(`   GET  /api/error                 - Intentional error`);
   console.log(`   GET  /api/flaky                 - Random success/failure\n`);
 

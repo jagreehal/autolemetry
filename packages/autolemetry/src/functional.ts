@@ -41,7 +41,7 @@ import {
 import { getConfig } from './config';
 import { getConfig as getInitConfig, getSdk } from './init';
 import { type Sampler, type SamplingContext, AlwaysSampler } from './sampling';
-import { getAnalyticsQueue } from './track';
+import { getEventQueue } from './track';
 import type { TraceContext } from './trace-context';
 import { createTraceContext } from './trace-context';
 import { setSpanName } from './trace-helpers';
@@ -336,11 +336,11 @@ export interface TracingOptions<
   startNewRoot?: boolean;
 
   /**
-   * Automatically flush analytics queue when span ends
+   * Automatically flush events queue when span ends
    * Only flushes on root spans (to avoid excessive flushing)
    * @default true
    */
-  autoFlushAnalytics?: boolean;
+  autoFlushEvents?: boolean;
 }
 
 /**
@@ -651,15 +651,15 @@ function wrapWithTracing<TArgs extends unknown[], TReturn>(
     const isRootSpan =
       options.startNewRoot || otelTrace.getActiveSpan() === undefined;
     const shouldAutoFlush =
-      options.autoFlushAnalytics ?? getInitConfig()?.autoFlushAnalytics ?? true;
+      options.autoFlushEvents ?? getInitConfig()?.autoFlushEvents ?? true;
     const shouldAutoFlushSpans = getInitConfig()?.autoFlush ?? false;
 
     const flushIfNeeded = async () => {
       if (!shouldAutoFlush || !isRootSpan) return;
 
       try {
-        // Flush analytics queue
-        const queue = getAnalyticsQueue();
+        // Flush events queue
+        const queue = getEventQueue();
         if (queue && queue.size() > 0) {
           await queue.flush();
         }
@@ -703,7 +703,7 @@ function wrapWithTracing<TArgs extends unknown[], TReturn>(
       spanName,
       options.startNewRoot ? { root: true } : {},
       async (span) => {
-        // Run within operation context so analytics can auto-capture operation.name
+        // Run within operation context so events can auto-capture operation.name
         return runInOperationContext(spanName, async () => {
           let shouldKeepSpan = true;
 
@@ -919,7 +919,7 @@ function wrapWithTracingSync<TArgs extends unknown[], TReturn>(
     const isRootSpan =
       options.startNewRoot || otelTrace.getActiveSpan() === undefined;
     const shouldAutoFlush =
-      options.autoFlushAnalytics ?? getInitConfig()?.autoFlushAnalytics ?? true;
+      options.autoFlushEvents ?? getInitConfig()?.autoFlushEvents ?? true;
     const shouldAutoFlushSpans = getInitConfig()?.autoFlush ?? false;
 
     // Note: This is intentionally fire-and-forget (void) for synchronous functions.
@@ -928,8 +928,8 @@ function wrapWithTracingSync<TArgs extends unknown[], TReturn>(
     const flushIfNeeded = () => {
       if (!shouldAutoFlush || !isRootSpan) return;
 
-      // Flush analytics queue
-      const queue = getAnalyticsQueue();
+      // Flush events queue
+      const queue = getEventQueue();
       if (queue && queue.size() > 0) {
         void queue.flush().catch((error) => {
           const initConfig = getInitConfig();
@@ -984,7 +984,7 @@ function wrapWithTracingSync<TArgs extends unknown[], TReturn>(
       spanName,
       options.startNewRoot ? { root: true } : {},
       (span) => {
-        // Run within operation context so analytics can auto-capture operation.name
+        // Run within operation context so events can auto-capture operation.name
         return runInOperationContext(spanName, () => {
           let shouldKeepSpan = true;
 
@@ -1173,7 +1173,7 @@ function executeImmediately<TReturn = unknown>(
   const isRootSpan =
     options.startNewRoot || otelTrace.getActiveSpan() === undefined;
   const shouldAutoFlush =
-    options.autoFlushAnalytics ?? getInitConfig()?.autoFlushAnalytics ?? true;
+    options.autoFlushEvents ?? getInitConfig()?.autoFlushEvents ?? true;
   const shouldAutoFlushSpans = getInitConfig()?.autoFlush ?? false;
 
   const callCounter = options.withMetrics
@@ -1194,8 +1194,8 @@ function executeImmediately<TReturn = unknown>(
     if (!shouldAutoFlush || !isRootSpan) return;
 
     try {
-      // Flush analytics queue
-      const queue = getAnalyticsQueue();
+      // Flush events queue
+      const queue = getEventQueue();
       if (queue && queue.size() > 0) {
         await queue.flush();
       }
@@ -2044,7 +2044,7 @@ export function span<T = unknown>(
   const { name, attributes } = options;
 
   const executeSpan = (span: Span) => {
-    // Run within operation context so analytics can auto-capture operation.name
+    // Run within operation context so events can auto-capture operation.name
     return runInOperationContext(name, () => {
       try {
         // Set attributes

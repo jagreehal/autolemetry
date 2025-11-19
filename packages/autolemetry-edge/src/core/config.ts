@@ -123,7 +123,7 @@ export function parseConfig(config: EdgeConfig): ResolvedEdgeConfig {
       instrumentGlobalCache: config.instrumentation?.instrumentGlobalCache ?? false,
       disabled: config.instrumentation?.disabled ?? false,
     },
-    adapters: config.adapters ?? [],
+    subscribers: config.subscribers ?? [],
   };
 
   return resolved;

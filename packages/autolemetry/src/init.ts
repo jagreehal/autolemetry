@@ -2,7 +2,7 @@
  * Simplified initialization for autolemetry
  *
  * Single init() function with sensible defaults.
- * Replaces initInstrumentation() and separate analytics config.
+ * Replaces initInstrumentation() and separate events config.
  */
 
 import { NodeSDK } from '@opentelemetry/sdk-node';
@@ -29,8 +29,8 @@ import {
 } from '@opentelemetry/semantic-conventions';
 import type { Sampler } from './sampling';
 import { AdaptiveSampler } from './sampling';
-import type { AnalyticsAdapter } from './analytics-adapter';
-import type { Logger } from './logger-types';
+import type { EventSubscriber } from './event-subscriber';
+import type { Logger } from './logger';
 import type { Attributes } from '@opentelemetry/api';
 import type { ValidationConfig } from './validation';
 import {
@@ -43,6 +43,8 @@ import type { PushMetricExporter } from '@opentelemetry/sdk-metrics';
 import type { LogRecordProcessor } from '@opentelemetry/sdk-logs';
 import { TailSamplingSpanProcessor } from './tail-sampling-processor';
 import { resolveConfigFromEnv } from './env-config';
+import { PinoInstrumentation } from '@opentelemetry/instrumentation-pino';
+import { WinstonInstrumentation } from '@opentelemetry/instrumentation-winston';
 
 /**
  * CompositeSpanProcessor combines multiple span processors
@@ -235,8 +237,8 @@ export interface AutolemetryConfig {
   /** Service name (required) */
   service: string;
 
-  /** Business analytics adapters - bring your own (PostHog, Mixpanel, etc.) */
-  adapters?: AnalyticsAdapter[];
+  /** Event subscribers - bring your own (PostHog, Mixpanel, etc.) */
+  subscribers?: EventSubscriber[];
 
   /**
    * Additional OpenTelemetry instrumentations to register.
@@ -413,41 +415,43 @@ export interface AutolemetryConfig {
   environment?: string;
 
   /**
-   * Logger instance for internal logging (4-method interface: info/warn/error/debug)
-   * - Default: silent logger (no-op)
-   * - Use createLogger() for our opinionated Pino adapter with trace context
-   * - Use createWinstonLogger() for Winston adapter
-   * - Inject your own: Pino, Winston, or any logger with 4 methods
+   * Logger instance for structured logging with automatic trace correlation
    *
-   * OpenTelemetry approach: simple abstraction, user choice
+   * **Recommended:** Bring your own Pino or Winston instance
    *
-   * @example Using our Pino adapter
+   * Autolemetry automatically instruments Pino and Winston loggers to:
+   * - Inject trace context (traceId, spanId) into every log record
+   * - Record errors in the active OpenTelemetry span
+   * - Bridge logs to the OpenTelemetry Logs API for OTLP export to Grafana, Datadog, etc.
+   *
+   * Supports any logger with 4 methods: info/warn/error/debug
+   * Default: silent logger (no-op)
+   *
+   * @example Using Pino (recommended)
    * ```typescript
-   * import { createLogger, init } from 'autolemetry'
+   * import pino from 'pino'  // npm install pino
+   * import { init } from 'autolemetry'
    *
-   * const logger = createLogger('my-app', { level: 'debug' })
+   * const logger = pino({ level: 'info' })
+   * init({ service: 'my-app', logger })
+   *
+   * // Logs automatically include traceId/spanId and export via OTLP!
+   * logger.info('User created', { userId: '123' })
+   * ```
+   *
+   * @example Using Winston
+   * ```typescript
+   * import winston from 'winston'  // npm install winston
+   * import { init } from 'autolemetry'
+   *
+   * const logger = winston.createLogger({
+   *   level: 'info',
+   *   format: winston.format.json()
+   * })
    * init({ service: 'my-app', logger })
    * ```
    *
-   * @example Injecting your own Pino instance
-   * ```typescript
-   * import pino from 'pino'
-   * import { init } from 'autolemetry'
-   *
-   * const logger = pino({ ... }) // Your existing Pino config
-   * init({ service: 'my-app', logger }) // Pino has our 4 methods
-   * ```
-   *
-   * @example Injecting Winston
-   * ```typescript
-   * import winston from 'winston'
-   * import { init } from 'autolemetry'
-   *
-   * const logger = winston.createLogger({ ... })
-   * init({ service: 'my-app', logger }) // Winston has our 4 methods
-   * ```
-   *
-   * @example Custom logger
+   * @example Custom logger (any logger with 4 methods)
    * ```typescript
    * const logger = {
    *   info: (msg, extra) => console.log(msg, extra),
@@ -461,7 +465,7 @@ export interface AutolemetryConfig {
   logger?: Logger;
 
   /**
-   * Automatically flush analytics queue when root spans end
+   * Automatically flush events queue when root spans end
    * - true: Auto-flush on root span completion (default)
    * - false: Use batching (events flush every 10 seconds automatically)
    *
@@ -469,19 +473,19 @@ export interface AutolemetryConfig {
    * Default is true for serverless/short-lived processes. Set to false
    * for long-running services where batching is more efficient.
    */
-  autoFlushAnalytics?: boolean;
+  autoFlushEvents?: boolean;
 
   /**
    * Include OpenTelemetry span flushing in auto-flush (default: false)
    *
-   * When enabled, spans are force-flushed along with analytics events on root
+   * When enabled, spans are force-flushed along with events events on root
    * span completion. This is useful for serverless/short-lived processes where
    * spans may not export before the process ends.
    *
    * - true: Force-flush spans on root span completion (~50-200ms latency)
    * - false: Spans export via normal batch processor (default behavior)
    *
-   * Only applies when autoFlushAnalytics is also enabled.
+   * Only applies when autoFlushEvents is also enabled.
    *
    * Note: For edge runtimes (Cloudflare Workers, Vercel Edge), use the
    * 'autolemetry-edge' package instead, which handles this automatically.
@@ -490,7 +494,7 @@ export interface AutolemetryConfig {
    * ```typescript
    * init({
    *   service: 'my-lambda',
-   *   autoFlushAnalytics: true,
+   *   autoFlushEvents: true,
    *   autoFlush: true, // Force-flush spans
    * });
    * ```
@@ -498,7 +502,7 @@ export interface AutolemetryConfig {
   autoFlush?: boolean;
 
   /**
-   * Validation configuration for analytics events
+   * Validation configuration for events events
    * - Override default sensitive field patterns for redaction
    * - Customize max lengths, nesting depth, etc.
    *
@@ -673,11 +677,13 @@ function normalizeOtlpHeaders(
  * init({ service: 'my-app' })
  * ```
  *
- * @example With analytics (observe in PostHog, Mixpanel, etc.)
+ * @example With events (observe in PostHog, Mixpanel, etc.)
  * ```typescript
+ * import { PostHogSubscriber } from 'autolemetry-subscribers/posthog';
+ *
  * init({
  *   service: 'my-app',
- *   adapters: [new PostHogAdapter({ apiKey: '...' })]
+ *   subscribers: [new PostHogSubscriber({ apiKey: '...' })]
  * })
  * ```
  *
@@ -721,6 +727,34 @@ function normalizeOtlpHeaders(
  * })
  * ```
  */
+
+/**
+ * Auto-detect logger type and return appropriate instrumentation
+ * Detects Pino and Winston loggers based on their unique properties
+ */
+function createLoggerInstrumentation(
+  logger: Logger,
+): PinoInstrumentation | WinstonInstrumentation | null {
+  // Type guard: check for Pino-specific properties
+  // Pino has 'child' and 'bindings' methods
+  if (
+    'child' in logger &&
+    'bindings' in logger &&
+    typeof logger.child === 'function'
+  ) {
+    return new PinoInstrumentation();
+  }
+
+  // Type guard: check for Winston-specific properties
+  // Winston has 'transports' array or 'defaultMeta' property
+  if ('transports' in logger || 'defaultMeta' in logger) {
+    return new WinstonInstrumentation();
+  }
+
+  // Unknown logger type - no instrumentation
+  return null;
+}
+
 export function init(cfg: AutolemetryConfig): void {
   // Resolve environment variables (standard OTEL env vars)
   const envConfig = resolveConfigFromEnv();
@@ -737,11 +771,11 @@ export function init(cfg: AutolemetryConfig): void {
     },
     // Handle otlpHeaders merge (can be string or object)
     otlpHeaders:
-      cfg.otlpHeaders !== undefined
-        ? cfg.otlpHeaders
-        : envConfig.otlpHeaders !== undefined
-          ? envConfig.otlpHeaders
-          : undefined,
+      cfg.otlpHeaders === undefined
+        ? envConfig.otlpHeaders === undefined
+          ? undefined
+          : envConfig.otlpHeaders
+        : cfg.otlpHeaders,
   } as AutolemetryConfig;
 
   // Set logger (use provided or default to silent)
@@ -864,6 +898,17 @@ export function init(cfg: AutolemetryConfig): void {
   // Handle instrumentations: merge manual instrumentations with auto-integrations
   let finalInstrumentations: NodeSDKConfiguration['instrumentations'] =
     cfg.instrumentations ? [...cfg.instrumentations] : [];
+
+  // Auto-enable logger instrumentation if a logger is provided
+  if (cfg.logger) {
+    const loggerInstrumentation = createLoggerInstrumentation(cfg.logger);
+    if (loggerInstrumentation) {
+      finalInstrumentations = [...finalInstrumentations, loggerInstrumentation];
+      logger.debug(
+        `[autolemetry] Auto-enabled ${loggerInstrumentation.constructor.name} for logger`,
+      );
+    }
+  }
 
   if (cfg.integrations !== undefined) {
     try {

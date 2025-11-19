@@ -8015,7 +8015,7 @@ var AbstractAsyncHooksContextManager = class {
   _patchRemoveListener(ee, original) {
     const contextManager = this;
     return function(event, listener) {
-      const events = contextManager._getPatchMap(ee)?.[event];
+      const event =contextManager._getPatchMap(ee)?.[event];
       if (events === void 0) {
         return original.call(this, event, listener);
       }
