@@ -1,5 +1,13 @@
 # @jagreehal/example-drizzle
 
+## 1.0.2
+
+### Patch Changes
+
+- Updated dependencies [b5bd9ab]
+  - autolemetry@1.0.0
+  - autolemetry-plugins@0.3.1
+
 ## 1.0.1
 
 ### Patch Changes
