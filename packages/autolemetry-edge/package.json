@@ -1,6 +1,6 @@
 {
   "name": "autolemetry-edge",
-  "version": "2.0.0",
+  "version": "3.0.0",
   "description": "Vendor-agnostic OpenTelemetry for edge runtimes - foundation for Cloudflare, Vercel, Netlify, Deno",
   "type": "module",
   "main": "./dist/index.js",
