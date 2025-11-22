@@ -1,6 +1,6 @@
 {
   "name": "@jagreehal/example-mcp-client",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "private": true,
   "type": "module",
   "description": "Example MCP client with autolemetry-mcp instrumentation and distributed tracing",
