@@ -432,3 +432,258 @@ export function finalizeSpan(span: Span, error?: unknown): void {
   }
   span.end();
 }
+
+/**
+ * Creates a deterministic trace ID from a seed string.
+ *
+ * Generates a consistent 128-bit trace ID (32 hex characters) from an input seed
+ * using SHA-256 hashing. Useful for correlating external system IDs (request IDs,
+ * order IDs, session IDs) with OpenTelemetry trace IDs.
+ *
+ * **Use Cases:**
+ * - Correlate external request IDs with traces
+ * - Link customer support tickets to trace data
+ * - Associate business entities (orders, sessions) with observability data
+ * - Debug specific user flows by deterministic trace lookup
+ *
+ * **Important:** Only use this when you need deterministic trace IDs for correlation.
+ * For normal tracing, let OpenTelemetry generate random trace IDs automatically.
+ *
+ * **Runtime Support:**
+ * - Node.js 15+ (native crypto.subtle)
+ * - All modern browsers
+ * - Edge runtimes (Cloudflare Workers, Deno, etc.)
+ *
+ * @param seed - Input string to generate trace ID from (e.g., request ID, order ID)
+ * @returns Promise resolving to a 32-character hex trace ID (128 bits)
+ *
+ * @example Correlate external request ID with trace
+ * ```typescript
+ * import { createDeterministicTraceId } from 'autolemetry/trace-helpers'
+ * import { trace, context } from '@opentelemetry/api'
+ *
+ * // In middleware or request handler
+ * const requestId = req.headers['x-request-id']
+ * const traceId = await createDeterministicTraceId(requestId)
+ *
+ * // Use with manual span creation (advanced - not needed with trace/span functions)
+ * const tracer = trace.getTracer('my-service')
+ * const spanContext = {
+ *   traceId,
+ *   spanId: '0123456789abcdef', // Still random
+ *   traceFlags: 1
+ * }
+ * ```
+ *
+ * @example Link customer support tickets to traces
+ * ```typescript
+ * import { createDeterministicTraceId } from 'autolemetry/trace-helpers'
+ *
+ * // Support dashboard integration
+ * const ticketId = 'TICKET-12345'
+ * const traceId = await createDeterministicTraceId(ticketId)
+ *
+ * // Generate direct link to traces in observability backend
+ * const traceUrl = `https://your-otel-backend.com/traces/${traceId}`
+ * console.log(`View related traces: ${traceUrl}`)
+ * ```
+ *
+ * @example Session-based correlation
+ * ```typescript
+ * import { createDeterministicTraceId } from 'autolemetry/trace-helpers'
+ *
+ * // Track all operations for a user session
+ * const sessionId = req.session.id
+ * const traceId = await createDeterministicTraceId(sessionId)
+ *
+ * // All operations in this session share the same trace ID
+ * // Makes it easy to find all activity for a specific session
+ * ```
+ *
+ * @public
+ */
+export async function createDeterministicTraceId(
+  seed: string,
+): Promise<string> {
+  // Encode seed string to bytes
+  const encoder = new TextEncoder();
+  const data = encoder.encode(seed);
+
+  // Generate SHA-256 hash (256 bits)
+  const hashBuffer = await crypto.subtle.digest('SHA-256', data);
+
+  // Convert to hex string and truncate to 32 characters (128 bits)
+  // OpenTelemetry trace IDs are 128 bits (16 bytes, 32 hex characters)
+  const hashArray = new Uint8Array(hashBuffer);
+  return Array.from(hashArray)
+    .map((byte) => byte.toString(16).padStart(2, '0'))
+    .join('')
+    .slice(0, 32);
+}
+
+/**
+ * Flattens nested metadata objects into dot-notation span attributes.
+ *
+ * Converts complex nested objects into flat key-value pairs suitable for
+ * OpenTelemetry span attributes. Non-string values are JSON serialized.
+ * Handles serialization failures gracefully with a fallback value.
+ *
+ * **Use Cases:**
+ * - Structured metadata with nested objects
+ * - User context with multiple properties
+ * - Request/response metadata
+ * - Business entity attributes
+ *
+ * **Note:** Filters out null/undefined values automatically to keep spans clean.
+ *
+ * @param metadata - Nested metadata object to flatten
+ * @param prefix - Prefix for all attribute keys (default: 'metadata')
+ * @returns Flattened attributes as { [key: string]: string }
+ *
+ * @example Basic metadata flattening
+ * ```typescript
+ * import { flattenMetadata } from 'autolemetry/trace-helpers'
+ * import { trace } from 'autolemetry'
+ *
+ * export const processOrder = trace(ctx => async (orderId: string) => {
+ *   const order = await getOrder(orderId)
+ *
+ *   // Flatten complex order metadata
+ *   const flattened = flattenMetadata({
+ *     user: { id: order.userId, tier: 'premium' },
+ *     payment: { method: 'card', processor: 'stripe' },
+ *     items: order.items.length
+ *   })
+ *
+ *   ctx.setAttributes(flattened)
+ *   // Results in:
+ *   // {
+ *   //   'metadata.user.id': 'user-123',
+ *   //   'metadata.user.tier': 'premium',
+ *   //   'metadata.payment.method': 'card',
+ *   //   'metadata.payment.processor': 'stripe',
+ *   //   'metadata.items': '5'
+ *   // }
+ * })
+ * ```
+ *
+ * @example Custom prefix for semantic conventions
+ * ```typescript
+ * import { flattenMetadata } from 'autolemetry/trace-helpers'
+ * import { trace } from 'autolemetry'
+ *
+ * export const fetchUser = trace(ctx => async (userId: string) => {
+ *   const user = await db.users.findOne({ id: userId })
+ *
+ *   // Use semantic convention prefix
+ *   const userAttrs = flattenMetadata(
+ *     {
+ *       id: user.id,
+ *       email: user.email,
+ *       plan: user.subscription.plan
+ *     },
+ *     'user'  // Custom prefix
+ *   )
+ *
+ *   ctx.setAttributes(userAttrs)
+ *   // Results in:
+ *   // {
+ *   //   'user.id': 'user-123',
+ *   //   'user.email': 'user@example.com',
+ *   //   'user.plan': 'enterprise'
+ *   // }
+ * })
+ * ```
+ *
+ * @example With complex objects (auto-serialized)
+ * ```typescript
+ * import { flattenMetadata } from 'autolemetry/trace-helpers'
+ * import { trace } from 'autolemetry'
+ *
+ * export const analyzeRequest = trace(ctx => async (req: Request) => {
+ *   const metadata = flattenMetadata({
+ *     headers: req.headers,  // Object - will be JSON serialized
+ *     query: req.query,       // Object - will be JSON serialized
+ *     timestamp: new Date()   // Non-string - will be JSON serialized
+ *   })
+ *
+ *   ctx.setAttributes(metadata)
+ *   // Results in:
+ *   // {
+ *   //   'metadata.headers': '{"accept":"application/json",...}',
+ *   //   'metadata.query': '{"page":"1","limit":"10"}',
+ *   //   'metadata.timestamp': '"2024-01-15T12:00:00.000Z"'
+ *   // }
+ * })
+ * ```
+ *
+ * @example Error handling
+ * ```typescript
+ * import { flattenMetadata } from 'autolemetry/trace-helpers'
+ *
+ * // Objects with circular references are handled gracefully
+ * const circular: any = { a: 1 }
+ * circular.self = circular
+ *
+ * const flattened = flattenMetadata({ data: circular })
+ * // Results in:
+ * // { 'metadata.data': '<serialization-failed>' }
+ * ```
+ *
+ * @public
+ */
+export function flattenMetadata(
+  metadata: Record<string, unknown>,
+  prefix = 'metadata',
+): Record<string, string> {
+  const flattened: Record<string, string> = {};
+  const seen = new WeakSet<object>(); // Track visited objects to detect cycles
+
+  function flatten(obj: Record<string, unknown>, currentPrefix: string): void {
+    for (const [key, value] of Object.entries(obj)) {
+      // Skip null/undefined values
+      if (value == null) continue;
+
+      const attributeKey = `${currentPrefix}.${key}`;
+
+      // Handle primitives directly (string, number, boolean)
+      if (typeof value === 'string') {
+        flattened[attributeKey] = value;
+        continue;
+      }
+      if (typeof value === 'number' || typeof value === 'boolean') {
+        flattened[attributeKey] = String(value);
+        continue;
+      }
+
+      // Recursively flatten plain objects (with cycle detection)
+      if (
+        typeof value === 'object' &&
+        value !== null &&
+        value.constructor === Object
+      ) {
+        // Detect circular references
+        if (seen.has(value)) {
+          flattened[attributeKey] = '<circular-reference>';
+          continue;
+        }
+
+        // Mark as visited and recursively flatten
+        seen.add(value);
+        flatten(value as Record<string, unknown>, attributeKey);
+        continue;
+      }
+
+      // Serialize arrays and other non-plain objects to JSON
+      try {
+        flattened[attributeKey] = JSON.stringify(value);
+      } catch {
+        // Handle circular references or non-serializable objects
+        flattened[attributeKey] = '<serialization-failed>';
+      }
+    }
+  }
+
+  flatten(metadata, prefix);
+  return flattened;
+}

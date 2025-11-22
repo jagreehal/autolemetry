@@ -8,6 +8,7 @@
  */
 
 import { createTraceparent } from './traceparent';
+import { PrivacyManager, PrivacyConfig, getDenialReason } from './privacy';
 
 export interface AutolemetryWebConfig {
   /**
@@ -33,10 +34,41 @@ export interface AutolemetryWebConfig {
    * @default true
    */
   instrumentXHR?: boolean;
+
+  /**
+   * Privacy controls for traceparent header injection
+   *
+   * Configure origin filtering and privacy signal respecting (DNT, GPC)
+   * to ensure compliance with GDPR, CCPA, and user privacy preferences.
+   *
+   * @example Basic origin filtering
+   * ```typescript
+   * {
+   *   privacy: {
+   *     allowedOrigins: ['api.myapp.com'],  // Only inject on API calls
+   *     respectDoNotTrack: true              // Respect user's DNT setting
+   *   }
+   * }
+   * ```
+   *
+   * @example Block third-party analytics
+   * ```typescript
+   * {
+   *   privacy: {
+   *     blockedOrigins: ['analytics.google.com', 'facebook.com']
+   *   }
+   * }
+   * ```
+   */
+  privacy?: PrivacyConfig;
 }
 
 let isInitialized = false;
 let config: AutolemetryWebConfig | undefined;
+let privacyManager: PrivacyManager | undefined;
+let originalFetch: typeof window.fetch | undefined;
+let originalXHROpen: typeof XMLHttpRequest.prototype.open | undefined;
+let originalXHRSetRequestHeader: typeof XMLHttpRequest.prototype.setRequestHeader | undefined;
 
 /**
  * Initialize autolemetry-web
@@ -83,7 +115,15 @@ export function init(userConfig: AutolemetryWebConfig): void {
     return;
   }
 
+  // Validate configuration
+  validateConfig(userConfig);
+
   config = userConfig;
+
+  // Initialize privacy manager if privacy config provided
+  if (config.privacy) {
+    privacyManager = new PrivacyManager(config.privacy);
+  }
 
   // Patch fetch
   if (config.instrumentFetch !== false) {
@@ -102,6 +142,15 @@ export function init(userConfig: AutolemetryWebConfig): void {
       service: config.service,
       instrumentFetch: config.instrumentFetch !== false,
       instrumentXHR: config.instrumentXHR !== false,
+      privacyEnabled: !!config.privacy,
+      privacyConfig: config.privacy
+        ? {
+            allowedOrigins: config.privacy.allowedOrigins?.length ?? 0,
+            blockedOrigins: config.privacy.blockedOrigins?.length ?? 0,
+            respectDoNotTrack: config.privacy.respectDoNotTrack ?? false,
+            respectGPC: config.privacy.respectGPC ?? false,
+          }
+        : null,
     });
   }
 }
@@ -110,27 +159,54 @@ export function init(userConfig: AutolemetryWebConfig): void {
  * Patch fetch() to auto-inject traceparent headers
  */
 function patchFetch(): void {
-  const originalFetch = window.fetch.bind(window);
+  // Always get the current window.fetch as the original
+  // This allows tests to set up mocks before calling init()
+  originalFetch = window.fetch.bind(window);
 
   window.fetch = function (
     input: RequestInfo | URL,
     init?: RequestInit
   ): Promise<Response> {
+    // Get URL string for logging and privacy checks
+    const url =
+      typeof input === 'string'
+        ? input
+        : input instanceof URL
+          ? input.toString()
+          : input.url;
+
     // Create headers object
     const headers = new Headers(init?.headers);
 
     // Only inject if traceparent doesn't already exist
     if (!headers.has('traceparent')) {
-      headers.set('traceparent', createTraceparent());
+      // Check privacy controls
+      if (privacyManager && !privacyManager.shouldInjectTraceparent(url)) {
+        if (config?.debug) {
+          const reason = getDenialReason(privacyManager, url);
+          console.log(
+            '[autolemetry-web] Skipped traceparent on fetch (privacy):',
+            url,
+            reason
+          );
+        }
+      } else {
+        // Inject traceparent header
+        headers.set('traceparent', createTraceparent());
 
-      if (config?.debug) {
-        const url = typeof input === 'string' ? input : input instanceof URL ? input.toString() : input.url;
-        console.log('[autolemetry-web] Injected traceparent on fetch:', url, headers.get('traceparent'));
+        if (config?.debug) {
+          console.log(
+            '[autolemetry-web] Injected traceparent on fetch:',
+            url,
+            headers.get('traceparent')
+          );
+        }
       }
     }
 
     // Call original fetch with updated headers
-    return originalFetch(input, { ...init, headers });
+    // originalFetch is always defined here because patchFetch() sets it before patching
+    return originalFetch!(input, { ...init, headers });
   };
 }
 
@@ -138,8 +214,10 @@ function patchFetch(): void {
  * Patch XMLHttpRequest to auto-inject traceparent headers
  */
 function patchXMLHttpRequest(): void {
-  const originalOpen = XMLHttpRequest.prototype.open;
-  const originalSetRequestHeader = XMLHttpRequest.prototype.setRequestHeader;
+  // Always get the current prototypes as the originals
+  // This allows tests to set up mocks before calling init()
+  originalXHROpen = XMLHttpRequest.prototype.open;
+  originalXHRSetRequestHeader = XMLHttpRequest.prototype.setRequestHeader;
 
   // Track which XHR instances have traceparent set
   const xhrHasTraceparent = new WeakSet<XMLHttpRequest>();
@@ -152,7 +230,8 @@ function patchXMLHttpRequest(): void {
     if (name.toLowerCase() === 'traceparent') {
       xhrHasTraceparent.add(this);
     }
-    return originalSetRequestHeader.call(this, name, value);
+    // originalXHRSetRequestHeader is always defined here because patchXMLHttpRequest() sets it before patching
+    return originalXHRSetRequestHeader!.call(this, name, value);
   };
 
   // Patch open to inject traceparent after headers are ready
@@ -164,7 +243,11 @@ function patchXMLHttpRequest(): void {
     password?: string | null
   ): void {
     // Call original open
-    const result = originalOpen.call(this, method, url, async, username, password);
+    // originalXHROpen is always defined here because patchXMLHttpRequest() sets it before patching
+    const result = originalXHROpen!.call(this, method, url, async, username, password);
+
+    // Convert URL to string for logging and privacy checks
+    const urlStr = typeof url === 'string' ? url : url.toString();
 
     // Listen for readyState change to inject header at the right time
     const xhr = this;
@@ -175,17 +258,38 @@ function patchXMLHttpRequest(): void {
       if (xhr.readyState === XMLHttpRequest.OPENED) {
         // Only inject if not already set
         if (!xhrHasTraceparent.has(xhr)) {
-          try {
-            const traceparent = createTraceparent();
-            originalSetRequestHeader.call(xhr, 'traceparent', traceparent);
-
+          // Check privacy controls
+          if (privacyManager && !privacyManager.shouldInjectTraceparent(urlStr)) {
             if (config?.debug) {
-              console.log('[autolemetry-web] Injected traceparent on XHR:', url, traceparent);
+              const reason = getDenialReason(privacyManager, urlStr);
+              console.log(
+                '[autolemetry-web] Skipped traceparent on XHR (privacy):',
+                urlStr,
+                reason
+              );
             }
-          } catch (error) {
-            // Silently ignore if setRequestHeader fails
-            if (config?.debug) {
-              console.warn('[autolemetry-web] Failed to inject traceparent on XHR:', error);
+          } else {
+            // Inject traceparent header
+            try {
+              const traceparent = createTraceparent();
+              // originalXHRSetRequestHeader is always defined here because patchXMLHttpRequest() sets it before patching
+              originalXHRSetRequestHeader!.call(xhr, 'traceparent', traceparent);
+
+              if (config?.debug) {
+                console.log(
+                  '[autolemetry-web] Injected traceparent on XHR:',
+                  urlStr,
+                  traceparent
+                );
+              }
+            } catch (error) {
+              // Silently ignore if setRequestHeader fails
+              if (config?.debug) {
+                console.warn(
+                  '[autolemetry-web] Failed to inject traceparent on XHR:',
+                  error
+                );
+              }
             }
           }
         }
@@ -202,12 +306,96 @@ function patchXMLHttpRequest(): void {
 }
 
 /**
+ * Validate configuration at initialization time
+ * Catches common misconfigurations early
+ */
+function validateConfig(userConfig: AutolemetryWebConfig): void {
+  // Validate service name
+  if (!userConfig.service || typeof userConfig.service !== 'string') {
+    throw new Error('[autolemetry-web] service name is required and must be a string');
+  }
+
+  if (userConfig.service.length === 0) {
+    throw new Error('[autolemetry-web] service name cannot be empty');
+  }
+
+  if (userConfig.service.length > 255) {
+    console.warn(
+      '[autolemetry-web] service name is very long (> 255 chars). Consider using a shorter name.'
+    );
+  }
+
+  // Validate privacy config if provided
+  if (userConfig.privacy) {
+    const { allowedOrigins, blockedOrigins } = userConfig.privacy;
+
+    // Warn if both allowlist and blocklist are empty
+    if (
+      (!allowedOrigins || allowedOrigins.length === 0) &&
+      (!blockedOrigins || blockedOrigins.length === 0) &&
+      !userConfig.privacy.respectDoNotTrack &&
+      !userConfig.privacy.respectGPC
+    ) {
+      console.warn(
+        '[autolemetry-web] privacy config provided but all options are empty/disabled. This has no effect.'
+      );
+    }
+
+    // Warn about overlapping origins
+    if (allowedOrigins && blockedOrigins) {
+      const overlap = allowedOrigins.filter((allowed) =>
+        blockedOrigins.some((blocked) =>
+          allowed.toLowerCase().includes(blocked.toLowerCase())
+        )
+      );
+      if (overlap.length > 0) {
+        console.warn(
+          '[autolemetry-web] Some allowedOrigins match blockedOrigins. Blocklist takes precedence:',
+          overlap
+        );
+      }
+    }
+
+    // Validate origin format (warn if looks invalid)
+    const allOrigins = [
+      ...(allowedOrigins ?? []),
+      ...(blockedOrigins ?? []),
+    ];
+    allOrigins.forEach((origin) => {
+      if (origin.includes('://')) {
+        console.warn(
+          `[autolemetry-web] Origin "${origin}" includes protocol (://) - this is usually not needed. Just use the domain name.`
+        );
+      }
+    });
+  }
+}
+
+/**
  * Reset initialization state (for testing)
  * @internal
  */
 export function resetForTesting(): void {
   isInitialized = false;
   config = undefined;
+  privacyManager = undefined;
+
+  // Restore original fetch/XHR if they were patched
+  // Then clear the stored originals so next test can set up fresh mocks
+  if (typeof window !== 'undefined') {
+    if (originalFetch) {
+      window.fetch = originalFetch;
+      originalFetch = undefined;
+    }
+    if (originalXHROpen) {
+      XMLHttpRequest.prototype.open = originalXHROpen;
+      originalXHROpen = undefined;
+    }
+    if (originalXHRSetRequestHeader) {
+      XMLHttpRequest.prototype.setRequestHeader = originalXHRSetRequestHeader;
+      originalXHRSetRequestHeader = undefined;
+    }
+  }
 }
 
 /**
@@ -216,4 +404,12 @@ export function resetForTesting(): void {
  */
 export function getConfig(): AutolemetryWebConfig | undefined {
   return config;
+}
+
+/**
+ * Get current privacy manager
+ * @internal
+ */
+export function getPrivacyManager(): PrivacyManager | undefined {
+  return privacyManager;
 }

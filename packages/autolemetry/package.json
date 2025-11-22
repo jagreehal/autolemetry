@@ -84,6 +84,14 @@
       "types": "./dist/trace-helpers.d.ts",
       "import": "./dist/trace-helpers.js"
     },
+    "./tracer-provider": {
+      "types": "./dist/tracer-provider.d.ts",
+      "import": "./dist/tracer-provider.js"
+    },
+    "./semantic-helpers": {
+      "types": "./dist/semantic-helpers.d.ts",
+      "import": "./dist/semantic-helpers.js"
+    },
     "./decorators": {
       "types": "./dist/decorators.d.ts",
       "import": "./dist/decorators.js"

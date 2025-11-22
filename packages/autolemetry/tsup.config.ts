@@ -8,6 +8,8 @@ export default defineConfig([
       instrumentation: 'src/instrumentation.ts',
       logger: 'src/logger.ts',
       'trace-helpers': 'src/trace-helpers.ts',
+      'tracer-provider': 'src/tracer-provider.ts',
+      'semantic-helpers': 'src/semantic-helpers.ts',
       sampling: 'src/sampling.ts',
       event: 'src/event.ts',
       'event-subscriber': 'src/event-subscriber.ts',
