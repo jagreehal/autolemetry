@@ -80,6 +80,36 @@ Event subscribers for product events platforms (PostHog, Mixpanel, Amplitude, Se
 - Multiple API styles for maximum flexibility
 - Advanced sampling strategies
 
+### `packages/autolemetry-mcp` (Model Context Protocol)
+**NEW:** OpenTelemetry instrumentation for Model Context Protocol (MCP) with distributed tracing. Enables automatic tracing of MCP servers and clients using W3C Trace Context propagation via the `_meta` field.
+
+- **Automatic Instrumentation**: One function call to instrument all tools, resources, and prompts
+- **Distributed Tracing**: W3C Trace Context propagation through `_meta` field (traceparent, tracestate, baggage)
+- **Transport-Agnostic**: Works with stdio, HTTP, SSE, or any MCP transport (context in JSON payload, not headers)
+- **Proxy-Based Pattern**: Similar to autolemetry-cloudflare bindings instrumentation (no MCP SDK modifications)
+- **Runtime Support**: Both Node.js (autolemetry) and Edge (autolemetry-edge)
+- **Tree-Shakeable Entry Points**:
+  - `autolemetry-mcp` - Everything (server + client + context utilities)
+  - `autolemetry-mcp/server` - Server instrumentation only (~5KB)
+  - `autolemetry-mcp/client` - Client instrumentation only (~4KB)
+  - `autolemetry-mcp/context` - Context utilities only (~2KB)
+
+**Bundle Size:** ~7KB total (context 2KB + server 3KB + client 2KB)
+
+**Key Implementation Details:**
+- Uses Proxy pattern to wrap `registerTool()`, `registerResource()`, `registerPrompt()` on server
+- Uses Proxy pattern to wrap `callTool()`, `getResource()`, `getPrompt()` on client
+- Server extracts parent context from `_meta` field using `extractOtelContextFromMeta()`
+- Client injects current context into `_meta` field using `injectOtelContextToMeta()`
+- Runtime detection auto-imports from `autolemetry` or `autolemetry-edge` as needed
+- Requires MCP SDK v1.0.0+ (which uses Zod v3 - autolemetry doesn't use Zod so no conflict)
+
+**Why Better than Manual Instrumentation:**
+- No need to manually wrap each tool handler
+- Automatic parent-child span relationships across client-server boundaries
+- Transport-agnostic (works with any MCP transport, not just HTTP)
+- Consistent span naming and attributes
+
 ## Environment Variables
 
 Autolemetry supports standard OpenTelemetry environment variables for configuration. This enables zero-code configuration changes across environments and compatibility with the broader OTEL ecosystem.
@@ -380,6 +410,147 @@ The library uses standard OpenTelemetry context propagation:
 - `trace()` automatically creates child spans in the active context
 - Use `withNewContext()` to create isolated trace trees
 - Context includes custom attributes via `runInOperationContext()`
+
+### Advanced Features (v1.1.0+)
+
+#### Deterministic Trace IDs
+Generate consistent trace IDs from seeds for correlation with external systems:
+
+```typescript
+import { createDeterministicTraceId } from 'autolemetry/trace-helpers'
+
+// Generate trace ID from external request ID
+const requestId = req.headers['x-request-id']
+const traceId = await createDeterministicTraceId(requestId)
+
+// Use for correlation in support tickets, external systems, etc.
+console.log(`View traces: https://your-backend.com/traces/${traceId}`)
+```
+
+**Implementation:** Uses SHA-256 hashing to generate consistent 128-bit trace IDs. Works in Node.js and edge runtimes (via crypto.subtle).
+
+**Use cases:**
+- Correlate external request IDs with OTel traces
+- Link support tickets to trace data
+- Associate business entities (orders, sessions) with observability data
+
+#### Metadata Flattening
+Automatically flatten nested objects into dot-notation span attributes:
+
+```typescript
+import { flattenMetadata } from 'autolemetry/trace-helpers'
+import { trace } from 'autolemetry'
+
+export const processOrder = trace(ctx => async (order: Order) => {
+  const metadata = flattenMetadata({
+    user: { id: order.userId, tier: 'premium' },
+    payment: { method: 'card', processor: 'stripe' },
+    items: order.items.length
+  })
+
+  ctx.setAttributes(metadata)
+  // Results in: metadata.user.id, metadata.user.tier, metadata.payment.method, etc.
+})
+```
+
+**Features:**
+- Auto-serializes non-string values to JSON
+- Filters out null/undefined values
+- Gracefully handles circular references (→ `<serialization-failed>`)
+- Customizable prefix (default: `'metadata'`)
+
+#### Isolated Tracer Provider
+For library authors who want to use Autolemetry without interfering with the application's global OTel setup:
+
+```typescript
+import { NodeTracerProvider } from '@opentelemetry/sdk-trace-node'
+import { BatchSpanProcessor } from '@opentelemetry/sdk-trace-base'
+import { OTLPTraceExporter } from '@opentelemetry/exporter-trace-otlp-http'
+import { setAutolemetryTracerProvider } from 'autolemetry/tracer-provider'
+
+// Create isolated provider (don't call provider.register())
+const exporter = new OTLPTraceExporter({ url: 'https://your-backend.com/v1/traces' })
+const provider = new NodeTracerProvider()
+provider.addSpanProcessor(new BatchSpanProcessor(exporter))
+
+// Set as Autolemetry's provider (isolated from global OTel)
+setAutolemetryTracerProvider(provider)
+
+// Now all trace(), span(), instrument() calls use this provider
+```
+
+**Important limitations:**
+- Isolates span processing and export only
+- OpenTelemetry context (trace IDs, parent spans) is still shared globally
+- Spans from isolated provider may inherit context from global spans
+
+**Use cases:**
+- Library code with embedded Autolemetry
+- SDKs that need observability without forcing users to configure OTel
+- Separate span processing for different subsystems
+- Testing with isolated trace collection
+
+#### Semantic Convention Helpers
+Pre-configured trace helpers following OpenTelemetry semantic conventions:
+
+```typescript
+import { traceLLM, traceDB, traceHTTP, traceMessaging } from 'autolemetry/semantic-helpers'
+
+// LLM operations (Gen AI semantic conventions)
+export const generateText = traceLLM({
+  model: 'gpt-4-turbo',
+  operation: 'chat',
+  system: 'openai'
+})(ctx => async (prompt: string) => {
+  const response = await openai.chat.completions.create({ /* ... */ })
+  ctx.setAttribute('gen.ai.usage.completion_tokens', response.usage.completion_tokens)
+  return response.choices[0].message.content
+})
+
+// Database operations (DB semantic conventions)
+export const getUser = traceDB({
+  system: 'postgresql',
+  operation: 'SELECT',
+  dbName: 'app_db',
+  collection: 'users'
+})(ctx => async (userId: string) => {
+  const query = 'SELECT * FROM users WHERE id = $1'
+  ctx.setAttribute('db.statement', query)
+  return await pool.query(query, [userId])
+})
+
+// HTTP client operations (HTTP semantic conventions)
+export const fetchUser = traceHTTP({
+  method: 'GET',
+  url: 'https://api.example.com/users/:id'
+})(ctx => async (userId: string) => {
+  const response = await fetch(`https://api.example.com/users/${userId}`)
+  ctx.setAttribute('http.response.status_code', response.status)
+  return response.json()
+})
+
+// Messaging operations (Messaging semantic conventions)
+export const publishEvent = traceMessaging({
+  system: 'kafka',
+  operation: 'publish',
+  destination: 'user-events'
+})(ctx => async (event: Event) => {
+  await producer.send({ topic: 'user-events', messages: [event] })
+  ctx.setAttribute('messaging.message.id', event.id)
+})
+```
+
+**Benefits:**
+- Automatic semantic attributes following OTel specs
+- Type-safe configuration interfaces
+- Reduces boilerplate by 60-70%
+- Links to official OTel semantic convention docs in JSDoc
+
+**Available helpers:**
+- `traceLLM()` - Gen AI operations (chat, completion, embedding)
+- `traceDB()` - Database operations (SQL, NoSQL, Redis)
+- `traceHTTP()` - HTTP client requests
+- `traceMessaging()` - Queue/messaging operations (Kafka, RabbitMQ, SQS)
 
 ### Graceful Shutdown
 All components implement graceful shutdown:

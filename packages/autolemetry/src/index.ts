@@ -105,7 +105,29 @@ export {
   getActiveSpan,
   getActiveContext,
   runWithSpan,
+  finalizeSpan,
+  createDeterministicTraceId,
+  flattenMetadata,
 } from './trace-helpers';
+
+// Isolated tracer provider support (advanced - for library authors)
+export {
+  setAutolemetryTracerProvider,
+  getAutolemetryTracerProvider,
+  getAutolemetryTracer,
+} from './tracer-provider';
+
+// Semantic convention helpers
+export {
+  traceLLM,
+  traceDB,
+  traceHTTP,
+  traceMessaging,
+  type LLMConfig,
+  type DBConfig,
+  type HTTPConfig,
+  type MessagingConfig,
+} from './semantic-helpers';
 
 // Re-export events types
 export type {

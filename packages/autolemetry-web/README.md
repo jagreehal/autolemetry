@@ -307,16 +307,6 @@ interface AutolemetryWebConfig {
   /** Service name for the browser application */
   service: string
 
-  /** Service version (optional, default: '1.0.0') */
-  version?: string
-
-  /** Additional resource attributes */
-  resourceAttributes?: {
-    'deployment.environment'?: string
-    'team'?: string
-    [key: string]: string | number | boolean | undefined
-  }
-
   /** Enable fetch instrumentation (default: true) */
   instrumentFetch?: boolean
 
@@ -325,6 +315,23 @@ interface AutolemetryWebConfig {
 
   /** Enable debug logging (default: false) */
   debug?: boolean
+
+  /** Privacy controls for traceparent header injection */
+  privacy?: PrivacyConfig
+}
+
+interface PrivacyConfig {
+  /** Only inject traceparent on these origins (whitelist) */
+  allowedOrigins?: string[]
+
+  /** Never inject traceparent on these origins (blacklist) */
+  blockedOrigins?: string[]
+
+  /** Respect Do Not Track browser setting */
+  respectDoNotTrack?: boolean
+
+  /** Respect Global Privacy Control signal */
+  respectGPC?: boolean
 }
 ```
 
@@ -333,12 +340,11 @@ interface AutolemetryWebConfig {
 ```typescript
 init({
   service: 'my-spa',
-  version: '2.1.0',
-  resourceAttributes: {
-    'deployment.environment': 'production',
-    'team': 'frontend'
-  },
-  debug: false
+  debug: false,
+  privacy: {
+    allowedOrigins: ['api.myapp.com'],
+    respectDoNotTrack: true
+  }
 })
 ```
 
@@ -402,6 +408,252 @@ if (ctx) {
   console.log('Trace ID:', ctx.traceId)
   console.log('Span ID:', ctx.spanId)
 }
+```
+
+## Privacy Controls
+
+autolemetry-web includes built-in privacy controls to ensure compliance with GDPR, CCPA, and other privacy regulations. Control which origins receive `traceparent` headers and respect user privacy preferences.
+
+### Privacy Configuration
+
+```typescript
+interface PrivacyConfig {
+  /** Only inject traceparent on these origins (whitelist) */
+  allowedOrigins?: string[]
+
+  /** Never inject traceparent on these origins (blacklist) */
+  blockedOrigins?: string[]
+
+  /** Respect Do Not Track browser setting */
+  respectDoNotTrack?: boolean
+
+  /** Respect Global Privacy Control signal */
+  respectGPC?: boolean
+}
+```
+
+### Example: Restrict to First-Party APIs
+
+Only inject `traceparent` on your own API endpoints:
+
+```typescript
+init({
+  service: 'my-app',
+  privacy: {
+    allowedOrigins: ['api.myapp.com', 'myapp.com']
+  }
+})
+
+// ✅ Injects traceparent
+fetch('https://api.myapp.com/users')
+
+// ❌ Does NOT inject traceparent (not in allowlist)
+fetch('https://external-api.com/data')
+```
+
+### Example: Block Third-Party Analytics
+
+Block `traceparent` injection on analytics and tracking domains:
+
+```typescript
+init({
+  service: 'my-app',
+  privacy: {
+    blockedOrigins: [
+      'analytics.google.com',
+      'facebook.com',
+      'mixpanel.com',
+      'segment.io'
+    ]
+  }
+})
+
+// ✅ Injects traceparent (not blocked)
+fetch('https://api.myapp.com/users')
+
+// ❌ Does NOT inject traceparent (blocked)
+fetch('https://analytics.google.com/collect')
+```
+
+### Example: Respect User Privacy Signals
+
+Respect Do Not Track (DNT) and Global Privacy Control (GPC):
+
+```typescript
+init({
+  service: 'my-app',
+  privacy: {
+    respectDoNotTrack: true,  // Disable tracing if user has DNT enabled
+    respectGPC: true           // Disable tracing if user has GPC enabled
+  }
+})
+
+// If user has DNT or GPC enabled:
+// ❌ NO traceparent headers injected on ANY requests
+```
+
+### Example: Combined Privacy Rules
+
+Combine multiple privacy controls for fine-grained control:
+
+```typescript
+init({
+  service: 'my-app',
+  privacy: {
+    // Only inject on these origins
+    allowedOrigins: ['myapp.com', 'api.myapp.com'],
+
+    // BUT never inject on these (even if in allowlist)
+    blockedOrigins: ['analytics.myapp.com'],
+
+    // AND respect user's privacy preferences
+    respectDoNotTrack: true,
+    respectGPC: true
+  }
+})
+```
+
+### Decision Priority
+
+Privacy checks follow this order:
+
+1. **Do Not Track** - If enabled and `respectDoNotTrack: true`, block ALL injection
+2. **Global Privacy Control** - If enabled and `respectGPC: true`, block ALL injection
+3. **Blocklist** - If origin matches `blockedOrigins`, block injection
+4. **Allowlist** - If `allowedOrigins` is set, ONLY allow those origins
+5. **Default** - Allow injection (backward compatible)
+
+### Origin Matching
+
+Origins are matched using **substring matching** for flexibility:
+
+```typescript
+init({
+  privacy: {
+    allowedOrigins: ['myapp.com']
+  }
+})
+
+// ✅ Matches (contains "myapp.com")
+fetch('https://myapp.com/api')
+fetch('https://api.myapp.com/users')
+fetch('https://admin.myapp.com/dashboard')
+
+// ❌ Does NOT match
+fetch('https://otherapp.com/api')
+```
+
+**Case-insensitive:** Origins are normalized to lowercase before matching.
+
+### GDPR & CCPA Compliance
+
+When handling EU or California users, consider these configurations:
+
+**Strict Compliance (Recommended):**
+```typescript
+init({
+  service: 'my-app',
+  privacy: {
+    allowedOrigins: ['myapp.com'],        // First-party only
+    respectDoNotTrack: true,               // Honor DNT
+    respectGPC: true                       // Honor GPC
+  }
+})
+```
+
+**Balanced Approach:**
+```typescript
+init({
+  service: 'my-app',
+  privacy: {
+    blockedOrigins: [
+      'analytics.google.com',
+      'facebook.com',
+      'doubleclick.net'
+    ],
+    respectGPC: true  // Respect explicit privacy request
+  }
+})
+```
+
+### Debug Logging
+
+Enable debug logging to see privacy decisions:
+
+```typescript
+init({
+  service: 'my-app',
+  debug: true,  // <-- Enable debug logging
+  privacy: {
+    blockedOrigins: ['analytics.google.com']
+  }
+})
+
+// Console output:
+// [autolemetry-web] Initialized successfully { service: 'my-app', privacyEnabled: true, ... }
+// [autolemetry-web] Skipped traceparent on fetch (privacy): https://analytics.google.com/collect Origin is in blockedOrigins list
+// [autolemetry-web] Injected traceparent on fetch: https://api.myapp.com/users 00-4bf92f...
+```
+
+### Troubleshooting Privacy Issues
+
+**Headers not being injected when expected:**
+
+1. Check if DNT or GPC is enabled in your browser
+2. Verify origin is in `allowedOrigins` (if configured)
+3. Verify origin is NOT in `blockedOrigins`
+4. Enable debug logging to see decision reasons
+
+**Headers still being injected when blocked:**
+
+1. Ensure privacy config is passed correctly to `init()`
+2. Check that `init()` was only called once (subsequent calls are ignored)
+3. Verify origin matching is correct (case-insensitive substring matching)
+
+**Testing Privacy Controls:**
+
+```typescript
+// For unit tests, you can access the privacy manager
+import { getPrivacyManager } from 'autolemetry-web'
+
+const manager = getPrivacyManager()
+if (manager) {
+  const shouldInject = manager.shouldInjectTraceparent('https://api.myapp.com')
+  console.log('Should inject:', shouldInject)
+}
+```
+
+**Checking Browser Privacy Settings:**
+
+```javascript
+// Check if Do Not Track is enabled
+console.log('DNT:', navigator.doNotTrack) // '1' = enabled, '0' = disabled
+
+// Check if Global Privacy Control is enabled
+console.log('GPC:', navigator.globalPrivacyControl) // true/false/undefined
+```
+
+### Advanced: Custom Privacy Logic
+
+For advanced use cases, you can import and use the `PrivacyManager` directly:
+
+```typescript
+import { PrivacyManager } from 'autolemetry-web/privacy'
+
+const manager = new PrivacyManager({
+  allowedOrigins: ['myapp.com'],
+  respectDoNotTrack: true
+})
+
+// Check if injection should happen for a specific URL
+const shouldInject = manager.shouldInjectTraceparent('https://api.myapp.com/users')
+console.log('Should inject:', shouldInject)
+
+// Get denial reason (for debugging)
+import { getDenialReason } from 'autolemetry-web/privacy'
+const reason = getDenialReason(manager, 'https://blocked.com/api')
+console.log('Denial reason:', reason)
+// Output: "Origin https://blocked.com is not in allowedOrigins list"
 ```
 
 ## Using with Other SDKs

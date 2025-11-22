@@ -49,6 +49,9 @@
 // Core initialization
 export { init, type AutolemetryWebConfig } from './init';
 
+// Privacy types (re-exported from init.ts which imports from privacy.ts)
+export type { PrivacyConfig } from './privacy';
+
 // Functional API (DX wrappers)
 export {
   trace,

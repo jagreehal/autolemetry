@@ -6,6 +6,7 @@
  */
 
 import { trace, metrics, type Tracer, type Meter } from '@opentelemetry/api';
+import { getAutolemetryTracer } from './tracer-provider';
 
 export type { ILogger } from './logger';
 
@@ -79,7 +80,7 @@ class Config {
   private config: Required<InstrumentationConfig> = {
     tracerName: 'app',
     meterName: 'app',
-    tracer: trace.getTracer('app'),
+    tracer: getAutolemetryTracer('app'),
     meter: metrics.getMeter('app'),
   };
 
@@ -96,7 +97,7 @@ class Config {
   configure(options: InstrumentationConfig): void {
     if (options.tracerName) {
       this.config.tracerName = options.tracerName;
-      this.config.tracer = trace.getTracer(options.tracerName);
+      this.config.tracer = getAutolemetryTracer(options.tracerName);
     }
     if (options.meterName) {
       this.config.meterName = options.meterName;
