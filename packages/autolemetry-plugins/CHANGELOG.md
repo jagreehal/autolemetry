@@ -1,5 +1,12 @@
 # autolemetry-plugins
 
+## 0.3.2
+
+### Patch Changes
+
+- Updated dependencies [da08e8d]
+  - autolemetry@1.0.1
+
 ## 0.3.1
 
 ### Patch Changes
