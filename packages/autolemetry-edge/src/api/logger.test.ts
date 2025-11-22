@@ -1,5 +1,5 @@
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
-import { createEdgeLogger } from './logger';
+import { createEdgeLogger, runWithLogLevel, getActiveLogLevel } from './logger';
 import { trace } from '@opentelemetry/api';
 
 describe('Edge Logger', () => {
@@ -243,7 +243,7 @@ describe('Edge Logger', () => {
 
     it('should handle very long messages', () => {
       const logger = createEdgeLogger('test-service');
-      const longMessage = 'a'.repeat(10000);
+      const longMessage = 'a'.repeat(10_000);
 
       logger.info(longMessage);
 
@@ -261,6 +261,107 @@ describe('Edge Logger', () => {
       expect(consoleLogSpy).toHaveBeenCalledOnce();
       const logOutput = JSON.parse(consoleLogSpy.mock.calls[0][0]);
       expect(logOutput.msg).toBe(specialMessage);
+    });
+  });
+
+  describe('Dynamic log level control', () => {
+    it('should override log level via runWithLogLevel', () => {
+      const logger = createEdgeLogger('test-service', { level: 'info' });
+
+      // Normal behavior: debug filtered out
+      logger.debug('outside context');
+      expect(consoleLogSpy).not.toHaveBeenCalled();
+
+      // Inside debug context: debug logged
+      runWithLogLevel('debug', () => {
+        logger.debug('inside debug context');
+      });
+      expect(consoleLogSpy).toHaveBeenCalledOnce();
+
+      // Back to normal: debug filtered out again
+      logger.debug('outside context again');
+      expect(consoleLogSpy).toHaveBeenCalledOnce();
+    });
+
+    it('should support none level to temporarily disable logging', () => {
+      const logger = createEdgeLogger('test-service', { level: 'info' });
+
+      logger.info('before none');
+      const callsBeforeNone = consoleLogSpy.mock.calls.length;
+
+      runWithLogLevel('none', () => {
+        logger.info('inside none context');
+        logger.error('even errors suppressed');
+      });
+      expect(consoleLogSpy.mock.calls.length).toBe(callsBeforeNone); // No new logs
+
+      logger.info('after none');
+      expect(consoleLogSpy.mock.calls.length).toBe(callsBeforeNone + 1);
+    });
+
+    it('should return value from callback', () => {
+      const result = runWithLogLevel('debug', () => {
+        return 42;
+      });
+      expect(result).toBe(42);
+    });
+
+    it('should propagate async results', async () => {
+      const result = await runWithLogLevel('debug', async () => {
+        return 'async value';
+      });
+      expect(result).toBe('async value');
+    });
+
+    it('should allow raising log level temporarily', () => {
+      const logger = createEdgeLogger('test-service', { level: 'error' });
+
+      logger.info('normal info');
+      logger.warn('normal warn');
+      expect(consoleLogSpy).not.toHaveBeenCalled();
+
+      runWithLogLevel('info', () => {
+        logger.info('temporary info');
+        logger.warn('temporary warn');
+      });
+      expect(consoleLogSpy).toHaveBeenCalledTimes(2);
+    });
+
+    it('should isolate log level changes to context', () => {
+      const logger = createEdgeLogger('test-service', { level: 'info' });
+
+      runWithLogLevel('debug', () => {
+        logger.debug('context 1 - debug');
+        expect(consoleLogSpy).toHaveBeenCalledOnce();
+      });
+
+      runWithLogLevel('error', () => {
+        logger.info('context 2 - info should be filtered');
+        expect(consoleLogSpy).toHaveBeenCalledOnce(); // No new logs
+      });
+    });
+  });
+
+  describe('getActiveLogLevel', () => {
+    it('should return undefined when no active level', () => {
+      expect(getActiveLogLevel()).toBeUndefined();
+    });
+
+    it('should return active level inside runWithLogLevel', () => {
+      runWithLogLevel('debug', () => {
+        expect(getActiveLogLevel()).toBe('debug');
+      });
+
+      runWithLogLevel('error', () => {
+        expect(getActiveLogLevel()).toBe('error');
+      });
+    });
+
+    it('should reset after runWithLogLevel completes', () => {
+      runWithLogLevel('debug', () => {
+        expect(getActiveLogLevel()).toBe('debug');
+      });
+      expect(getActiveLogLevel()).toBeUndefined();
     });
   });
 });

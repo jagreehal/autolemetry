@@ -44,16 +44,20 @@ Replace `NODE_OPTIONS` and 30+ lines of SDK boilerplate with `init()`, wrap func
     - [Decorators (TypeScript 5+)](#decorators-typescript-5)
     - [Database Instrumentation](#database-instrumentation)
   - [Business Metrics \& Product Events](#business-metrics--product-events)
-    - [OpenTelemetry Metrics (Metric class + helpers)](#opentelemetry-metrics-metrics-class--helpers)
+    - [OpenTelemetry Metrics (Metric class + helpers)](#opentelemetry-metrics-metric-class--helpers)
     - [Product Events (PostHog, Mixpanel, Amplitude, …)](#product-events-posthog-mixpanel-amplitude-)
   - [Logging with Trace Context](#logging-with-trace-context)
+    - [Using Pino (recommended)](#using-pino-recommended)
+    - [Using Winston](#using-winston)
+    - [Using Bunyan (or other loggers)](#using-bunyan-or-other-loggers)
+    - [What you get automatically](#what-you-get-automatically)
   - [Auto Instrumentation \& Advanced Configuration](#auto-instrumentation--advanced-configuration)
   - [Operational Safety \& Runtime Controls](#operational-safety--runtime-controls)
   - [Configuration Reference](#configuration-reference)
   - [Building Custom Instrumentation](#building-custom-instrumentation)
     - [Instrumenting Queue Consumers](#instrumenting-queue-consumers)
     - [Instrumenting Scheduled Jobs / Cron](#instrumenting-scheduled-jobs--cron)
-    - [Creating Custom Event Subscribers](#creating-custom-events-adapters)
+    - [Creating Custom Event Subscribers](#creating-custom-event-subscribers)
     - [Low-Level Span Manipulation](#low-level-span-manipulation)
     - [Custom Metrics](#custom-metrics)
   - [Serverless \& Short-lived Processes](#serverless--short-lived-processes)
@@ -63,7 +67,9 @@ Replace `NODE_OPTIONS` and 30+ lines of SDK boilerplate with `init()`, wrap func
   - [API Reference](#api-reference)
   - [FAQ \& Next Steps](#faq--next-steps)
   - [Troubleshooting \& Debugging](#troubleshooting--debugging)
-    - [ConsoleSpanExporter (Visual Debugging)](#consolespanexporter-visual-debugging)
+    - [Quick Debug Mode (Recommended)](#quick-debug-mode-recommended)
+    - [Manual Configuration (Advanced)](#manual-configuration-advanced)
+      - [ConsoleSpanExporter (Visual Debugging)](#consolespanexporter-visual-debugging)
     - [InMemorySpanExporter (Testing \& Assertions)](#inmemoryspanexporter-testing--assertions)
     - [Using Both (Advanced)](#using-both-advanced)
   - [Creating Custom Instrumentation](#creating-custom-instrumentation)
@@ -104,6 +110,38 @@ npm install autolemetry
 # or
 pnpm add autolemetry
 ```
+
+**Optional: Auto-Instrumentations**
+
+For automatic tracing of HTTP servers, Express, databases, and more, install the auto-instrumentations package:
+
+```bash
+npm add @opentelemetry/auto-instrumentations-node
+# or
+pnpm add @opentelemetry/auto-instrumentations-node
+```
+
+This is **optional** and only needed if you want to use the `integrations` option in `init()`. The functional API (`trace()`, `span()`) works without it.
+
+<details>
+<summary>When do I need auto-instrumentations?</summary>
+
+**You need it if:**
+
+- You want automatic tracing of ALL HTTP requests, database queries, etc.
+- You're using frameworks like Express, Fastify, NestJS
+- You prefer "batteries included" setup
+
+**You don't need it if:**
+
+- You're using only the functional API (`trace()`, `span()`)
+- You want minimal bundle size
+- You're deploying to edge runtimes (Cloudflare Workers, Vercel Edge)
+- You want selective instrumentation for specific operations only
+
+The auto-instrumentations package includes 47 instrumentation libraries (~104KB) for frameworks, databases, message queues, cloud SDKs, and more. It's optional to keep autolemetry lightweight by default.
+
+</details>
 
 ### 2. Initialize once at startup
 
@@ -379,7 +417,117 @@ export const createUser = trace((ctx) => async (input: CreateUserData) => {
 });
 ```
 
-Available helpers: `traceId`, `spanId`, `correlationId`, `setAttribute`, `setAttributes`, `setStatus`, `recordException`.
+Available helpers: `traceId`, `spanId`, `correlationId`, `setAttribute`, `setAttributes`, `setStatus`, `recordException`, `getBaggage`, `setBaggage`, `deleteBaggage`, `getAllBaggage`.
+
+#### Baggage (Context Propagation)
+
+Baggage allows you to propagate custom key-value pairs across distributed traces. Baggage is automatically included in HTTP headers when using `injectTraceContext()` from `autolemetry/http`.
+
+```typescript
+import { trace, withBaggage } from 'autolemetry';
+import { injectTraceContext } from 'autolemetry/http';
+
+// Set baggage for downstream services
+export const createOrder = trace((ctx) => async (order: Order) => {
+  return await withBaggage({
+    baggage: {
+      'tenant.id': order.tenantId,
+      'user.id': order.userId,
+    },
+    fn: async () => {
+      // Baggage is available to all child spans and HTTP calls
+      const tenantId = ctx.getBaggage('tenant.id');
+      ctx.setAttribute('tenant.id', tenantId || 'unknown');
+
+      // HTTP headers automatically include baggage
+      const headers = injectTraceContext();
+      await fetch('/api/charge', { headers, body: JSON.stringify(order) });
+    },
+  });
+});
+```
+
+**Typed Baggage (Optional):**
+
+For type-safe baggage operations, use `defineBaggageSchema()`:
+
+```typescript
+import { trace, defineBaggageSchema } from 'autolemetry';
+
+type TenantBaggage = { tenantId: string; region?: string };
+const tenantBaggage = defineBaggageSchema<TenantBaggage>('tenant');
+
+export const handler = trace<TenantBaggage>((ctx) => async () => {
+  // Type-safe get
+  const tenant = tenantBaggage.get(ctx);
+  if (tenant?.tenantId) {
+    console.log('Tenant:', tenant.tenantId);
+  }
+
+  // Type-safe set with proper scoping
+  return await tenantBaggage.with(ctx, { tenantId: 't1' }, async () => {
+    // Baggage is available here and in child spans
+  });
+});
+```
+
+**Automatic Baggage → Span Attributes:**
+
+Enable `baggage: true` in `init()` to automatically copy all baggage entries to span attributes, making them visible in trace UIs without manual `ctx.setAttribute()` calls:
+
+```typescript
+import { init, trace, withBaggage } from 'autolemetry';
+
+init({
+  service: 'my-app',
+  baggage: true, // Auto-copy baggage to span attributes
+});
+
+export const processOrder = trace((ctx) => async (order: Order) => {
+  return await withBaggage({
+    baggage: {
+      'tenant.id': order.tenantId,
+      'user.id': order.userId,
+    },
+    fn: async () => {
+      // Span automatically has baggage.tenant.id and baggage.user.id attributes!
+      // No need for: ctx.setAttribute('tenant.id', ctx.getBaggage('tenant.id'))
+      await chargeCustomer(order);
+    },
+  });
+});
+```
+
+**Custom prefix:**
+
+```typescript
+init({
+  service: 'my-app',
+  baggage: 'ctx', // Creates ctx.tenant.id, ctx.user.id
+  // Or use '' for no prefix: tenant.id, user.id
+});
+```
+
+**Extracting Baggage from Incoming Requests:**
+
+```typescript
+import { extractTraceContext, trace, context } from 'autolemetry';
+
+// In Express middleware
+app.use((req, res, next) => {
+  const extractedContext = extractTraceContext(req.headers);
+  context.with(extractedContext, () => {
+    next();
+  });
+});
+```
+
+**Key Points:**
+
+- Typed baggage is completely optional - existing untyped baggage code continues to work without changes
+- `baggage: true` in `init()` eliminates manual attribute setting for baggage
+- Baggage values are strings (convert numbers/objects before setting)
+- Never put PII in baggage - it propagates in HTTP headers across services!
 
 ### Reusable Middleware Helpers
 
@@ -687,6 +835,7 @@ init({
   sampler?: Sampler;
   version?: string;
   environment?: string;
+  baggage?: boolean | string; // Auto-copy baggage to span attributes
   autoFlushEvents?: boolean;  // Auto-flush events (default: true)
   autoFlush?: boolean;           // Auto-flush spans (default: false)
   integrations?: string[] | boolean | Record<string, { enabled?: boolean }>;
@@ -722,6 +871,31 @@ init({
 ```
 
 Event instances automatically inherit these subscribers unless you explicitly override them. See [Product Events](#product-events-posthog-mixpanel-amplitude-) for details.
+
+**Baggage Configuration:**
+
+Enable automatic copying of baggage entries to span attributes:
+
+```typescript
+init({
+  service: 'my-app',
+  baggage: true, // Copies baggage to span attributes with 'baggage.' prefix
+});
+
+// With custom prefix
+init({
+  service: 'my-app',
+  baggage: 'ctx', // Copies with 'ctx.' prefix → ctx.tenant.id
+});
+
+// No prefix
+init({
+  service: 'my-app',
+  baggage: '', // Copies directly → tenant.id
+});
+```
+
+This eliminates the need to manually call `ctx.setAttribute()` for baggage values. See [Baggage (Context Propagation)](#baggage-context-propagation) for usage examples.
 
 **Protocol Configuration:**
 
@@ -1149,6 +1323,11 @@ Each API is type-safe, works in both ESM and CJS, and is designed to minimize bo
 - **Can I customize everything?** Yes. Override exporters, readers, resources, validation, or even the full NodeSDK via `sdkFactory`.
 - **Does it work in production?** Yes. Adaptive sampling, redaction, validation, rate limiting, and circuit breakers are enabled out of the box.
 - **What about frameworks?** Use decorators, `withTracing()`, or `instrument()` for NestJS, Fastify, Express, Next.js actions, queues, workers, anything in Node.js.
+- **Why do I need to install @opentelemetry/auto-instrumentations-node separately?** Autolemetry is designed to be lightweight and flexible. The auto-instrumentations package bundles 47 instrumentation libraries (~104KB + dependencies). Making it optional means:
+  - Smaller bundles for users who only need functional tracing (`trace()`, `span()`)
+  - No unnecessary dependencies in edge runtimes (autolemetry-edge/autolemetry-cloudflare)
+  - Freedom to choose specific instrumentations instead of the full bundle
+  - If you want the convenience of `integrations: true`, just install it once: `pnpm add @opentelemetry/auto-instrumentations-node`
 
 **Next steps:**
 

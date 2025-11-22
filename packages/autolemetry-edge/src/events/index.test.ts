@@ -1,6 +1,6 @@
 import { describe, expect, it, vi } from 'vitest';
 import { context as otelContext, trace } from '@opentelemetry/api';
-import { createEdgeSubscribers, getEdgeSubscribers } from './subscribers';
+import { createEdgeSubscribers, getEdgeSubscribers } from './index';
 import { getActiveConfig, parseConfig, setConfig } from '../core/config';
 
 describe('createEdgeSubscribers', () => {

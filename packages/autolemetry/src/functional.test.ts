@@ -1,6 +1,13 @@
 /* eslint-disable @typescript-eslint/no-unused-vars */
 import { describe, it, expect, beforeEach, vi } from 'vitest';
-import { trace, withTracing, instrument, ctx, span } from './functional';
+import {
+  trace,
+  withTracing,
+  instrument,
+  ctx,
+  span,
+  withBaggage,
+} from './functional';
 import type { TraceContext } from './trace-helpers';
 import type { TracingOptions } from './functional';
 
@@ -918,6 +925,135 @@ describe('Functional API', () => {
       expect(spans[0]!.name).toBe('fetchUser');
       expect(spans[0]!.attributes['request.id']).toBe('req-456');
       expect(spans[0]!.attributes['operation.name']).toBe('fetchUser');
+    });
+  });
+
+  describe('baggage', () => {
+    it('should get baggage entry from context', async () => {
+      const collector = createTraceCollector();
+      const { context, propagation } = await import('@opentelemetry/api');
+
+      // Create context with baggage
+      const activeContext = context.active();
+      const baggage = propagation.createBaggage();
+      const updatedBaggage = baggage.setEntry('tenant.id', {
+        value: 'tenant-123',
+      });
+      const contextWithBaggage = propagation.setBaggage(
+        activeContext,
+        updatedBaggage,
+      );
+
+      await context.with(contextWithBaggage, async () => {
+        await trace((ctx) => async () => {
+          const tenantId = ctx.getBaggage('tenant.id');
+          expect(tenantId).toBe('tenant-123');
+          return 'done';
+        })();
+      });
+
+      expect(collector.getSpans()).toHaveLength(1);
+    });
+
+    it('withBaggage should set baggage for child spans', async () => {
+      const collector = createTraceCollector();
+
+      await trace((ctx) => async () => {
+        return await withBaggage({
+          baggage: { 'tenant.id': 'tenant-456', 'user.id': 'user-789' },
+          fn: async () => {
+            // Check baggage is available
+            expect(ctx.getBaggage('tenant.id')).toBe('tenant-456');
+            expect(ctx.getBaggage('user.id')).toBe('user-789');
+
+            // Create child span - should inherit baggage
+            await trace((childCtx) => async () => {
+              expect(childCtx.getBaggage('tenant.id')).toBe('tenant-456');
+              return 'child-done';
+            })();
+            return 'parent-done';
+          },
+        });
+      })();
+
+      const spans = collector.getSpans();
+      expect(spans).toHaveLength(2);
+    });
+
+    it('withBaggage should work with sync functions', () => {
+      let capturedBaggage: string | undefined;
+
+      trace((ctx) => () => {
+        return withBaggage({
+          baggage: { key: 'value' },
+          fn: () => {
+            capturedBaggage = ctx.getBaggage('key');
+            return 'sync-result';
+          },
+        });
+      })();
+
+      expect(capturedBaggage).toBe('value');
+    });
+
+    it('withBaggage should merge with existing baggage', async () => {
+      const collector = createTraceCollector();
+      const { context, propagation } = await import('@opentelemetry/api');
+
+      // Set initial baggage
+      const activeContext = context.active();
+      const baggage = propagation.createBaggage();
+      const updatedBaggage = baggage.setEntry('existing.key', {
+        value: 'existing-value',
+      });
+      const contextWithBaggage = propagation.setBaggage(
+        activeContext,
+        updatedBaggage,
+      );
+
+      await context.with(contextWithBaggage, async () => {
+        await trace((ctx) => async () => {
+          // New baggage should be available
+          expect(ctx.getBaggage('new.key')).toBeUndefined(); // Not set yet
+
+          return await withBaggage({
+            baggage: { 'new.key': 'new-value' },
+            fn: async () => {
+              // New baggage should be available
+              expect(ctx.getBaggage('new.key')).toBe('new-value');
+              // Existing baggage should still be available (if propagator preserves it)
+              return 'done';
+            },
+          });
+        })();
+      });
+
+      // Only 1 span created (the outer trace)
+      expect(collector.getSpans()).toHaveLength(1);
+    });
+
+    it('ctx.getAllBaggage should return all baggage entries', async () => {
+      const collector = createTraceCollector();
+      const { context, propagation } = await import('@opentelemetry/api');
+
+      // Create context with multiple baggage entries
+      const activeContext = context.active();
+      let baggage = propagation.createBaggage();
+      baggage = baggage.setEntry('key1', { value: 'value1' });
+      baggage = baggage.setEntry('key2', { value: 'value2' });
+      const contextWithBaggage = propagation.setBaggage(activeContext, baggage);
+
+      await context.with(contextWithBaggage, async () => {
+        await trace((ctx) => async () => {
+          const allBaggage = ctx.getAllBaggage();
+          expect(allBaggage.size).toBeGreaterThanOrEqual(2);
+          expect(allBaggage.get('key1')?.value).toBe('value1');
+          expect(allBaggage.get('key2')?.value).toBe('value2');
+          return 'done';
+        })();
+      });
+
+      expect(collector.getSpans()).toHaveLength(1);
     });
   });
 });

@@ -1,6 +1,6 @@
 import { describe, it, expect, vi } from 'vitest';
 import { instrument } from './instrument';
-import { trace } from './functional';
+import { trace } from 'autolemetry-edge';
 import type { ExportedHandler } from '@cloudflare/workers-types';
 
 describe('Handler Instrumentation - Integration Tests', () => {

@@ -12,11 +12,11 @@ import {
   type AttributeValue,
 } from '@opentelemetry/api';
 import type { Sampler } from '@opentelemetry/sdk-trace-base';
-import type { TraceContext } from '../core/trace-context';
-import { createTraceContext, setSpanName } from '../core/trace-context';
+import type { TraceContext } from './core/trace-context';
+import { createTraceContext, setSpanName } from './core/trace-context';
 
 // Re-export for convenience
-export type { TraceContext } from '../core/trace-context';
+export type { TraceContext } from './core/trace-context';
 
 type AnyFn = (...args: any[]) => any;
 

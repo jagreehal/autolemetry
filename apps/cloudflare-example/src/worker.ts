@@ -3,13 +3,21 @@ import {
   instrument,
   trace,
   span,
-  createEdgeLogger,
-  getEdgeSubscribers,
-} from 'autolemetry-edge';
-import { SamplingPresets } from 'autolemetry-edge/sampling';
+} from 'autolemetry-cloudflare';
+import { createEdgeLogger, runWithLogLevel } from 'autolemetry-cloudflare/logger';
+import { getEdgeSubscribers } from 'autolemetry-cloudflare/events';
+import { SamplingPresets } from 'autolemetry-cloudflare/sampling';
 import { SpanStatusCode } from '@opentelemetry/api';
 
 const log = createEdgeLogger('cloudflare-example');
+
+// Example: Dynamic log level control per-request
+// Useful for debugging specific requests without changing global log level
+//
+// runWithLogLevel('debug', () => {
+//   log.debug('This will be logged even though logger is created with default "info" level')
+//   processRequest(request)
+// })
 
 // Example traced function with attribute extractors
 const processRequest = trace({

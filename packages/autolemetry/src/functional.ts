@@ -36,6 +36,8 @@
 import {
   SpanStatusCode,
   trace as otelTrace,
+  context,
+  propagation,
   type Span,
 } from '@opentelemetry/api';
 import { getConfig } from './config';
@@ -43,7 +45,11 @@ import { getConfig as getInitConfig, getSdk } from './init';
 import { type Sampler, type SamplingContext, AlwaysSampler } from './sampling';
 import { getEventQueue } from './track';
 import type { TraceContext } from './trace-context';
-import { createTraceContext } from './trace-context';
+import {
+  createTraceContext,
+  getActiveContextWithBaggage,
+  getContextStorage,
+} from './trace-context';
 import { setSpanName } from './trace-helpers';
 import { runInOperationContext } from './operation-context';
 import { inferVariableNameFromCallStack } from './variable-name-inference';
@@ -375,7 +381,9 @@ export interface InstrumentOptions<
 // Maximum error message length to prevent span bloat
 const MAX_ERROR_MESSAGE_LENGTH = 500;
 
-function createDummyCtx(): TraceContext {
+function createDummyCtx<
+  TBaggage extends Record<string, unknown> | undefined = undefined,
+>(): TraceContext<TBaggage> {
   return {
     traceId: '',
     spanId: '',
@@ -384,7 +392,11 @@ function createDummyCtx(): TraceContext {
     setAttributes: () => {},
     setStatus: () => {},
     recordException: () => {},
-  } as unknown as TraceContext;
+    getBaggage: () => undefined,
+    setBaggage: () => '',
+    deleteBaggage: () => {},
+    getAllBaggage: () => new Map(),
+  } as unknown as TraceContext<TBaggage>;
 }
 
 function isAsyncFunction(fn: unknown): boolean {
@@ -528,12 +540,14 @@ function shouldSkip(
  *
  * Returns base context (trace IDs) + span methods from the active span.
  */
-function getCtxValue(): TraceContext | null {
+function getCtxValue<
+  TBaggage extends Record<string, unknown> | undefined = undefined,
+>(): TraceContext<TBaggage> | null {
   const activeSpan = otelTrace.getActiveSpan();
   if (!activeSpan) return null;
 
   // Use shared utility to create trace context
-  return createTraceContext(activeSpan);
+  return createTraceContext<TBaggage>(activeSpan);
 }
 
 /**
@@ -708,6 +722,14 @@ function wrapWithTracing<TArgs extends unknown[], TReturn>(
           let shouldKeepSpan = true;
 
           setSpanName(span, spanName);
+
+          // Initialize context storage with the active context BEFORE creating trace context
+          const initialContext = context.active();
+          const contextStorage = getContextStorage();
+          if (!contextStorage.getStore()) {
+            contextStorage.enterWith(initialContext);
+          }
+
           const ctxValue = createTraceContext(span);
           const fn = fnFactory(ctxValue);
           const argsAttributes = options.attributesFromArgs
@@ -826,7 +848,20 @@ function wrapWithTracing<TArgs extends unknown[], TReturn>(
               status: 'started',
             });
 
-            const result = await fn.call(this, ...args);
+            // Execute the user's function with the updated context
+            // This ensures ctx.setBaggage() changes are visible to OpenTelemetry operations
+            // (like BaggageSpanProcessor, child spans, etc.)
+            // We use getActiveContextWithBaggage() which checks the stored context,
+            // so if baggage is set during execution, it will be picked up
+            const executeWithContext = async () => {
+              // Get the current context (may have been updated by ctx.setBaggage())
+              const currentContext = getActiveContextWithBaggage();
+              // Establish the context in OpenTelemetry's context manager
+              return context.with(currentContext, async () => {
+                return fn.call(this, ...args);
+              });
+            };
+            const result = await executeWithContext();
 
             return await onSuccess(result);
           } catch (error) {
@@ -1542,16 +1577,21 @@ function executeImmediately<TReturn = unknown>(
 
 // Single argument - Specific overloads with TraceContext first
 // Overload 1a: Immediate execution - sync function with context
-export function trace<TReturn = unknown>(
-  fn: (ctx: TraceContext) => TReturn,
-): TReturn;
+export function trace<
+  TBaggage extends Record<string, unknown> | undefined = undefined,
+  TReturn = unknown,
+>(fn: (ctx: TraceContext<TBaggage>) => TReturn): TReturn;
 // Overload 1b: Factory sync function with no args - non-generic for type inference
-export function trace(
-  fnFactory: (ctx: TraceContext) => () => unknown,
-): () => unknown;
+export function trace<
+  TBaggage extends Record<string, unknown> | undefined = undefined,
+>(fnFactory: (ctx: TraceContext<TBaggage>) => () => unknown): () => unknown;
 // Overload 1c: Factory sync function - non-generic for type inference
-export function trace<TArgs extends unknown[], TReturn>(
-  fnFactory: (ctx: TraceContext) => (...args: TArgs) => TReturn,
+export function trace<
+  TBaggage extends Record<string, unknown> | undefined = undefined,
+  TArgs extends unknown[] = unknown[],
+  TReturn = unknown,
+>(
+  fnFactory: (ctx: TraceContext<TBaggage>) => (...args: TArgs) => TReturn,
 ): (...args: TArgs) => TReturn;
 // Overload 1d: Factory sync function with no args returning explicit type (typed generic)
 export function trace<TReturn = unknown>(
@@ -2172,4 +2212,84 @@ export async function withNewContext<T = unknown>(
       span.end();
     }
   });
+}
+
+/**
+ * Options for withBaggage() function
+ */
+export interface WithBaggageOptions<T = unknown> {
+  /** Baggage entries to set (key-value pairs) */
+  baggage: Record<string, string>;
+  /** Function to execute with the updated baggage */
+  fn: () => T | Promise<T>;
+}
+
+/**
+ * Execute a function with updated baggage entries
+ *
+ * Baggage is immutable in OpenTelemetry, so this helper creates a new context
+ * with the specified baggage entries and runs the function within that context.
+ * All child spans created within the function will inherit the baggage.
+ *
+ * @example Setting baggage for downstream services
+ * ```typescript
+ * import { trace, withBaggage } from 'autolemetry';
+ *
+ * export const createOrder = trace((ctx) => async (order: Order) => {
+ *   // Set baggage that will be propagated to downstream HTTP calls
+ *   return await withBaggage({
+ *     baggage: {
+ *       'tenant.id': order.tenantId,
+ *       'user.id': order.userId,
+ *     },
+ *     fn: async () => {
+ *       // This HTTP call will include the baggage in headers
+ *       await fetch('/api/charge', {
+ *         method: 'POST',
+ *         body: JSON.stringify(order),
+ *       });
+ *     },
+ *   });
+ * });
+ * ```
+ *
+ * @example Using with existing baggage
+ * ```typescript
+ * export const processOrder = trace((ctx) => async (order: Order) => {
+ *   // Read existing baggage
+ *   const tenantId = ctx.getBaggage('tenant.id');
+ *
+ *   // Add additional baggage entries
+ *   return await withBaggage({
+ *     baggage: {
+ *       'order.id': order.id,
+ *       'order.amount': String(order.amount),
+ *     },
+ *     fn: async () => {
+ *       await charge(order);
+ *     },
+ *   });
+ * });
+ * ```
+ */
+export function withBaggage<T = unknown>(
+  options: WithBaggageOptions<T>,
+): T | Promise<T> {
+  const { baggage: baggageEntries, fn } = options;
+  const currentContext = context.active();
+
+  // Get existing baggage or create new
+  let updatedBaggage =
+    propagation.getBaggage(currentContext) ?? propagation.createBaggage();
+
+  // Set all baggage entries
+  for (const [key, value] of Object.entries(baggageEntries)) {
+    updatedBaggage = updatedBaggage.setEntry(key, { value });
+  }
+
+  // Create new context with updated baggage
+  const newContext = propagation.setBaggage(currentContext, updatedBaggage);
+
+  // Run the function within the new context
+  return context.with(newContext, fn);
 }

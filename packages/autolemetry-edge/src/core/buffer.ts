@@ -11,4 +11,6 @@ import { Buffer } from 'node:buffer';
 //@ts-ignore
 globalThis.Buffer = Buffer;
 
-export { Buffer };
+
+
+export {Buffer} from 'node:buffer';

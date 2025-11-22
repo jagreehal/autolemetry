@@ -295,7 +295,15 @@ export function getActiveSpan(): Span | undefined {
  * ```
  */
 export function getActiveContext(): Context {
-  return context.active();
+  // Check stored context first (from baggage setters), then fall back to active context
+  // This ensures ctx.setBaggage() changes are visible to OpenTelemetry operations
+  try {
+    const { getActiveContextWithBaggage } = require('./trace-context');
+    return getActiveContextWithBaggage();
+  } catch {
+    // Fallback if trace-context isn't available
+    return context.active();
+  }
 }
 
 /**

@@ -1,7 +1,7 @@
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 import { instrumentGlobalFetch } from './fetch';
 import { trace, SpanStatusCode, SpanKind, context as api_context } from '@opentelemetry/api';
-import { setConfig, parseConfig } from '../core/config';
+import { setConfig, parseConfig } from 'autolemetry-edge';
 
 describe('Global Fetch Instrumentation', () => {
   let mockTracer: any;

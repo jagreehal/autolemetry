@@ -42,9 +42,11 @@ import { OTLPTraceExporter as OTLPTraceExporterHTTP } from '@opentelemetry/expor
 import type { PushMetricExporter } from '@opentelemetry/sdk-metrics';
 import type { LogRecordProcessor } from '@opentelemetry/sdk-logs';
 import { TailSamplingSpanProcessor } from './tail-sampling-processor';
+import { BaggageSpanProcessor } from './baggage-span-processor';
 import { resolveConfigFromEnv } from './env-config';
 import { PinoInstrumentation } from '@opentelemetry/instrumentation-pino';
 import { WinstonInstrumentation } from '@opentelemetry/instrumentation-winston';
+import { createRequire } from 'module';
 
 /**
  * CompositeSpanProcessor combines multiple span processors
@@ -502,6 +504,55 @@ export interface AutolemetryConfig {
   autoFlush?: boolean;
 
   /**
+   * Automatically copy baggage entries to span attributes
+   *
+   * When enabled, all baggage entries are automatically added as span attributes,
+   * making them visible in trace UIs (Jaeger, Grafana, DataDog, etc.) without
+   * manually calling ctx.setAttribute() for each entry.
+   *
+   * - `true`: adds baggage with 'baggage.' prefix (e.g. baggage.tenant.id)
+   * - `string`: uses custom prefix (e.g. 'ctx' → ctx.tenant.id, '' → tenant.id)
+   * - `false` or omit: disabled (default)
+   *
+   * @default false
+   *
+   * @example Enable with default prefix
+   * ```typescript
+   * init({
+   *   service: 'my-app',
+   *   baggage: true
+   * });
+   *
+   * // Now baggage automatically appears as span attributes
+   * await withBaggage({
+   *   baggage: { 'tenant.id': 't1', 'user.id': 'u1' },
+   *   fn: async () => {
+   *     // Span has baggage.tenant.id and baggage.user.id attributes!
+   *   }
+   * });
+   * ```
+   *
+   * @example Custom prefix
+   * ```typescript
+   * init({
+   *   service: 'my-app',
+   *   baggage: 'ctx' // Uses 'ctx.' prefix
+   * });
+   * // Creates attributes: ctx.tenant.id, ctx.user.id
+   * ```
+   *
+   * @example No prefix
+   * ```typescript
+   * init({
+   *   service: 'my-app',
+   *   baggage: '' // No prefix
+   * });
+   * // Creates attributes: tenant.id, user.id
+   * ```
+   */
+  baggage?: boolean | string;
+
+  /**
    * Validation configuration for events events
    * - Override default sensitive field patterns for redaction
    * - Customize max lengths, nesting depth, etc.
@@ -857,6 +908,28 @@ export function init(cfg: AutolemetryConfig): void {
   // If no endpoint and no custom processor/exporter, spanProcessor remains undefined
   // SDK will still work but won't export traces
 
+  // Add baggage span processor if enabled
+  if (cfg.baggage) {
+    const prefix =
+      typeof cfg.baggage === 'string'
+        ? cfg.baggage
+          ? `${cfg.baggage}.`
+          : ''
+        : 'baggage.';
+    const baggageProcessor = new BaggageSpanProcessor({ prefix });
+
+    if (spanProcessor) {
+      // Combine existing processor with baggage processor
+      spanProcessor = new CompositeSpanProcessor([
+        spanProcessor,
+        baggageProcessor,
+      ]);
+    } else {
+      // Only baggage processor
+      spanProcessor = baggageProcessor;
+    }
+  }
+
   // Apply debug mode configuration
   const debugMode = resolveDebugFlag(cfg.debug);
 
@@ -925,9 +998,15 @@ export function init(cfg: AutolemetryConfig): void {
         (error as { code?: string }).code === AUTO_INSTRUMENTATIONS_NOT_FOUND
       ) {
         logger.warn(
-          '[autolemetry] Could not load auto-instrumentations. ' +
-            'Install @opentelemetry/auto-instrumentations-node to use the integrations option. ' +
-            'Integrations will be ignored.',
+          '[autolemetry] Auto-instrumentations package not found.\n' +
+            '  To use the "integrations" option, install the package:\n\n' +
+            '    npm add @opentelemetry/auto-instrumentations-node\n' +
+            '    # or\n' +
+            '    pnpm add @opentelemetry/auto-instrumentations-node\n' +
+            '    # or\n' +
+            '    yarn add @opentelemetry/auto-instrumentations-node\n\n' +
+            '  Alternatively, use the functional API (trace/span) which requires no additional packages.\n' +
+            '  Your integrations config will be ignored until the package is installed.',
         );
       } else {
         logger.warn(
@@ -1108,14 +1187,26 @@ function ensureAutoInstrumentationsModule(): void {
   }
 
   try {
-    // eslint-disable-next-line @typescript-eslint/no-require-imports
-    const autoInstrumentationsModule = require('@opentelemetry/auto-instrumentations-node');
+    // Use createRequire for ESM compatibility
+    // In CJS, require is globally available; in ESM, we need createRequire
+    const requireFn =
+      typeof require !== 'undefined' ? require : createRequire(import.meta.url);
+
+    const autoInstrumentationsModule = requireFn(
+      '@opentelemetry/auto-instrumentations-node',
+    );
     getNodeAutoInstrumentations =
       autoInstrumentationsModule.getNodeAutoInstrumentations;
-  } catch {
-    throw new AutoInstrumentationsNotFoundError(
-      '@opentelemetry/auto-instrumentations-node is not installed. Install it as a peer dependency to use the integrations option.',
-    );
+  } catch (error) {
+    // Only treat MODULE_NOT_FOUND as a missing package
+    // Other errors (syntax errors, etc.) should be re-thrown
+    if ((error as NodeJS.ErrnoException).code === 'MODULE_NOT_FOUND') {
+      throw new AutoInstrumentationsNotFoundError(
+        '@opentelemetry/auto-instrumentations-node is not installed. Install it as a peer dependency to use the integrations option.',
+      );
+    }
+    // Re-throw other errors
+    throw error;
   }
 }
 
