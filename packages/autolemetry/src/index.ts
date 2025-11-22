@@ -31,11 +31,18 @@
 // Core initialization
 export { init, type AutolemetryConfig } from './init';
 
+// Baggage span processor
+export {
+  BaggageSpanProcessor,
+  type BaggageSpanProcessorOptions,
+} from './baggage-span-processor';
+
 // Functional API (re-export for convenience)
 export type {
   TraceContext,
   SpanOptions,
   WithNewContextOptions,
+  WithBaggageOptions,
   InstrumentOptions,
 } from './functional';
 export {
@@ -44,6 +51,7 @@ export {
   withTracing,
   span,
   withNewContext,
+  withBaggage,
   ctx,
 } from './functional';
 
@@ -119,3 +127,6 @@ export {
 
 // Re-export common OpenTelemetry types
 export type { Span, SpanContext, Tracer, Context } from '@opentelemetry/api';
+
+// Export typed baggage helper
+export { defineBaggageSchema } from './trace-context';

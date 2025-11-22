@@ -49,7 +49,7 @@ export function createTraceContext(span: Span): TraceContext {
   return {
     traceId: spanContext.traceId,
     spanId: spanContext.spanId,
-    correlationId: spanContext.traceId.substring(0, 16),
+    correlationId: spanContext.traceId.slice(0, 16),
     'code.function': spanNameMap.get(span),
     setAttribute: span.setAttribute.bind(span),
     setAttributes: span.setAttributes.bind(span),

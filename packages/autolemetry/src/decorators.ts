@@ -26,6 +26,7 @@
 import type { TracingOptions, TraceContext } from './functional';
 import { getConfig } from './config';
 import { SpanStatusCode } from '@opentelemetry/api';
+import { createTraceContext } from './trace-context';
 
 /**
  * Options for @Trace method decorator
@@ -150,25 +151,7 @@ export function Trace(
       return tracer.startActiveSpan(spanName, async (span) => {
         try {
           // Make ctx available via this.ctx for methods that need it
-          const ctx: TraceContext = {
-            traceId: span.spanContext().traceId,
-            spanId: span.spanContext().spanId,
-            correlationId: span.spanContext().traceId,
-            setAttribute: (key: string, value: unknown) => {
-              span.setAttribute(key, value as string | number | boolean);
-            },
-            setAttributes: (attributes: Record<string, unknown>) => {
-              for (const [key, value] of Object.entries(attributes)) {
-                span.setAttribute(key, value as string | number | boolean);
-              }
-            },
-            setStatus: (status: { code: number; message?: string }) => {
-              span.setStatus(status);
-            },
-            recordException: (error: Error) => {
-              span.recordException(error);
-            },
-          };
+          const ctx: TraceContext = createTraceContext(span);
 
           const originalCtx = (this as { ctx?: TraceContext }).ctx;
           try {

@@ -22,7 +22,7 @@ import {
   SpanKind,
   SpanStatusCode,
 } from '@opentelemetry/api';
-import { WorkerTracer } from '../core/tracer';
+import { WorkerTracer } from 'autolemetry-edge';
 import { wrap } from './common';
 
 /**

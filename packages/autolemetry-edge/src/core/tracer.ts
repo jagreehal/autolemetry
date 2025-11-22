@@ -27,14 +27,14 @@ import {
 import { SpanImpl } from './span';
 import type { TraceFlushableSpanProcessor } from '../types';
 
-enum NewTraceFlags {
-  RANDOM_TRACE_ID_SET = 2,
-  RANDOM_TRACE_ID_UNSET = 0,
-}
+const NewTraceFlags = {
+  RANDOM_TRACE_ID_SET: 2,
+  RANDOM_TRACE_ID_UNSET: 0,
+} as const;
 
 type NewTraceFlagValues =
-  | NewTraceFlags.RANDOM_TRACE_ID_SET
-  | NewTraceFlags.RANDOM_TRACE_ID_UNSET;
+  | typeof NewTraceFlags.RANDOM_TRACE_ID_SET
+  | typeof NewTraceFlags.RANDOM_TRACE_ID_UNSET;
 
 const idGenerator: RandomIdGenerator = new RandomIdGenerator();
 
@@ -139,9 +139,9 @@ export class WorkerTracer implements Tracer {
       attributes: sanitizeAttributes(attributes),
       name,
       onEnd: (span) => {
-        this.spanProcessors.forEach((sp) => {
+        for (const sp of this.spanProcessors) {
           sp.onEnd(span as unknown as ReadableSpan);
-        });
+        }
       },
       resource: this.resource,
       spanContext,
@@ -151,10 +151,10 @@ export class WorkerTracer implements Tracer {
       startTime: options.startTime,
     });
 
-    this.spanProcessors.forEach((sp) => {
+    for (const sp of this.spanProcessors) {
       //@ts-ignore - OTel type quirk
       sp.onStart(span, context);
-    });
+    }
 
     return span;
   }
@@ -184,7 +184,7 @@ export class WorkerTracer implements Tracer {
     const options = args.length > 1 ? (args[0] as SpanOptions) : undefined;
     const parentContext =
       args.length > 2 ? (args[1] as Context) : api_context.active();
-    const fn = args[args.length - 1] as F;
+    const fn = args.at(-1) as F;
 
     const span = this.startSpan(name, options, parentContext);
     const contextWithSpanSet = trace.setSpan(parentContext, span);

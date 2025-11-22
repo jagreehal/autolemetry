@@ -32,7 +32,38 @@ Simple working examples demonstrating autolemetry functionality.
 
 ## Examples
 
-### Basic Example
+### Browser/Web Examples
+
+#### Vanilla JavaScript Example
+
+Ultra-lightweight browser example showing distributed tracing from browser → backend:
+
+```bash
+cd apps/example-web-vanilla
+
+# Build autolemetry-web first
+cd ../../packages/autolemetry-web
+pnpm build
+cd ../../apps/example-web-vanilla
+
+# Serve with any static server
+python3 -m http.server 8000
+# Or: npx http-server -p 8000
+```
+
+Then open http://localhost:8000 and check DevTools Network tab for `traceparent` headers!
+
+**What it does:**
+- Demonstrates `init()` for browser SDK
+- Shows automatic `traceparent` header injection on fetch/XHR
+- Displays trace IDs in the browser
+- Only **1.6KB gzipped** - no OpenTelemetry dependencies!
+
+**See:** [example-web-vanilla/README.md](./example-web-vanilla/README.md) for detailed instructions.
+
+### Node.js Examples
+
+#### Basic Example
 
 Demonstrates basic tracing, metrics, and events:
 

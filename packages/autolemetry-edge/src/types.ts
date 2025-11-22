@@ -17,7 +17,7 @@ import type {
 } from '@opentelemetry/sdk-trace-base';
 
 // Re-export commonly used types
-export type { Attributes, Context, Span, SpanOptions, ReadableSpan };
+
 
 /**
  * Extended SpanOptions with per-span sampler support
@@ -28,14 +28,13 @@ export interface ExtendedSpanOptions extends SpanOptions {
 
 /**
  * Trigger types for edge handlers
+ * Can be a Request or any vendor-specific trigger type
  */
 export type Trigger =
   | Request
-  | MessageBatch
-  | ScheduledController
   | DOConstructorTrigger
   | 'do-alarm'
-  | ForwardableEmailMessage;
+  | unknown;
 
 export interface DOConstructorTrigger {
   id: string;
@@ -263,3 +262,6 @@ export interface HandlerInstrumentation<T extends Trigger, R extends any> {
 /**
  * Utility types
  */
+
+export {type Attributes, type Context, type Span, type SpanOptions} from '@opentelemetry/api';
+export {type ReadableSpan} from '@opentelemetry/sdk-trace-base';

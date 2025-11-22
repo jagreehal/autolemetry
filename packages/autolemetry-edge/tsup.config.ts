@@ -8,10 +8,10 @@ const pkg = JSON.parse(readFileSync(join(__dirname, 'package.json'), 'utf8'));
 export default defineConfig({
   entry: {
     index: 'src/index.ts',
-    'sampling/index': 'src/sampling/index.ts',
-    'instrumentation/index': 'src/instrumentation/index.ts',
-    'testing/index': 'src/testing/index.ts',
-    'api/compose': 'src/api/compose.ts',
+    sampling: 'src/sampling.ts',
+    events: 'src/events.ts',
+    logger: 'src/logger.ts',
+    testing: 'src/testing.ts',
   },
   format: ['esm'], // ESM-only for edge runtimes
   dts: true,

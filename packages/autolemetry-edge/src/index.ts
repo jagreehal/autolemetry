@@ -1,25 +1,22 @@
 /**
  * autolemetry-edge
  *
- * Ultra-lightweight OpenTelemetry for edge runtimes
- * - Cloudflare Workers
- * - Vercel Edge Functions
- * - Netlify Edge Functions
- * - Deno Deploy
- * - AWS Lambda@Edge
+ * Vendor-agnostic OpenTelemetry for edge runtimes
+ * Foundation for Cloudflare Workers, Vercel Edge, Netlify Edge, Deno Deploy
  *
- * Bundle size: ~43KB minified (~13KB gzipped) vs 700KB for Node.js version
- * Core bundle: 24.58KB (standalone), 6,797 LOC source code
+ * Bundle size: ~20KB minified (~8KB gzipped)
  *
  * @example Quick Start
  * ```typescript
- * import { trace, createEdgeLogger } from 'autolemetry-edge'
+ * import { trace, init } from 'autolemetry-edge'
  *
- * const log = createEdgeLogger('user')
+ * init({
+ *   service: { name: 'my-edge-function' },
+ *   exporter: { url: process.env.OTEL_ENDPOINT }
+ * })
  *
- * export const createUser = trace(async function createUser(email: string) {
- *   log.info('Creating user', { email })
- *   return { id: '123', email }
+ * export const handler = trace(async (request: Request) => {
+ *   return new Response('Hello World')
  * })
  * ```
  */
@@ -36,9 +33,10 @@ export {
   createInitialiser,
   getActiveConfig,
   setConfig,
+  type Initialiser,
 } from './core/config';
 
-// Functional API (PRIMARY - this is our killer feature!)
+// Functional API (PRIMARY - zero-boilerplate tracing)
 export {
   trace,
   withTracing,
@@ -47,46 +45,7 @@ export {
   type traceOptions,
   type TraceContext,
   type InstrumentOptions,
-} from './api/functional';
-
-// Handler instrumentation (for Cloudflare Workers)
-export { instrument } from './api/instrument';
-export { instrumentDO } from './api/durable-objects';
-export { instrumentWorkflow } from './api/workflows';
-
-// Bindings instrumentation (auto-applied, but can be used manually)
-export {
-  instrumentKV,
-  instrumentR2,
-  instrumentD1,
-  instrumentServiceBinding,
-  instrumentBindings,
-} from './instrumentation/bindings';
-
-// Subscribers hook
-export {
-  createEdgeSubscribers,
-  getEdgeSubscribers,
-  getEventName,
-  type EdgeSubscribers,
-  type EdgeEvent,
-  type EdgeFunnelStepEvent,
-  type EdgeOutcomeEvent,
-  type EdgeTrackEvent,
-  type EdgeValueEvent,
-  type EdgeTransport,
-  type EdgeDispatchOptions,
-  type SubscriberDeliveryMode,
-  type FunnelStepStatus,
-  type OutcomeStatus,
-} from './api/subscribers';
-
-// Logger (zero dependencies!)
-export {
-  createEdgeLogger,
-  getEdgeTraceContext,
-  type EdgeLogger,
-} from './api/logger';
+} from './functional';
 
 // Types
 export type {
@@ -107,11 +66,10 @@ export type {
   InitialSpanInfo,
   HandlerInstrumentation,
   EdgeSubscriber,
+  ReadableSpan,
 } from './types';
 
 // Re-export OpenTelemetry APIs for convenience
-// (Users shouldn't need to import @opentelemetry/api directly)
-// Note: We export trace from functional API above, so we don't re-export OpenTelemetry's trace
 export { context, propagation } from '@opentelemetry/api';
 
 // Re-export common OpenTelemetry types

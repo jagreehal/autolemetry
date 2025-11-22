@@ -8,8 +8,8 @@ Autolemetry is a monorepo containing three packages that provide ergonomic OpenT
 
 ## Package Architecture
 
-### `packages/autolemetry` (Core)
-The main package providing OpenTelemetry instrumentation with an ergonomic functional API. Key concepts:
+### `packages/autolemetry` (Node.js Core)
+The main package providing OpenTelemetry instrumentation with an ergonomic functional API for Node.js runtimes. Key concepts:
 
 - **Functional API**: Primary interface using `trace()`, `span()`, and `instrument()` functions that wrap business logic with automatic span lifecycle management
 - **Dual Configuration System**:
@@ -17,7 +17,7 @@ The main package providing OpenTelemetry instrumentation with an ergonomic funct
   - `getConfig()` provides runtime configuration for sampling, rate limiting, circuit breakers
 - **Production Hardening**: Built-in rate limiters, circuit breakers, and PII redaction
 - **Adaptive Sampling**: Defaults to 10% baseline sampling, 100% for errors/slow operations (tail sampling)
-- **Events Integration**: Unified API to send product events events to any platform via adapters
+- **Events Integration**: Unified API to send product events to any platform via adapters
 - **Multiple Entry Points**: Package uses explicit exports (check `package.json` exports field) for tree-shaking:
   - `autolemetry` - Core trace/span/init functions
   - `autolemetry/logger` - Pino integration
@@ -33,8 +33,52 @@ Event subscribers for product events platforms (PostHog, Mixpanel, Amplitude, Se
 - Consistent payload normalization
 - Tree-shakeable exports (each adapter is a separate entry point)
 
-### `packages/autolemetry-edge`
-Lightweight OpenTelemetry implementation for edge runtimes (Cloudflare Workers, Vercel Edge, Deno Deploy). Bundle size optimized (~43KB vs 700KB for Node.js version). Implements a minimal OpenTelemetry SDK subset compatible with edge constraints.
+### `packages/autolemetry-edge` (Vendor-Agnostic Edge Foundation)
+**NEW:** Vendor-agnostic OpenTelemetry foundation for edge runtimes. Bundle size optimized (~20KB vs 700KB for Node.js version). Provides:
+
+- **Core Functionality**: TracerProvider, OTLP exporter, context management
+- **Functional API**: Same `trace()`, `span()`, `instrument()` API as Node.js version
+- **Sampling Strategies**: Adaptive, error-only, slow-only, custom samplers
+- **Events System**: Product analytics with trace correlation
+- **Zero-Dependency Logger**: Trace-aware logging
+- **Testing Utilities**: Test harnesses and assertion helpers
+- **Tree-Shakeable Entry Points**:
+  - `autolemetry-edge` - Core functional API
+  - `autolemetry-edge/sampling` - Sampling strategies
+  - `autolemetry-edge/events` - Events system
+  - `autolemetry-edge/logger` - Logger
+  - `autolemetry-edge/testing` - Testing utilities
+
+**Supported Runtimes:** Cloudflare Workers (via autolemetry-cloudflare), Vercel Edge, Netlify Edge, Deno Deploy, or any edge runtime with fetch() and AsyncLocalStorage.
+
+### `packages/autolemetry-cloudflare` (Cloudflare Workers Complete)
+**NEW:** Complete OpenTelemetry solution for Cloudflare Workers. Built on autolemetry-edge with Cloudflare-specific features:
+
+- **Native CF OTel Integration**: Works with Cloudflare's native observability (wrangler.toml destinations)
+- **Complete Bindings Coverage**: Auto-instruments KV, R2, D1, Durable Objects, Workflows, Workers AI, Vectorize, Hyperdrive, Service Bindings, Queue, Analytics Engine, and Email
+- **Multiple API Styles**:
+  - `instrument(handler, config)` - Compatible with @microlabs/otel-cf-workers
+  - `wrapModule(config, handler)` - Compatible with workers-honeycomb-logger
+  - `wrapDurableObject(config, DOClass)` - Durable Objects instrumentation
+  - Functional API via re-exports from autolemetry-edge
+- **Handler Instrumentation**: Automatic tracing for fetch, scheduled, queue, email handlers
+- **Global Instrumentations**: Auto-instrument global fetch() and cache API
+- **Tree-Shakeable Entry Points**:
+  - `autolemetry-cloudflare` - Everything (wrappers + re-exports from autolemetry-edge)
+  - `autolemetry-cloudflare/bindings` - Just bindings instrumentation
+  - `autolemetry-cloudflare/handlers` - Just handler wrappers
+  - `autolemetry-cloudflare/sampling` - Re-export from autolemetry-edge
+  - `autolemetry-cloudflare/events` - Re-export from autolemetry-edge
+  - `autolemetry-cloudflare/logger` - Re-export from autolemetry-edge
+  - `autolemetry-cloudflare/testing` - Re-export from autolemetry-edge
+
+**Bundle Size:** ~45KB total (autolemetry-edge 20KB + CF-specific 25KB)
+
+**Why Better than Competitors:**
+- More complete than @microlabs/otel-cf-workers (which lacks R2, AI, Vectorize, Hyperdrive)
+- Vendor-agnostic unlike workers-honeycomb-logger (works with any OTLP backend)
+- Multiple API styles for maximum flexibility
+- Advanced sampling strategies
 
 ## Environment Variables
 

@@ -20,8 +20,14 @@
  * ```
  */
 
-import { SpanStatusCode, context, trace } from '@opentelemetry/api';
+import {
+  SpanStatusCode,
+  context,
+  trace,
+  propagation,
+} from '@opentelemetry/api';
 import { getConfig } from './config';
+import { getActiveContextWithBaggage } from './trace-context';
 
 export interface HttpInstrumentedOptions {
   /** Service name for HTTP calls (default: 'http-client') */
@@ -326,6 +332,9 @@ function extractStatusCode(result: unknown): number | undefined {
 /**
  * Inject trace context into HTTP headers (for distributed tracing)
  *
+ * This includes W3C Trace Context (traceparent, tracestate) and W3C Baggage headers.
+ * Uses OpenTelemetry's propagation system for full compatibility.
+ *
  * @example
  * ```typescript
  * import { injectTraceContext } from 'autolemetry/http'
@@ -336,25 +345,85 @@ function extractStatusCode(result: unknown): number | undefined {
  *
  * fetch('/api/users', { headers })
  * ```
+ *
+ * @example With baggage
+ * ```typescript
+ * import { trace, withBaggage, injectTraceContext } from 'autolemetry'
+ *
+ * export const createOrder = trace((ctx) => async (order: Order) => {
+ *   return await withBaggage({
+ *     baggage: { 'tenant.id': order.tenantId },
+ *     fn: async () => {
+ *       const headers = injectTraceContext();
+ *       // Headers now include 'baggage' header with tenant.id
+ *       await fetch('/api/charge', { headers });
+ *     },
+ *   });
+ * });
+ * ```
  */
 export function injectTraceContext(
   headers: Record<string, string> = {},
 ): Record<string, string> {
-  const currentContext = context.active();
-  const span = trace.getSpan(currentContext);
+  // Use getActiveContextWithBaggage to check stored context (from baggage setters)
+  // This ensures ctx.setBaggage() changes are included in injected headers
+  const currentContext = getActiveContextWithBaggage();
 
-  if (!span) {
-    return headers;
-  }
-
-  const spanContext = span.spanContext();
-  if (!spanContext) {
-    return headers;
-  }
-
-  // W3C Trace Context format
-  headers['traceparent'] =
-    `00-${spanContext.traceId}-${spanContext.spanId}-0${spanContext.traceFlags}`;
+  // Use OpenTelemetry's propagation.inject for full W3C support
+  // This includes traceparent, tracestate, and baggage headers
+  propagation.inject(currentContext, headers);
 
   return headers;
+}
+
+/**
+ * Extract trace context from HTTP headers (for distributed tracing)
+ *
+ * This extracts W3C Trace Context (traceparent, tracestate) and W3C Baggage headers.
+ * Uses OpenTelemetry's propagation system for full compatibility.
+ *
+ * Returns a context that can be used with context.with() to run code
+ * with the extracted trace context and baggage.
+ *
+ * @example
+ * ```typescript
+ * import { extractTraceContext, trace } from 'autolemetry'
+ * import { context } from 'autolemetry'
+ *
+ * // In Express middleware
+ * app.use((req, res, next) => {
+ *   const extractedContext = extractTraceContext(req.headers);
+ *   context.with(extractedContext, () => {
+ *     next();
+ *   });
+ * });
+ * ```
+ *
+ * @example In a traced function
+ * ```typescript
+ * export const handleWebhook = trace((ctx) => async (req: Request) => {
+ *   const extractedContext = extractTraceContext(req.headers);
+ *   return await context.with(extractedContext, async () => {
+ *     // Now ctx.getBaggage() will return baggage from the incoming request
+ *     const tenantId = ctx.getBaggage('tenant.id');
+ *     await processWebhook(req.body);
+ *   });
+ * });
+ * ```
+ */
+export function extractTraceContext(
+  headers: Record<string, string | string[] | undefined>,
+): ReturnType<typeof context.active> {
+  const carrier: Record<string, string> = {};
+
+  // Convert headers to flat string format expected by propagation
+  for (const [key, value] of Object.entries(headers)) {
+    if (value !== undefined) {
+      carrier[key] = Array.isArray(value) ? (value[0] ?? '') : value;
+    }
+  }
+
+  // Extract context using OpenTelemetry's propagation system
+  // Returns a Context that can be used with context.with()
+  return propagation.extract(context.active(), carrier);
 }

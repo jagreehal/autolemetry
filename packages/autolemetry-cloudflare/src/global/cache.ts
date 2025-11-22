@@ -8,8 +8,8 @@
  */
 
 import { trace, SpanStatusCode, SpanKind } from '@opentelemetry/api';
-import { wrap } from './common';
-import { WorkerTracer } from '../core/tracer';
+import { wrap } from '../bindings/common';
+import { WorkerTracer } from 'autolemetry-edge';
 
 type CacheOperation = 'match' | 'put' | 'delete';
 

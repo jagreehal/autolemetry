@@ -15,8 +15,7 @@ import {
   SpanStatusCode,
   SpanKind,
 } from '@opentelemetry/api';
-import { getActiveConfig } from '../core/config';
-import { WorkerTracer } from '../core/tracer';
+import { getActiveConfig, WorkerTracer } from 'autolemetry-edge';
 
 /**
  * Gather HTTP request attributes following OpenTelemetry semantic conventions

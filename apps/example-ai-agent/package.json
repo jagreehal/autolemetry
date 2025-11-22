@@ -9,7 +9,7 @@
     "start:rag": "tsx src/rag-pipeline.ts"
   },
   "dependencies": {
-    "@openai/agents": "^0.3.2",
+    "@openai/agents": "^0.3.3",
     "@opentelemetry/auto-instrumentations-node": "^0.67.0",
     "@traceloop/node-server-sdk": "^0.20.1",
     "openai": "^6.9.1",

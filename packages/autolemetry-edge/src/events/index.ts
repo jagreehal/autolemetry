@@ -15,15 +15,7 @@ import type {
 export type SubscriberDeliveryMode = 'fire-and-forget' | 'await';
 
 // Re-export event types for convenience
-export type {
-  FunnelStepStatus,
-  OutcomeStatus,
-  EdgeEvent,
-  EdgeTrackEvent,
-  EdgeFunnelStepEvent,
-  EdgeOutcomeEvent,
-  EdgeValueEvent,
-};
+
 
 export type EdgeTransport = (event: EdgeEvent) => OrPromise<void>;
 
@@ -283,7 +275,7 @@ function createSubscribersInstance(
 
 export function createEdgeSubscribers(options: CreateEdgeSubscribersOptions): EdgeSubscribers {
   if (typeof options.transport !== 'function') {
-    throw new Error('createEdgeSubscribers: options.transport is required');
+    throw new TypeError('createEdgeSubscribers: options.transport is required');
   }
 
   return createSubscribersInstance(options);
@@ -307,7 +299,7 @@ export function createEdgeSubscribers(options: CreateEdgeSubscribersOptions): Ed
  * ```
  */
 export function getEdgeSubscribers(
-  ctx?: ExecutionContext,
+  ctx?: { waitUntil(promise: Promise<any>): void },
 ): EdgeSubscribers | null {
   const config = getActiveConfig();
   if (!config) {
@@ -315,7 +307,7 @@ export function getEdgeSubscribers(
   }
 
   const subscribers = config.subscribers ?? [];
-  if (!subscribers.length) {
+  if (subscribers.length === 0) {
     return null;
   }
 
@@ -342,3 +334,5 @@ export function getEdgeSubscribers(
   });
 }
 
+
+export {type FunnelStepStatus, type OutcomeStatus, type EdgeEvent, type EdgeTrackEvent, type EdgeFunnelStepEvent, type EdgeOutcomeEvent, type EdgeValueEvent} from '../types';

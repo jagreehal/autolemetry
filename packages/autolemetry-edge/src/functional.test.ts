@@ -32,15 +32,15 @@ describe('Functional API', () => {
           const result = fn(mockSpan);
           // If it's a promise, ensure errors are properly propagated
           if (result && typeof result.then === 'function') {
-            return result.catch((err: any) => {
+            return result.catch((error: any) => {
               // Re-throw to maintain error behavior but ensure it's in promise chain
-              return Promise.reject(err);
+              throw error;
             });
           }
           return result;
-        } catch (err) {
+        } catch (error) {
           // Convert sync errors to rejected promises to match OTel behavior
-          return Promise.reject(err);
+          return Promise.reject(error);
         }
       }),
     };
@@ -524,7 +524,7 @@ describe('Functional API', () => {
 
     it('should handle functions returning promises', async () => {
       const promiseFunction = trace(async function getDataAsync() {
-        return Promise.resolve({ data: 'test' });
+        return { data: 'test' };
       });
 
       const result = await promiseFunction();

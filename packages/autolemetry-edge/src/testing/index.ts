@@ -5,4 +5,5 @@
  * Currently minimal - can be extended with utilities from autolemetry package as needed.
  */
 
+// Empty export to make this a valid module
 export {};

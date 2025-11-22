@@ -49,8 +49,8 @@ export class OTLPExporter implements SpanExporter {
     return new Promise<void>((resolve, reject) => {
       try {
         this.send(items, resolve, reject);
-      } catch (e) {
-        reject(e);
+      } catch (error) {
+        reject(error);
       }
     });
   }

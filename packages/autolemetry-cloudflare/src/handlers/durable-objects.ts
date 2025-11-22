@@ -14,10 +14,9 @@ import {
   SpanStatusCode,
   SpanKind,
 } from '@opentelemetry/api';
-import type { ConfigurationOption } from '../types';
-import { createInitialiser, setConfig } from '../core/config';
-import { wrap } from '../instrumentation/common';
-import { WorkerTracer } from '../core/tracer';
+import type { ConfigurationOption } from 'autolemetry-edge';
+import { createInitialiser, setConfig, WorkerTracer } from 'autolemetry-edge';
+import { wrap } from '../bindings/common';
 
 // Durable Object types
 type DOFetchFn = (request: Request) => Response | Promise<Response>;

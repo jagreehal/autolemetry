@@ -33,18 +33,18 @@ import type {
   HandlerInstrumentation,
   InitialSpanInfo,
   ReadableSpan,
-} from '../types';
+} from 'autolemetry-edge';
 import {
   createInitialiser,
   setConfig,
   type Initialiser,
-} from '../core/config';
-import { WorkerTracerProvider } from '../core/provider';
-import { WorkerTracer } from '../core/tracer';
-import { proxyExecutionContext, unwrap, wrap, type PromiseTracker } from '../instrumentation/common';
-import { instrumentGlobalFetch } from '../instrumentation/fetch';
-import { instrumentGlobalCache } from '../instrumentation/cache';
-import { instrumentBindings } from '../instrumentation/bindings';
+  WorkerTracerProvider,
+  WorkerTracer,
+} from 'autolemetry-edge';
+import { proxyExecutionContext, unwrap, wrap, type PromiseTracker } from '../bindings/common';
+import { instrumentGlobalFetch } from '../global/fetch';
+import { instrumentGlobalCache } from '../global/cache';
+import { instrumentBindings } from '../bindings/bindings';
 import type { Attributes, Span } from '@opentelemetry/api';
 
 type FetchHandler = (

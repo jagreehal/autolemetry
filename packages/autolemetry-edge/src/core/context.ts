@@ -87,10 +87,10 @@ abstract class AbstractAsyncHooksContextManager implements ContextManager {
     this._createPatchMap(ee);
 
     // Patch methods that add a listener to propagate context
-    ADD_LISTENER_METHODS.forEach((methodName) => {
-      if (ee[methodName] === undefined) return;
+    for (const methodName of ADD_LISTENER_METHODS) {
+      if (ee[methodName] === undefined) continue;
       ee[methodName] = this._patchAddListener(ee, ee[methodName], context);
-    });
+    }
 
     // Patch methods that remove a listener
     if (typeof ee.removeListener === 'function') {
@@ -133,7 +133,7 @@ abstract class AbstractAsyncHooksContextManager implements ContextManager {
           delete map[event];
         }
       }
-      return original.apply(this, arguments);
+      return Reflect.apply(original, this, arguments);
     };
   }
 
