@@ -1,5 +1,12 @@
 # autolemetry-mcp
 
+## 1.0.0
+
+### Patch Changes
+
+- Updated dependencies [955ac09]
+  - autolemetry@2.0.0
+
 ## 0.2.0
 
 ### Minor Changes

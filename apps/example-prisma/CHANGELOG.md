@@ -1,5 +1,12 @@
 # @jagreehal/example-prisma
 
+## 1.0.3
+
+### Patch Changes
+
+- Updated dependencies [955ac09]
+  - autolemetry@2.0.0
+
 ## 1.0.2
 
 ### Patch Changes
