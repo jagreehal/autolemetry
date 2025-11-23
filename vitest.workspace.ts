@@ -23,6 +23,14 @@ export default defineWorkspace([
   
   // Subscribers package
   'packages/autolemetry-subscribers/vitest.config.ts',
+  
+  // MCP package - unit tests
+  'packages/autolemetry-mcp/vitest.config.ts',
+  // MCP package - integration tests
+  'packages/autolemetry-mcp/vitest.integration.config.ts',
+  
+  // Web package
+  'packages/autolemetry-web/vitest.config.ts',
 ]);
 
 

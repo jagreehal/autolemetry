@@ -26,8 +26,6 @@ export default defineConfig([
       http: 'src/http.ts',
       db: 'src/db.ts',
       decorators: 'src/decorators.ts',
-      'presets/datadog': 'src/presets/datadog.ts',
-      'presets/honeycomb': 'src/presets/honeycomb.ts',
     },
     format: ['esm'], // ESM only for better tree-shaking
     dts: true,

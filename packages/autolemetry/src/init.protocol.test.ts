@@ -72,8 +72,8 @@ describe('Protocol resolution logic', () => {
     });
 
     it('should prioritize config parameter', () => {
-      expect(resolveProtocol('grpc', undefined)).toBe('grpc');
-      expect(resolveProtocol('http', undefined)).toBe('http');
+      expect(resolveProtocol('grpc')).toBe('grpc');
+      expect(resolveProtocol('http')).toBe('http');
     });
   });
 

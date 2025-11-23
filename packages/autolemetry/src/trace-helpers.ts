@@ -298,6 +298,7 @@ export function getActiveContext(): Context {
   // Check stored context first (from baggage setters), then fall back to active context
   // This ensures ctx.setBaggage() changes are visible to OpenTelemetry operations
   try {
+    // eslint-disable-next-line @typescript-eslint/no-require-imports
     const { getActiveContextWithBaggage } = require('./trace-context');
     return getActiveContextWithBaggage();
   } catch {
@@ -515,7 +516,7 @@ export async function createDeterministicTraceId(
   // Convert to hex string and truncate to 32 characters (128 bits)
   // OpenTelemetry trace IDs are 128 bits (16 bytes, 32 hex characters)
   const hashArray = new Uint8Array(hashBuffer);
-  return Array.from(hashArray)
+  return [...hashArray]
     .map((byte) => byte.toString(16).padStart(2, '0'))
     .join('')
     .slice(0, 32);

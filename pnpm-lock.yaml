@@ -285,7 +285,7 @@ importers:
         specifier: workspace:*
         version: link:../../packages/autolemetry-mcp
       zod:
-        specifier: ^3.25.76
+        specifier: 3.25.76
         version: 3.25.76
     devDependencies:
       '@types/node':
@@ -505,6 +505,43 @@ importers:
         specifier: ^3.18.3
         version: 3.18.3
 
+  packages/autolemetry-backends:
+    dependencies:
+      '@opentelemetry/exporter-logs-otlp-http':
+        specifier: '>=0.57.0'
+        version: 0.208.0(@opentelemetry/api@1.9.0)
+      '@opentelemetry/sdk-logs':
+        specifier: '>=0.57.0'
+        version: 0.208.0(@opentelemetry/api@1.9.0)
+      autolemetry:
+        specifier: workspace:*
+        version: link:../autolemetry
+    devDependencies:
+      '@types/node':
+        specifier: ^24.10.1
+        version: 24.10.1
+      '@typescript-eslint/eslint-plugin':
+        specifier: ^8.47.0
+        version: 8.47.0(@typescript-eslint/parser@8.47.0(eslint@9.39.1(jiti@2.6.1))(typescript@5.9.3))(eslint@9.39.1(jiti@2.6.1))(typescript@5.9.3)
+      '@typescript-eslint/parser':
+        specifier: ^8.47.0
+        version: 8.47.0(eslint@9.39.1(jiti@2.6.1))(typescript@5.9.3)
+      eslint-config-prettier:
+        specifier: ^10.1.8
+        version: 10.1.8(eslint@9.39.1(jiti@2.6.1))
+      eslint-plugin-unicorn:
+        specifier: ^62.0.0
+        version: 62.0.0(eslint@9.39.1(jiti@2.6.1))
+      tsup:
+        specifier: ^8.5.1
+        version: 8.5.1(jiti@2.6.1)(postcss@8.5.6)(tsx@4.20.6)(typescript@5.9.3)(yaml@2.8.1)
+      typescript:
+        specifier: ^5.9.3
+        version: 5.9.3
+      vitest:
+        specifier: ^4.0.13
+        version: 4.0.13(@edge-runtime/vm@5.0.0)(@opentelemetry/api@1.9.0)(@types/debug@4.1.12)(@types/node@24.10.1)(jiti@2.6.1)(lightningcss@1.30.2)(tsx@4.20.6)(yaml@2.8.1)
+
   packages/autolemetry-cloudflare:
     dependencies:
       '@opentelemetry/api':
@@ -595,7 +632,7 @@ importers:
         version: 1.9.0
     devDependencies:
       '@modelcontextprotocol/sdk':
-        specifier: ^1.9.3
+        specifier: ^1.22.0
         version: 1.22.0(@cfworker/json-schema@4.1.1)
       '@opentelemetry/context-async-hooks':
         specifier: ^2.2.0

@@ -339,7 +339,7 @@ import { ConsoleSpanExporter } from 'autolemetry/exporters'
 
 init({
   service: 'my-app',
-  spanExporter: new ConsoleSpanExporter(),
+  spanExporters: [new ConsoleSpanExporter()],
 })
 
 // Low-level testing - collect raw OTel spans
@@ -350,7 +350,7 @@ import { SimpleSpanProcessor } from 'autolemetry/processors'
 const exporter = new InMemorySpanExporter()
 init({
   service: 'test',
-  spanProcessor: new SimpleSpanProcessor(exporter),
+  spanProcessors: [new SimpleSpanProcessor(exporter)],
 })
 
 // Run code under test

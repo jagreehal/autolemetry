@@ -7,7 +7,7 @@
  * @example Direct cloud ingestion (serverless, edge)
  * ```typescript
  * import { init } from 'autolemetry';
- * import { createDatadogConfig } from 'autolemetry/presets/datadog';
+ * import { createDatadogConfig } from 'autolemetry-backends/datadog';
  *
  * init(createDatadogConfig({
  *   apiKey: process.env.DATADOG_API_KEY!,
@@ -19,7 +19,7 @@
  * @example Local Datadog Agent (long-running services, Kubernetes)
  * ```typescript
  * import { init } from 'autolemetry';
- * import { createDatadogConfig } from 'autolemetry/presets/datadog';
+ * import { createDatadogConfig } from 'autolemetry-backends/datadog';
  *
  * init(createDatadogConfig({
  *   service: 'my-api',
@@ -29,7 +29,7 @@
  */
 
 import { createRequire } from 'node:module';
-import type { AutolemetryConfig } from '../init';
+import type { AutolemetryConfig } from 'autolemetry';
 import type { LogRecordProcessor } from '@opentelemetry/sdk-logs';
 
 /**

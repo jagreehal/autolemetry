@@ -32,7 +32,7 @@ function captureStackTrace(): string {
   const originalStackTraceLimit = Error.stackTraceLimit;
   Error.stackTraceLimit = 10; // Only need first few frames
 
-  const err = new Error();
+  const err = new Error('Stack trace capture');
   const stack = err.stack || '';
 
   Error.stackTraceLimit = originalStackTraceLimit;
@@ -94,8 +94,8 @@ function parseCallLocation(stack: string): CallLocation | undefined {
 
       return {
         file: filePath,
-        line: parseInt(match[2]!, 10),
-        column: parseInt(match[3]!, 10),
+        line: Number.parseInt(match[2]!, 10),
+        column: Number.parseInt(match[3]!, 10),
       };
     }
   }
@@ -116,7 +116,7 @@ function readSourceLine(
       return undefined;
     }
 
-    const content = readFileSync(filePath, 'utf-8');
+    const content = readFileSync(filePath, 'utf8');
     const lines = content.split('\n');
 
     // Line numbers are 1-based

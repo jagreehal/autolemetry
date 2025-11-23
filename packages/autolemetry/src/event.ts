@@ -160,9 +160,9 @@ export class Event {
     // If subscribers provided to constructor, use those
     // Otherwise, fall back to subscribers from init()
     this.subscribers =
-      options.subscribers !== undefined
-        ? options.subscribers
-        : getConfig()?.subscribers || [];
+      options.subscribers === undefined
+        ? getConfig()?.subscribers || []
+        : options.subscribers;
 
     this.hasSubscribers = this.subscribers.length > 0; // Cache for hot path
 

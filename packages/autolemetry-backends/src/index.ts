@@ -1,0 +1,36 @@
+/**
+ * Autolemetry Backends
+ *
+ * Vendor backend configurations for simplified setup with
+ * popular observability platforms.
+ *
+ * @example Honeycomb
+ * ```typescript
+ * import { init } from 'autolemetry';
+ * import { createHoneycombConfig } from 'autolemetry-backends/honeycomb';
+ *
+ * init(createHoneycombConfig({
+ *   apiKey: process.env.HONEYCOMB_API_KEY!,
+ *   service: 'my-app',
+ * }));
+ * ```
+ *
+ * @example Datadog
+ * ```typescript
+ * import { init } from 'autolemetry';
+ * import { createDatadogConfig } from 'autolemetry-backends/datadog';
+ *
+ * init(createDatadogConfig({
+ *   apiKey: process.env.DATADOG_API_KEY!,
+ *   service: 'my-app',
+ * }));
+ * ```
+ */
+
+export { createHoneycombConfig, type HoneycombPresetConfig } from './honeycomb';
+
+export {
+  createDatadogConfig,
+  type DatadogPresetConfig,
+  type DatadogSite,
+} from './datadog';

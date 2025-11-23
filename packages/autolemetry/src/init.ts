@@ -13,12 +13,7 @@ import {
   SimpleSpanProcessor,
   ConsoleSpanExporter,
 } from '@opentelemetry/sdk-trace-base';
-import type {
-  SpanExporter,
-  ReadableSpan,
-  Span,
-} from '@opentelemetry/sdk-trace-base';
-import type { Context } from '@opentelemetry/api';
+import type { SpanExporter } from '@opentelemetry/sdk-trace-base';
 import {
   resourceFromAttributes,
   type Resource,
@@ -46,35 +41,7 @@ import { BaggageSpanProcessor } from './baggage-span-processor';
 import { resolveConfigFromEnv } from './env-config';
 import { PinoInstrumentation } from '@opentelemetry/instrumentation-pino';
 import { WinstonInstrumentation } from '@opentelemetry/instrumentation-winston';
-import { createRequire } from 'module';
-
-/**
- * CompositeSpanProcessor combines multiple span processors
- * All operations are delegated to all processors
- */
-class CompositeSpanProcessor implements SpanProcessor {
-  constructor(private readonly processors: SpanProcessor[]) {}
-
-  onStart(span: Span, parentContext: Context): void {
-    for (const processor of this.processors) {
-      processor.onStart(span, parentContext);
-    }
-  }
-
-  onEnd(span: ReadableSpan): void {
-    for (const processor of this.processors) {
-      processor.onEnd(span);
-    }
-  }
-
-  async shutdown(): Promise<void> {
-    await Promise.all(this.processors.map((p) => p.shutdown()));
-  }
-
-  async forceFlush(): Promise<void> {
-    await Promise.all(this.processors.map((p) => p.forceFlush()));
-  }
-}
+import { createRequire } from 'node:module';
 
 // Type imports for exporters
 type OTLPExporterConfig = {
@@ -291,55 +258,88 @@ export interface AutolemetryConfig {
   endpoint?: string;
 
   /**
-   * Custom span processor for traces
+   * Custom span processors for traces (supports multiple processors)
    * Allows you to use any backend: Jaeger, Zipkin, Datadog, New Relic, etc.
    * If not provided, defaults to OTLP with tail sampling
    *
-   * @example Jaeger
+   * @example Multiple processors
    * ```typescript
    * import { JaegerExporter } from '@opentelemetry/exporter-jaeger'
-   * import { BatchSpanProcessor } from '@opentelemetry/sdk-trace-base'
+   * import { BatchSpanProcessor, SimpleSpanProcessor, ConsoleSpanExporter } from '@opentelemetry/sdk-trace-base'
    *
    * init({
    *   service: 'my-app',
-   *   spanProcessor: new BatchSpanProcessor(new JaegerExporter())
+   *   spanProcessors: [
+   *     new BatchSpanProcessor(new JaegerExporter()),
+   *     new SimpleSpanProcessor(new ConsoleSpanExporter())  // Debug alongside production
+   *   ]
    * })
    * ```
    *
-   * @example Console (dev)
+   * @example Single processor
    * ```typescript
    * import { ConsoleSpanExporter, SimpleSpanProcessor } from '@opentelemetry/sdk-trace-base'
    *
    * init({
    *   service: 'my-app',
-   *   spanProcessor: new SimpleSpanProcessor(new ConsoleSpanExporter())
+   *   spanProcessors: [new SimpleSpanProcessor(new ConsoleSpanExporter())]
    * })
    * ```
    */
-  spanProcessor?: SpanProcessor;
+  spanProcessors?: SpanProcessor[];
 
   /**
-   * Custom span exporter for traces (alternative to spanProcessor)
-   * Provide either spanProcessor OR spanExporter, not both
-   * If provided, will be wrapped in TailSamplingSpanProcessor + BatchSpanProcessor
+   * Custom span exporters for traces (alternative to spanProcessors, supports multiple exporters)
+   * Provide either spanProcessors OR spanExporters, not both
+   * Each exporter will be wrapped in TailSamplingSpanProcessor + BatchSpanProcessor
    *
-   * @example Zipkin
+   * @example Multiple exporters
+   * ```typescript
+   * import { ZipkinExporter } from '@opentelemetry/exporter-zipkin'
+   * import { JaegerExporter } from '@opentelemetry/exporter-jaeger'
+   *
+   * init({
+   *   service: 'my-app',
+   *   spanExporters: [
+   *     new ZipkinExporter({ url: 'http://localhost:9411/api/v2/spans' }),
+   *     new JaegerExporter()  // Send to multiple backends simultaneously
+   *   ]
+   * })
+   * ```
+   *
+   * @example Single exporter
    * ```typescript
    * import { ZipkinExporter } from '@opentelemetry/exporter-zipkin'
    *
    * init({
    *   service: 'my-app',
-   *   spanExporter: new ZipkinExporter({ url: 'http://localhost:9411/api/v2/spans' })
+   *   spanExporters: [new ZipkinExporter({ url: 'http://localhost:9411/api/v2/spans' })]
    * })
    * ```
    */
-  spanExporter?: SpanExporter;
+  spanExporters?: SpanExporter[];
 
   /**
-   * Custom metric reader (advanced). Defaults to OTLP metrics exporter when
-   * metrics are enabled.
+   * Custom metric readers (supports multiple readers)
+   * Allows sending metrics to multiple backends: OTLP, Prometheus, custom readers
+   * Defaults to OTLP metrics exporter when metrics are enabled.
+   *
+   * @example Multiple metric readers
+   * ```typescript
+   * import { PeriodicExportingMetricReader } from '@opentelemetry/sdk-metrics'
+   * import { OTLPMetricExporter } from '@opentelemetry/exporter-metrics-otlp-http'
+   * import { PrometheusExporter } from '@opentelemetry/exporter-prometheus'
+   *
+   * init({
+   *   service: 'my-app',
+   *   metricReaders: [
+   *     new PeriodicExportingMetricReader({ exporter: new OTLPMetricExporter() }),
+   *     new PrometheusExporter()  // Export to multiple backends
+   *   ]
+   * })
+   * ```
    */
-  metricReader?: MetricReader;
+  metricReaders?: MetricReader[];
 
   /**
    * Custom log record processors. When omitted, logs are not configured.
@@ -883,17 +883,19 @@ export function init(cfg: AutolemetryConfig): void {
   // Resolve OTLP protocol (http or grpc)
   const protocol = resolveProtocol(cfg.protocol);
 
-  // Determine span processor: custom > custom exporter > default OTLP
-  let spanProcessor: SpanProcessor | undefined;
+  // Build array of span processors (supports multiple)
+  const spanProcessors: SpanProcessor[] = [];
 
-  if (cfg.spanProcessor) {
-    // User provided custom processor (full control)
-    spanProcessor = cfg.spanProcessor;
-  } else if (cfg.spanExporter) {
-    // User provided custom exporter (we wrap it with our tail sampling)
-    spanProcessor = new TailSamplingSpanProcessor(
-      new BatchSpanProcessor(cfg.spanExporter),
-    );
+  if (cfg.spanProcessors && cfg.spanProcessors.length > 0) {
+    // User provided custom processors (full control)
+    spanProcessors.push(...cfg.spanProcessors);
+  } else if (cfg.spanExporters && cfg.spanExporters.length > 0) {
+    // User provided custom exporters (wrap each with tail sampling)
+    for (const exporter of cfg.spanExporters) {
+      spanProcessors.push(
+        new TailSamplingSpanProcessor(new BatchSpanProcessor(exporter)),
+      );
+    }
   } else if (endpoint) {
     // Default: OTLP with tail sampling (only if endpoint is configured)
     const traceExporter = createTraceExporter(protocol, {
@@ -901,11 +903,11 @@ export function init(cfg: AutolemetryConfig): void {
       headers: otlpHeaders,
     });
 
-    spanProcessor = new TailSamplingSpanProcessor(
-      new BatchSpanProcessor(traceExporter),
+    spanProcessors.push(
+      new TailSamplingSpanProcessor(new BatchSpanProcessor(traceExporter)),
     );
   }
-  // If no endpoint and no custom processor/exporter, spanProcessor remains undefined
+  // If no endpoint and no custom processors/exporters, array remains empty
   // SDK will still work but won't export traces
 
   // Add baggage span processor if enabled
@@ -916,51 +918,35 @@ export function init(cfg: AutolemetryConfig): void {
           ? `${cfg.baggage}.`
           : ''
         : 'baggage.';
-    const baggageProcessor = new BaggageSpanProcessor({ prefix });
-
-    if (spanProcessor) {
-      // Combine existing processor with baggage processor
-      spanProcessor = new CompositeSpanProcessor([
-        spanProcessor,
-        baggageProcessor,
-      ]);
-    } else {
-      // Only baggage processor
-      spanProcessor = baggageProcessor;
-    }
+    spanProcessors.push(new BaggageSpanProcessor({ prefix }));
   }
 
   // Apply debug mode configuration
   const debugMode = resolveDebugFlag(cfg.debug);
 
   if (debugMode) {
-    // Debug enabled: console + backend (if configured)
-    const consoleProcessor = new SimpleSpanProcessor(new ConsoleSpanExporter());
-
-    if (spanProcessor) {
-      // Combine existing backend processor with console processor
-      spanProcessor = new CompositeSpanProcessor([
-        spanProcessor,
-        consoleProcessor,
-      ]);
-    } else {
-      // No backend configured, just use console (progressive development)
-      spanProcessor = consoleProcessor;
-    }
+    // Debug enabled: add console processor
+    spanProcessors.push(new SimpleSpanProcessor(new ConsoleSpanExporter()));
   }
-  // If debug is false/undefined, use whatever spanProcessor was configured above (backend only)
 
-  let metricReader: MetricReader | undefined = cfg.metricReader;
-  if (!metricReader && metricsEnabled && endpoint) {
-    // Only create OTLP metrics exporter if endpoint is configured
+  // Build array of metric readers (supports multiple)
+  const metricReaders: MetricReader[] = [];
+
+  if (cfg.metricReaders && cfg.metricReaders.length > 0) {
+    // User provided custom metric readers
+    metricReaders.push(...cfg.metricReaders);
+  } else if (metricsEnabled && endpoint) {
+    // Default: OTLP metrics exporter (only if endpoint is configured)
     const metricExporter = createMetricExporter(protocol, {
       url: formatEndpointUrl(endpoint, 'metrics', protocol),
       headers: otlpHeaders,
     });
 
-    metricReader = new PeriodicExportingMetricReader({
-      exporter: metricExporter,
-    });
+    metricReaders.push(
+      new PeriodicExportingMetricReader({
+        exporter: metricExporter,
+      }),
+    );
   }
 
   let logRecordProcessors: LogRecordProcessor[] | undefined;
@@ -1021,12 +1007,12 @@ export function init(cfg: AutolemetryConfig): void {
     instrumentations: finalInstrumentations,
   };
 
-  if (spanProcessor) {
-    sdkOptions.spanProcessor = spanProcessor;
+  if (spanProcessors.length > 0) {
+    sdkOptions.spanProcessors = spanProcessors;
   }
 
-  if (metricReader) {
-    sdkOptions.metricReader = metricReader;
+  if (metricReaders.length > 0) {
+    sdkOptions.metricReaders = metricReaders;
   }
 
   if (logRecordProcessors && logRecordProcessors.length > 0) {
@@ -1080,7 +1066,7 @@ export function init(cfg: AutolemetryConfig): void {
         initializeOpenLLMetry(
           cfg.openllmetry.options,
           sdk,
-          cfg.spanExporter,
+          cfg.spanExporters?.[0], // Pass first exporter if available
         ).catch((error_) => {
           logger.warn(
             `[autolemetry] OpenLLMetry initialization error: ${error_ instanceof Error ? error_.message : String(error_)}`,
@@ -1190,7 +1176,7 @@ function ensureAutoInstrumentationsModule(): void {
     // Use createRequire for ESM compatibility
     // In CJS, require is globally available; in ESM, we need createRequire
     const requireFn =
-      typeof require !== 'undefined' ? require : createRequire(import.meta.url);
+      typeof require === 'undefined' ? createRequire(import.meta.url) : require;
 
     const autoInstrumentationsModule = requireFn(
       '@opentelemetry/auto-instrumentations-node',

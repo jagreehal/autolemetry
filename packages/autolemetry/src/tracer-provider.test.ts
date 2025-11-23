@@ -160,7 +160,7 @@ describe('Isolated Tracer Provider', () => {
     });
 
     it('should allow both global and isolated providers to coexist', () => {
-      const globalProvider = trace.getTracerProvider();
+      const _globalProvider = trace.getTracerProvider();
       setAutolemetryTracerProvider(customProvider);
 
       const globalTracer = trace.getTracer('global-tracer');
