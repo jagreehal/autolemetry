@@ -1,5 +1,13 @@
 # @jagreehal/example-mcp-server
 
+## 0.1.2
+
+### Patch Changes
+
+- Updated dependencies [955ac09]
+  - autolemetry@2.0.0
+  - autolemetry-mcp@1.0.0
+
 ## 0.1.1
 
 ### Patch Changes

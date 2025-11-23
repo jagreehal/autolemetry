@@ -1,6 +1,6 @@
 {
   "name": "autolemetry-plugins",
-  "version": "0.3.2",
+  "version": "0.3.3",
   "description": "OpenTelemetry instrumentation for ORMs/databases without official support (Drizzle ORM)",
   "type": "module",
   "main": "./dist/index.js",

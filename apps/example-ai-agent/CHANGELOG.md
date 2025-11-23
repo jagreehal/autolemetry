@@ -1,5 +1,13 @@
 # @jagreehal/example-ai-agent
 
+## 1.0.6
+
+### Patch Changes
+
+- Updated dependencies [955ac09]
+  - autolemetry@2.0.0
+  - autolemetry-subscribers@3.0.0
+
 ## 1.0.5
 
 ### Patch Changes
