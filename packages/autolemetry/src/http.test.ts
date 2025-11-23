@@ -393,7 +393,7 @@ describe('injectTraceContext', () => {
 
     init({
       service: 'test',
-      spanProcessor: new SimpleSpanProcessor(exporter),
+      spanProcessors: [new SimpleSpanProcessor(exporter)],
       metrics: false,
     });
 
@@ -408,9 +408,9 @@ describe('injectTraceContext', () => {
           const baggage = propagation.getBaggage(ctx as any);
           if (baggage) {
             const baggageEntries: string[] = [];
-            baggage.getAllEntries().forEach(([key, entry]) => {
+            for (const [key, entry] of baggage.getAllEntries()) {
               baggageEntries.push(`${key}=${entry.value}`);
-            });
+            }
             if (baggageEntries.length > 0) {
               (carrier as Record<string, string>)['baggage'] =
                 baggageEntries.join(',');

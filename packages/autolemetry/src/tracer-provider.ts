@@ -71,14 +71,14 @@ function getGlobalState(): AutolemetryGlobalState {
     }
 
     return g[AUTOLEMETRY_GLOBAL_SYMBOL]!;
-  } catch (err) {
-    if (err instanceof Error) {
+  } catch (error) {
+    if (error instanceof Error) {
       console.error(
-        `[autolemetry] Failed to access global state: ${err.message}`,
+        `[autolemetry] Failed to access global state: ${error.message}`,
       );
     } else {
       console.error(
-        `[autolemetry] Failed to access global state: ${String(err)}`,
+        `[autolemetry] Failed to access global state: ${String(error)}`,
       );
     }
 

@@ -392,7 +392,7 @@ function createDummyCtx<
     setAttributes: () => {},
     setStatus: () => {},
     recordException: () => {},
-    getBaggage: () => undefined,
+    getBaggage: () => {},
     setBaggage: () => '',
     deleteBaggage: () => {},
     getAllBaggage: () => new Map(),

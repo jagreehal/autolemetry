@@ -278,9 +278,9 @@ export function createTraceContext<
 
       // Convert baggage entries to a Map
       const entries = new Map<string, BaggageEntry>();
-      baggage.getAllEntries().forEach(([key, entry]) => {
+      for (const [key, entry] of baggage.getAllEntries()) {
         entries.set(key, entry);
-      });
+      }
       return entries;
     },
 
@@ -297,19 +297,19 @@ export function createTraceContext<
           baggage = propagation.getBaggage(storedContext);
         }
       }
-      if (!baggage) return undefined;
+      if (!baggage) return;
 
       const prefix = namespace ? `${namespace}.` : '';
       const result: Record<string, unknown> = {};
 
-      baggage.getAllEntries().forEach(([key, entry]) => {
+      for (const [key, entry] of baggage.getAllEntries()) {
         if (namespace && key.startsWith(prefix)) {
           const fieldName = key.slice(prefix.length);
           result[fieldName] = entry.value;
         } else if (!namespace) {
           result[key] = entry.value;
         }
-      });
+      }
 
       return Object.keys(result).length > 0
         ? (result as Partial<T>)

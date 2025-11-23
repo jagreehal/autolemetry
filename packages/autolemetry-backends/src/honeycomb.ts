@@ -7,7 +7,7 @@
  * @example Using Honeycomb with API key
  * ```typescript
  * import { init } from 'autolemetry';
- * import { createHoneycombConfig } from 'autolemetry/presets/honeycomb';
+ * import { createHoneycombConfig } from 'autolemetry-backends/honeycomb';
  *
  * init(createHoneycombConfig({
  *   apiKey: process.env.HONEYCOMB_API_KEY!,
@@ -18,7 +18,7 @@
  * @example With custom dataset
  * ```typescript
  * import { init } from 'autolemetry';
- * import { createHoneycombConfig } from 'autolemetry/presets/honeycomb';
+ * import { createHoneycombConfig } from 'autolemetry-backends/honeycomb';
  *
  * init(createHoneycombConfig({
  *   apiKey: process.env.HONEYCOMB_API_KEY!,
@@ -28,7 +28,7 @@
  * ```
  */
 
-import type { AutolemetryConfig } from '../init';
+import type { AutolemetryConfig } from 'autolemetry';
 
 /**
  * Configuration options for Honeycomb preset

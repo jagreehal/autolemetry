@@ -20,12 +20,7 @@
  * ```
  */
 
-import {
-  SpanStatusCode,
-  context,
-  trace,
-  propagation,
-} from '@opentelemetry/api';
+import { SpanStatusCode, context, propagation } from '@opentelemetry/api';
 import { getConfig } from './config';
 import { getActiveContextWithBaggage } from './trace-context';
 

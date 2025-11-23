@@ -4,7 +4,7 @@ import { init } from './init';
 import { configure, resetConfig } from './config';
 import { InMemorySpanExporter } from './exporters';
 import { SimpleSpanProcessor } from './processors';
-import { trace, trace as otelTrace } from '@opentelemetry/api';
+import { trace as otelTrace } from '@opentelemetry/api';
 import { flush } from './shutdown';
 
 // Skipped: TypeScript 5+ decorators have limitations in vitest/esbuild/tsx test environments.
@@ -27,7 +27,7 @@ describe.skip('Decorators', () => {
     // Initialize with in-memory exporter for testing
     init({
       service: 'test-decorators',
-      spanProcessor: new SimpleSpanProcessor(exporter),
+      spanProcessors: [new SimpleSpanProcessor(exporter)],
       metrics: false,
     });
 

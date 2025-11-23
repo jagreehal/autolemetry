@@ -95,14 +95,6 @@
     "./decorators": {
       "types": "./dist/decorators.d.ts",
       "import": "./dist/decorators.js"
-    },
-    "./presets/datadog": {
-      "types": "./dist/presets/datadog.d.ts",
-      "import": "./dist/presets/datadog.js"
-    },
-    "./presets/honeycomb": {
-      "types": "./dist/presets/honeycomb.d.ts",
-      "import": "./dist/presets/honeycomb.js"
     }
   },
   "files": [

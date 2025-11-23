@@ -55,7 +55,7 @@ describe('Semantic Helpers', () => {
         model: 'text-embedding-3-small',
         operation: 'embedding',
         system: 'openai',
-      })((_ctx) => async (text: string) => [0.1, 0.2, 0.3]);
+      })((_ctx) => async (_text: string) => [0.1, 0.2, 0.3]);
 
       await embed('test text');
 
@@ -161,7 +161,7 @@ describe('Semantic Helpers', () => {
     it('should work with only method', async () => {
       const request = traceHTTP({
         method: 'POST',
-      })((_ctx) => async (data: object) => ({ success: true }));
+      })((_ctx) => async (_data: object) => ({ success: true }));
 
       await request({ test: 'data' });
 
@@ -209,7 +209,7 @@ describe('Semantic Helpers', () => {
         system: 'kafka',
         operation: 'publish',
         destination: 'user-events',
-      })((_ctx) => async (event: object) => {
+      })((_ctx) => async (_event: object) => {
         return { messageId: '123' };
       });
 

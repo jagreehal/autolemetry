@@ -146,15 +146,15 @@ describe('init() customization', () => {
     expect(metricReaderOptions).toHaveLength(0);
   });
 
-  it('respects custom metric reader', async () => {
+  it('respects custom metric readers', async () => {
     const { init, sdkInstances, metricReaderOptions } =
       await loadInitWithMocks();
     const customMetricReader = mock<MetricReader>();
 
-    init({ service: 'custom-metrics', metricReader: customMetricReader });
+    init({ service: 'custom-metrics', metricReaders: [customMetricReader] });
 
     const options = sdkInstances.at(-1)?.options as Record<string, unknown>;
-    expect(options.metricReader).toBe(customMetricReader);
+    expect(options.metricReaders).toEqual([customMetricReader]);
     expect(metricReaderOptions).toHaveLength(0);
   });
 
@@ -187,7 +187,7 @@ describe('init() customization', () => {
       service: 'custom-sdk',
       endpoint: 'http://localhost:4318',
       sdkFactory: (defaults) => {
-        expect(defaults.spanProcessor).toBeDefined();
+        expect(defaults.spanProcessors).toBeDefined();
         return customSdk;
       },
     });
@@ -196,15 +196,15 @@ describe('init() customization', () => {
     expect(customSdk.start).toHaveBeenCalled();
   });
 
-  it('uses provided spanProcessor when supplied', async () => {
+  it('uses provided spanProcessors when supplied', async () => {
     const { init, sdkInstances } = await loadInitWithMocks();
     const customProcessor = mock<SpanProcessor>();
     customProcessor.shutdown.mockResolvedValue();
     customProcessor.forceFlush.mockResolvedValue();
 
-    init({ service: 'custom-span', spanProcessor: customProcessor });
+    init({ service: 'custom-span', spanProcessors: [customProcessor] });
 
     const options = sdkInstances.at(-1)?.options as Record<string, unknown>;
-    expect(options.spanProcessor).toBe(customProcessor);
+    expect(options.spanProcessors).toEqual([customProcessor]);
   });
 });

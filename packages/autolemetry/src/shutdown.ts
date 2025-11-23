@@ -153,7 +153,10 @@ export async function shutdown(): Promise<void> {
     // Ignore ECONNREFUSED errors - this happens when no OTLP endpoint was configured
     // The SDK tries to flush exporters that don't exist, which is harmless
     const isConnectionRefused =
-      'code' in (error as any) && (error as any).code === 'ECONNREFUSED';
+      typeof error === 'object' &&
+      error !== null &&
+      'code' in error &&
+      error.code === 'ECONNREFUSED';
 
     if (!isConnectionRefused) {
       // Only store/log non-connection errors

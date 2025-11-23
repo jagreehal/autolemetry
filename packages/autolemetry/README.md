@@ -382,6 +382,7 @@ export const rollDice = trace(async function rollDice(rolls: number) {
       { name: 'roll.once', attributes: { roll: i + 1 } },
       async (span) => {
         span.setAttribute('range', '1-6');
+        span.addEvent('dice.rolled', { value: rollOnce() });
         results.push(rollOnce());
       },
     );
@@ -917,16 +918,20 @@ init({
 });
 ```
 
-**Vendor Presets:**
+**Vendor Backend Configurations:**
 
-For common observability platforms, use presets for simplified configuration:
+For simplified setup with popular observability platforms, see [`autolemetry-backends`](../autolemetry-backends):
+
+```bash
+npm install autolemetry-backends
+```
 
 ```typescript
 import { init } from 'autolemetry';
-import { createDatadogConfig } from 'autolemetry/presets/datadog';
-import { createHoneycombConfig } from 'autolemetry/presets/honeycomb';
+import { createDatadogConfig } from 'autolemetry-backends/datadog';
+import { createHoneycombConfig } from 'autolemetry-backends/honeycomb';
 
-// Datadog preset
+// Datadog
 init(
   createDatadogConfig({
     apiKey: process.env.DATADOG_API_KEY!,
@@ -935,7 +940,7 @@ init(
   }),
 );
 
-// Honeycomb preset (automatically uses gRPC)
+// Honeycomb (automatically uses gRPC)
 init(
   createHoneycombConfig({
     apiKey: process.env.HONEYCOMB_API_KEY!,
@@ -1145,12 +1150,24 @@ export async function customWorkflow() {
   }
 }
 
-// Add attributes to the currently active span
+// Add attributes and events to the currently active span
 export function enrichCurrentSpan(userId: string) {
   const span = getActiveSpan();
   if (span) {
     span.setAttribute('user.id', userId);
-    span.addEvent('User identified');
+    span.addEvent('User identified', { userId, timestamp: Date.now() });
+  }
+}
+
+// Add events with attributes (e.g., queue operations)
+export async function processQueue() {
+  const span = getActiveSpan();
+  if (span) {
+    span.addEvent('queue.wait', {
+      queue_size: 42,
+      queue_name: 'order-processing',
+    });
+    // Process queue...
   }
 }
 
@@ -1797,7 +1814,8 @@ import {
 // Span methods
 span.setAttribute(key, value); // Add single attribute
 span.setAttributes({ key: value }); // Add multiple attributes
-span.addEvent('cache.hit'); // Add event
+span.addEvent('cache.hit'); // Add event (name only)
+span.addEvent('queue.wait', { queue_size: 42 }); // Add event with attributes
 span.recordException(error); // Record exception
 span.setStatus({ code: SpanStatusCode.ERROR }); // Set status
 span.end(); // End span
