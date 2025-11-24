@@ -1,5 +1,12 @@
 # autolemetry-subscribers
 
+## 4.0.0
+
+### Patch Changes
+
+- Updated dependencies [53bcbaa]
+  - autolemetry@2.1.0
+
 ## 3.0.0
 
 ### Patch Changes

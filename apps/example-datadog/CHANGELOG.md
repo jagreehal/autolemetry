@@ -1,5 +1,12 @@
 # @jagreehal/example-datadog
 
+## 1.0.4
+
+### Patch Changes
+
+- Updated dependencies [53bcbaa]
+  - autolemetry@2.1.0
+
 ## 1.0.3
 
 ### Patch Changes
