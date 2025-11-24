@@ -12,7 +12,7 @@ export default defineConfig({
     factories: 'src/factories.ts',
     middleware: 'src/middleware.ts',
   },
-  format: ['esm'],
+  format: ['esm', 'cjs'],
   dts: true,
   sourcemap: true,
   clean: true,

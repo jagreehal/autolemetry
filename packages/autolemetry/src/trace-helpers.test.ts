@@ -51,10 +51,10 @@ describe('Trace Helpers', () => {
       expect(activeSpan).toBeUndefined();
     });
 
-    it('should return the active span inside a span context', async () => {
+    it('should return the active span inside a span context', () => {
       let capturedSpan;
 
-      await span({ name: 'test-span' }, (s) => {
+      span({ name: 'test-span' }, (s) => {
         capturedSpan = getActiveSpan();
         expect(capturedSpan).toBe(s);
       });
@@ -62,10 +62,10 @@ describe('Trace Helpers', () => {
       expect(capturedSpan).toBeDefined();
     });
 
-    it('should allow setting attributes on the active span', async () => {
+    it('should allow setting attributes on the active span', () => {
       const collector = createTraceCollector();
 
-      await span({ name: 'test-span' }, () => {
+      span({ name: 'test-span' }, () => {
         const activeSpan = getActiveSpan();
         if (activeSpan) {
           activeSpan.setAttribute('custom.attribute', 'value');
@@ -77,10 +77,10 @@ describe('Trace Helpers', () => {
       expect(spans[0]!.attributes['custom.attribute']).toBe('value');
     });
 
-    it('should allow calling span methods on the active span', async () => {
+    it('should allow calling span methods on the active span', () => {
       const collector = createTraceCollector();
 
-      await span({ name: 'test-span' }, () => {
+      span({ name: 'test-span' }, () => {
         const activeSpan = getActiveSpan();
         if (activeSpan) {
           // Test that we can call span methods
@@ -105,11 +105,11 @@ describe('Trace Helpers', () => {
       expect(ctx).toBeDefined();
     });
 
-    it('should return different contexts in different execution paths', async () => {
+    it('should return different contexts in different execution paths', () => {
       const rootContext = getActiveContext();
       let nestedContext;
 
-      await span({ name: 'test-span' }, () => {
+      span({ name: 'test-span' }, () => {
         nestedContext = getActiveContext();
       });
 
@@ -221,7 +221,7 @@ describe('Trace Helpers', () => {
   });
 
   describe('Integration with getTraceContext()', () => {
-    it('should work together with getTraceContext()', async () => {
+    it('should work together with getTraceContext()', () => {
       createTraceCollector(); // Set up mock tracer
       const tracer = getConfig().tracer;
       const testSpan = tracer.startSpan('test-operation');

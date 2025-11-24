@@ -1,33 +1,65 @@
 # Autolemetry Plugins
 
-OpenTelemetry instrumentation for ORMs and databases **without official support**. This package fills gaps where the OpenTelemetry community hasn't yet provided official instrumentation.
+OpenTelemetry instrumentation for libraries **without official support** OR where the official support is fundamentally broken.
 
-> **Philosophy**: Use official [@opentelemetry/instrumentation-\*](https://github.com/open-telemetry/opentelemetry-js-contrib/tree/main/plugins/node) packages when available. This package only provides instrumentation for libraries that lack official support.
+## Philosophy
 
-## When to Use This Package
+**autolemetry-plugins only includes instrumentation that:**
 
-✅ **Use `autolemetry-plugins`** when:
+1. **Has NO official OpenTelemetry package** (e.g., Drizzle ORM)
+2. **Has BROKEN official instrumentation** (e.g., Mongoose in ESM+tsx)
+3. **Adds significant value** beyond official packages
 
-- You're using **Drizzle ORM** (no official instrumentation exists)
-- You need instrumentation for ORMs/databases without official OpenTelemetry support
+**We do NOT include:**
 
-❌ **Use official packages** for:
+- Re-exports of official packages
+- Wrappers that add no value
+- Duplicates of working official packages
 
-- MongoDB → [`@opentelemetry/instrumentation-mongodb`](https://www.npmjs.com/package/@opentelemetry/instrumentation-mongodb)
-- Mongoose → [`@opentelemetry/instrumentation-mongoose`](https://www.npmjs.com/package/@opentelemetry/instrumentation-mongoose)
-- PostgreSQL → [`@opentelemetry/instrumentation-pg`](https://www.npmjs.com/package/@opentelemetry/instrumentation-pg)
-- MySQL → [`@opentelemetry/instrumentation-mysql2`](https://www.npmjs.com/package/@opentelemetry/instrumentation-mysql2)
-- Redis → [`@opentelemetry/instrumentation-redis`](https://www.npmjs.com/package/@opentelemetry/instrumentation-redis)
+## Why This Approach?
+
+With the `--import` pattern (Node.js 18.19+), using official OpenTelemetry packages **when they work** is simple:
+
+```javascript
+// instrumentation.mjs
+import { init } from 'autolemetry';
+import { PgInstrumentation } from '@opentelemetry/instrumentation-pg';
+
+init({
+  service: 'my-app',
+  instrumentations: [new PgInstrumentation()],
+});
+```
+
+```bash
+# Run with --import flag
+tsx --import ./instrumentation.mjs src/index.ts
+```
+
+**Benefits of official packages (when they work):**
+
+- ✅ Always up-to-date (maintained by OpenTelemetry)
+- ✅ Complete feature coverage
+- ✅ Battle-tested in production
+- ✅ Zero maintenance burden
+- ✅ More discoverable and trustworthy
+
+## When to Use Official Packages
+
+For databases/ORMs with **working** official instrumentation, **use those directly**:
+
+- **MongoDB** → [`@opentelemetry/instrumentation-mongodb`](https://www.npmjs.com/package/@opentelemetry/instrumentation-mongodb)
+- **PostgreSQL** → [`@opentelemetry/instrumentation-pg`](https://www.npmjs.com/package/@opentelemetry/instrumentation-pg)
+- **MySQL** → [`@opentelemetry/instrumentation-mysql2`](https://www.npmjs.com/package/@opentelemetry/instrumentation-mysql2)
+- **Redis** → [`@opentelemetry/instrumentation-redis`](https://www.npmjs.com/package/@opentelemetry/instrumentation-redis)
+- **Express** → [`@opentelemetry/instrumentation-express`](https://www.npmjs.com/package/@opentelemetry/instrumentation-express)
+- **Fastify** → [`@opentelemetry/instrumentation-fastify`](https://www.npmjs.com/package/@opentelemetry/instrumentation-fastify)
 
 [Browse all official instrumentations →](https://github.com/open-telemetry/opentelemetry-js-contrib/tree/main/plugins/node)
 
-## Features
+### ⚠️ Mongoose ESM Exception
 
-- **Tree-shakeable**: Import only what you need
-- **Zero overhead**: Instrumentation only adds spans when operations occur
-- **Type-safe**: Full TypeScript support with generics
-- **Idempotent**: Safe to call instrument functions multiple times
-- **Configurable**: Control what data is captured in spans
+**Note:** [`@opentelemetry/instrumentation-mongoose`](https://www.npmjs.com/package/@opentelemetry/instrumentation-mongoose) is fundamentally broken in ESM+tsx environments due to module loading hook issues. It works in CommonJS, but if you're using ESM with tsx/ts-node, use our custom plugin below.
 
 ## Installation
 
@@ -37,9 +69,154 @@ npm install autolemetry-plugins
 
 ## Currently Supported
 
+### Mongoose
+
+Instrument Mongoose database operations with OpenTelemetry tracing using runtime patching. Works in ESM+tsx unlike the official package. **✨ NEW: Automatic hook instrumentation - no manual trace() calls needed!**
+
+**Why we provide this:**
+
+The official [`@opentelemetry/instrumentation-mongoose`](https://www.npmjs.com/package/@opentelemetry/instrumentation-mongoose) package is fundamentally broken in ESM+tsx environments:
+
+- Uses module loading hooks (`import-in-the-middle`) that fail with ESM import hoisting
+- Mongoose package lacks proper dual-mode exports (CJS only)
+- Works in CommonJS, but fails in modern ESM projects
+- No timeline for ESM support
+
+Our implementation uses **runtime patching** instead of module loading hooks, so it works everywhere.
+
+#### Basic Usage (with Automatic Hook Tracing)
+
+```typescript
+import mongoose from 'mongoose';
+import { init } from 'autolemetry';
+import { instrumentMongoose } from 'autolemetry-plugins/mongoose';
+
+// Initialize Autolemetry
+init({ service: 'my-app' });
+
+// IMPORTANT: Instrument BEFORE defining schemas to enable automatic hook tracing
+instrumentMongoose(mongoose, {
+  dbName: 'myapp',
+  peerName: 'localhost',
+  peerPort: 27017,
+});
+
+// NOW define schemas - hooks are automatically traced!
+const userSchema = new mongoose.Schema({ name: String, email: String });
+
+userSchema.pre('save', async function () {
+  // ✨ This hook is AUTOMATICALLY traced - no manual trace() needed!
+  this.email = this.email.toLowerCase();
+});
+
+const User = mongoose.model('User', userSchema);
+
+// Connect to MongoDB
+await mongoose.connect('mongodb://localhost:27017/myapp');
+
+// All operations AND hooks are automatically traced
+await User.create({ name: 'Alice', email: 'ALICE@EXAMPLE.COM' });
+// Creates spans: mongoose.users.create + mongoose.users.pre.save
+```
+
+#### What Gets Automatically Traced
+
+**1. Model Operations** (all automatic):
+
+- `create`, `insertMany`, `find`, `findOne`, `findById`
+- `findOneAndUpdate`, `findByIdAndUpdate`, `updateOne`, `updateMany`
+- `deleteOne`, `deleteMany`, `countDocuments`, `aggregate`
+- Instance methods: `save`, `remove`, `deleteOne`
+
+**2. Schema Hooks** (automatic - no manual code needed!):
+
+- Pre hooks: `pre('save')`, `pre('findOneAndUpdate')`, etc.
+- Post hooks: `post('save')`, `post('remove')`, etc.
+- Built-in hooks: `post('init')` (document hydration)
+
+#### Hook Instrumentation Setup
+
+For automatic hook tracing, call `instrumentMongoose()` **before** defining schemas. ESM import hoisting means you need a separate init file:
+
+**Pattern for ESM+tsx projects:**
+
+Create `init-mongoose.ts`:
+
+```typescript
+import mongoose from 'mongoose';
+import { instrumentMongoose } from 'autolemetry-plugins/mongoose';
+
+instrumentMongoose(mongoose, { dbName: 'myapp' });
+```
+
+Import before schemas in `index.ts`:
+
+```typescript
+import './init-mongoose'; // Import first!
+import { User, Post } from './schema'; // Hooks auto-instrumented
+```
+
+#### Configuration
+
+```typescript
+{
+  dbName?: string                  // Database name
+  captureCollectionName?: boolean  // Include collection in spans (default: true)
+  peerName?: string                // MongoDB host
+  peerPort?: number                // MongoDB port (default: 27017)
+  tracerName?: string              // Custom tracer name
+}
+```
+
+#### Span Attributes
+
+**Operation Spans (SpanKind.CLIENT):**
+
+- `db.system` - "mongoose"
+- `db.operation` - create, find, update, etc.
+- `db.mongodb.collection` - Collection name
+- `db.name` - Database name
+- `net.peer.name` / `net.peer.port` - MongoDB server
+
+**Hook Spans (SpanKind.INTERNAL):**
+
+- `hook.type` - "pre" or "post"
+- `hook.operation` - save, findOneAndUpdate, etc.
+- `hook.model` - Model name (User, Post, etc.)
+- `db.mongodb.collection` - Collection name
+- `db.system` - "mongoose"
+- `db.name` - Database name
+
+#### Before vs After (70% Less Code!)
+
+**Before (Manual instrumentation):**
+
+```typescript
+import { trace } from 'autolemetry';
+
+userSchema.pre('save', async function () {
+  await trace((ctx) => async () => {
+    ctx.setAttribute('hook.type', 'pre');
+    ctx.setAttribute('hook.operation', 'save');
+    // ... lots of boilerplate
+    this.email = this.email.toLowerCase();
+  })();
+});
+```
+
+**After (Automatic instrumentation):**
+
+```typescript
+// NO trace() imports needed!
+userSchema.pre('save', async function () {
+  // Automatically traced with all attributes!
+  this.email = this.email.toLowerCase();
+});
+```
+
 ### Drizzle ORM
 
-Instrument Drizzle database operations with OpenTelemetry tracing.
+Instrument Drizzle database operations with OpenTelemetry tracing. Drizzle doesn't have official instrumentation, so we provide it here.
 
 ```typescript
 import { drizzle } from 'drizzle-orm/postgres-js';
@@ -86,74 +263,14 @@ await db.select().from(users).where(eq(users.id, 123));
 }
 ```
 
-## Using Official Instrumentation Packages
+**Span Attributes:**
 
-For databases with official OpenTelemetry support, use the contrib packages directly with autolemetry:
-
-### MongoDB Example
-
-```typescript
-import { init } from 'autolemetry';
-import { MongoDBInstrumentation } from '@opentelemetry/instrumentation-mongodb';
-import { MongoClient } from 'mongodb';
-
-// Initialize autolemetry with MongoDB instrumentation
-init({
-  service: 'my-service',
-  instrumentations: [
-    new MongoDBInstrumentation({
-      enhancedDatabaseReporting: true,
-    }),
-  ],
-});
-
-// MongoDB operations are automatically traced
-const client = new MongoClient('mongodb://localhost:27017');
-await client.connect();
-const db = client.db('myapp');
-await db.collection('users').findOne({ email: 'user@example.com' });
-```
-
-### Mongoose Example
-
-```typescript
-import { init } from 'autolemetry';
-import { MongooseInstrumentation } from '@opentelemetry/instrumentation-mongoose';
-import mongoose from 'mongoose';
-
-// Initialize autolemetry with Mongoose instrumentation
-init({
-  service: 'my-service',
-  instrumentations: [new MongooseInstrumentation()],
-});
-
-// Mongoose operations are automatically traced
-await mongoose.connect('mongodb://localhost:27017/myapp');
-const User = mongoose.model('User', new mongoose.Schema({ email: String }));
-await User.findOne({ email: 'user@example.com' });
-```
-
-### Multiple Instrumentations
-
-Combine multiple official instrumentations:
-
-```typescript
-import { init } from 'autolemetry';
-import { HttpInstrumentation } from '@opentelemetry/instrumentation-http';
-import { ExpressInstrumentation } from '@opentelemetry/instrumentation-express';
-import { MongoDBInstrumentation } from '@opentelemetry/instrumentation-mongodb';
-import { RedisInstrumentation } from '@opentelemetry/instrumentation-redis';
-
-init({
-  service: 'my-service',
-  instrumentations: [
-    new HttpInstrumentation(),
-    new ExpressInstrumentation(),
-    new MongoDBInstrumentation(),
-    new RedisInstrumentation(),
-  ],
-});
-```
+- `db.system` - Database type (postgresql, mysql, sqlite)
+- `db.operation` - Operation name (SELECT, INSERT, UPDATE, DELETE)
+- `db.name` - Database name
+- `db.statement` - SQL query text (if `captureQueryText: true`)
+- `net.peer.name` - Database host
+- `net.peer.port` - Database port
 
 ## Usage with Autolemetry
 
@@ -168,9 +285,7 @@ import postgres from 'postgres';
 // Initialize Autolemetry
 init({
   service: 'my-service',
-  otlp: {
-    endpoint: 'http://localhost:4318',
-  },
+  endpoint: 'http://localhost:4318',
 });
 
 // Instrument your database
@@ -182,82 +297,47 @@ instrumentDrizzleClient(db, { dbSystem: 'postgresql' });
 await db.select().from(users);
 ```
 
-## Span Attributes
+## Combining with Official Packages
 
-All plugins follow OpenTelemetry semantic conventions:
+Mix autolemetry-plugins with official OpenTelemetry instrumentations:
 
-### Common Attributes
+```typescript
+import { init } from 'autolemetry';
+import { instrumentDrizzleClient } from 'autolemetry-plugins/drizzle';
+import { HttpInstrumentation } from '@opentelemetry/instrumentation-http';
+import { ExpressInstrumentation } from '@opentelemetry/instrumentation-express';
+import { PgInstrumentation } from '@opentelemetry/instrumentation-pg';
 
-- `db.system` - Database system (postgresql, mysql, sqlite)
-- `db.operation` - Operation name (SELECT, INSERT, UPDATE, DELETE)
-- `db.name` - Database name
-- `net.peer.name` - Remote host
-- `net.peer.port` - Remote port
+init({
+  service: 'my-service',
+  instrumentations: [
+    new HttpInstrumentation(),
+    new ExpressInstrumentation(),
+    new PgInstrumentation(), // Official packages
+  ],
+});
 
-### Drizzle-Specific
-
-- `db.statement` - SQL query text (if enabled)
+// Drizzle (no official package available)
+const db = drizzle({ client: postgres(process.env.DATABASE_URL!) });
+instrumentDrizzleClient(db, { dbSystem: 'postgresql' });
+```
 
 ## Security Considerations
 
 ### Query Text Capture
 
-Drizzle plugin captures SQL query text by default. This may contain sensitive data:
+By default, Drizzle instrumentation captures SQL text which may contain sensitive data:
 
 ```typescript
+// Disable SQL capture to prevent PII leakage
 instrumentDrizzleClient(db, {
-  captureQueryText: false, // Disable to prevent PII leakage
+  captureQueryText: false,
 });
 ```
 
 ## Examples
 
-### Multi-Database Application
-
-```typescript
-import { init } from 'autolemetry'
-import { instrumentDrizzleClient } from 'autolemetry-plugins/drizzle'
-import { MongoDBInstrumentation } from '@opentelemetry/instrumentation-mongodb'
-import { drizzle } from 'drizzle-orm/postgres-js'
-import postgres from 'postgres'
-import { MongoClient } from 'mongodb'
-
-init({
-  service: 'multi-db-app',
-  instrumentations: [
-    new MongoDBInstrumentation({
-      enhancedDatabaseReporting: true,
-    }),
-  ],
-})
-
-// PostgreSQL for transactional data (use autolemetry-plugins)
-const pgClient = postgres(process.env.PG_URL!)
-const pg = drizzle({ client: pgClient })
-instrumentDrizzleClient(pg, { dbSystem: 'postgresql', dbName: 'orders' })
-
-// MongoDB for events (automatically instrumented)
-const mongoClient = new MongoClient(process.env.MONGO_URL!)
-await mongoClient.connect()
-
-// Both databases are now traced
-await pg.select().from(orders)
-await mongoClient.db('events').collection('events').insertOne({ ... })
-```
-
-### Conditional Instrumentation
-
-```typescript
-import { instrumentDrizzleClient } from 'autolemetry-plugins/drizzle';
-
-// Only instrument in development
-if (process.env.NODE_ENV === 'development') {
-  instrumentDrizzleClient(db, {
-    captureQueryText: true,
-    maxQueryTextLength: 2000,
-  });
-}
-```
+See the [example-drizzle](../../apps/example-drizzle) directory for a complete working example.
 
 ## TypeScript
 
@@ -266,21 +346,16 @@ Full type safety with TypeScript:
 ```typescript
 import type { InstrumentDrizzleConfig } from 'autolemetry-plugins';
 
-const drizzleConfig: InstrumentDrizzleConfig = {
+const config: InstrumentDrizzleConfig = {
   dbSystem: 'postgresql',
   captureQueryText: true,
+  maxQueryTextLength: 1000,
 };
 ```
 
-## Future Plans
+## Future
 
-When official OpenTelemetry instrumentation becomes available for Drizzle ORM, we will:
-
-1. Announce deprecation with migration guide
-2. Recommend users switch to the official package
-3. Eventually remove Drizzle instrumentation from this package
-
-This ensures users always get the best, most maintained instrumentation possible.
+When official OpenTelemetry instrumentation becomes available for Drizzle ORM, we will announce deprecation and provide a migration guide.
 
 ## Creating Your Own Instrumentation
 

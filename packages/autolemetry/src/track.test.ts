@@ -109,10 +109,10 @@ describe('track() function', () => {
       });
     });
 
-    it('should auto-attach traceId and spanId when in active span', async () => {
+    it('should auto-attach traceId and spanId when in active span', () => {
       const tracer = trace.getTracer('test');
 
-      await tracer.startActiveSpan('test-span', async (span) => {
+      tracer.startActiveSpan('test-span', (span) => {
         track('user.signup', { userId: '123' });
 
         // Verify event was enqueued with trace context

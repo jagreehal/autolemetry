@@ -1,7 +1,7 @@
 {
   "name": "autolemetry-plugins",
   "version": "0.3.3",
-  "description": "OpenTelemetry instrumentation for ORMs/databases without official support (Drizzle ORM)",
+  "description": "OpenTelemetry instrumentation for libraries without official support (Drizzle ORM)",
   "type": "module",
   "main": "./dist/index.js",
   "types": "./dist/index.d.ts",
@@ -9,11 +9,18 @@
   "exports": {
     ".": {
       "types": "./dist/index.d.ts",
-      "import": "./dist/index.js"
+      "import": "./dist/index.js",
+      "require": "./dist/index.cjs"
     },
     "./drizzle": {
       "types": "./dist/drizzle.d.ts",
-      "import": "./dist/drizzle.js"
+      "import": "./dist/drizzle.js",
+      "require": "./dist/drizzle.cjs"
+    },
+    "./mongoose": {
+      "types": "./dist/mongoose.d.ts",
+      "import": "./dist/mongoose.js",
+      "require": "./dist/mongoose.cjs"
     }
   },
   "files": [
@@ -47,6 +54,8 @@
     "plugins",
     "drizzle",
     "drizzle-orm",
+    "mongoose",
+    "mongodb",
     "database",
     "orm",
     "observability",
@@ -57,14 +66,19 @@
   "license": "MIT",
   "dependencies": {
     "@opentelemetry/api": "^1.9.0",
+    "@opentelemetry/instrumentation": "^0.57.0",
     "@opentelemetry/semantic-conventions": "^1.38.0",
     "autolemetry": "workspace:*"
   },
   "peerDependencies": {
-    "drizzle-orm": ">=0.44.7"
+    "drizzle-orm": ">=0.44.7",
+    "mongoose": ">=8.0.0"
   },
   "peerDependenciesMeta": {
     "drizzle-orm": {
+      "optional": true
+    },
+    "mongoose": {
       "optional": true
     }
   },

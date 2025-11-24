@@ -41,7 +41,7 @@ import { BaggageSpanProcessor } from './baggage-span-processor';
 import { resolveConfigFromEnv } from './env-config';
 import { PinoInstrumentation } from '@opentelemetry/instrumentation-pino';
 import { WinstonInstrumentation } from '@opentelemetry/instrumentation-winston';
-import { createRequire } from 'node:module';
+import { getNodeAutoInstrumentations } from '@opentelemetry/auto-instrumentations-node';
 
 // Type imports for exporters
 type OTLPExporterConfig = {
@@ -58,20 +58,6 @@ let OTLPTraceExporterGRPC:
 let OTLPMetricExporterGRPC:
   | (new (config: OTLPExporterConfig) => PushMetricExporter)
   | undefined;
-
-// Lazy-load getNodeAutoInstrumentations to preserve optional peer dependency
-// This will be loaded at runtime when integrations option is used (not at module load time)
-// This ensures it works correctly in ESM contexts and monorepo setups
-let getNodeAutoInstrumentations:
-  | ((config?: Record<string, unknown>) => unknown[])
-  | undefined;
-
-const AUTO_INSTRUMENTATIONS_NOT_FOUND = 'AUTO_INSTRUMENTATIONS_NOT_FOUND';
-
-class AutoInstrumentationsNotFoundError extends Error {
-  readonly code: typeof AUTO_INSTRUMENTATIONS_NOT_FOUND =
-    AUTO_INSTRUMENTATIONS_NOT_FOUND;
-}
 
 /**
  * Helper: Lazy-load gRPC trace exporter
@@ -213,6 +199,40 @@ export interface AutolemetryConfig {
    * Additional OpenTelemetry instrumentations to register.
    * Useful when you want HTTP/Prisma/etc auto instrumentation alongside
    * the functional helpers.
+   *
+   * **Important:** If you need custom instrumentation configs (like `requireParentSpan: false`),
+   * use EITHER manual instrumentations OR integrations, not both for the same library.
+   * Manual instrumentations always take precedence over auto-instrumentations.
+   *
+   * @example Manual instrumentations with custom config
+   * ```typescript
+   * import { MongoDBInstrumentation } from '@opentelemetry/instrumentation-mongodb'
+   *
+   * init({
+   *   service: 'my-app',
+   *   integrations: false,  // Disable auto-instrumentations
+   *   instrumentations: [
+   *     new MongoDBInstrumentation({
+   *       requireParentSpan: false  // Custom config
+   *     })
+   *   ]
+   * })
+   * ```
+   *
+   * @example Mix auto + manual (auto for most, manual for specific configs)
+   * ```typescript
+   * import { MongoDBInstrumentation } from '@opentelemetry/instrumentation-mongodb'
+   *
+   * init({
+   *   service: 'my-app',
+   *   integrations: ['http', 'express'],  // Auto for these
+   *   instrumentations: [
+   *     new MongoDBInstrumentation({
+   *       requireParentSpan: false  // Manual config for MongoDB
+   *     })
+   *   ]
+   * })
+   * ```
    */
   instrumentations?: NodeSDKConfiguration['instrumentations'];
 
@@ -220,19 +240,22 @@ export interface AutolemetryConfig {
    * Simple integration names for auto-instrumentation.
    * Uses @opentelemetry/auto-instrumentations-node (peer dependency).
    *
+   * **Important:** If you provide manual instrumentations for the same library,
+   * the manual config takes precedence and auto-instrumentation for that library is disabled.
+   *
+   * @example Enable all integrations (simple approach)
+   * ```typescript
+   * init({
+   *   service: 'my-app',
+   *   integrations: true  // Enable all with defaults
+   * })
+   * ```
+   *
    * @example Enable specific integrations
    * ```typescript
    * init({
    *   service: 'my-app',
    *   integrations: ['express', 'pino', 'http']
-   * })
-   * ```
-   *
-   * @example Enable all integrations
-   * ```typescript
-   * init({
-   *   service: 'my-app',
-   *   integrations: true  // Enable all
    * })
    * ```
    *
@@ -245,6 +268,21 @@ export interface AutolemetryConfig {
    *     pino: { enabled: true },
    *     http: { enabled: false }
    *   }
+   * })
+   * ```
+   *
+   * @example Manual config when you need custom settings
+   * ```typescript
+   * import { MongoDBInstrumentation } from '@opentelemetry/instrumentation-mongodb'
+   *
+   * init({
+   *   service: 'my-app',
+   *   integrations: false,  // Use manual control
+   *   instrumentations: [
+   *     new MongoDBInstrumentation({
+   *       requireParentSpan: false  // Custom config not available with auto
+   *     })
+   *   ]
    * })
    * ```
    */
@@ -971,7 +1009,29 @@ export function init(cfg: AutolemetryConfig): void {
 
   if (cfg.integrations !== undefined) {
     try {
-      const autoInstrumentations = getAutoInstrumentations(cfg.integrations);
+      // Detect manual instrumentations to avoid conflicts
+      const manualInstrumentationNames = getInstrumentationNames(
+        cfg.instrumentations ?? [],
+      );
+
+      // Warn if both integrations and manual instrumentations are provided
+      if (
+        manualInstrumentationNames.size > 0 &&
+        cfg.integrations !== false &&
+        cfg.integrations !== undefined
+      ) {
+        const manualNames = [...manualInstrumentationNames].join(', ');
+        logger.info(
+          `[autolemetry] Detected manual instrumentations (${manualNames}). ` +
+            'These will take precedence over auto-instrumentations. ' +
+            'Tip: Set integrations:false if you want full manual control, or remove manual configs to use auto-instrumentations.',
+        );
+      }
+
+      const autoInstrumentations = getAutoInstrumentations(
+        cfg.integrations,
+        manualInstrumentationNames,
+      );
       if (autoInstrumentations && autoInstrumentations.length > 0) {
         // Cast to proper type - getNodeAutoInstrumentations returns the correct type
         finalInstrumentations = [
@@ -980,25 +1040,9 @@ export function init(cfg: AutolemetryConfig): void {
         ];
       }
     } catch (error) {
-      if (
-        (error as { code?: string }).code === AUTO_INSTRUMENTATIONS_NOT_FOUND
-      ) {
-        logger.warn(
-          '[autolemetry] Auto-instrumentations package not found.\n' +
-            '  To use the "integrations" option, install the package:\n\n' +
-            '    npm add @opentelemetry/auto-instrumentations-node\n' +
-            '    # or\n' +
-            '    pnpm add @opentelemetry/auto-instrumentations-node\n' +
-            '    # or\n' +
-            '    yarn add @opentelemetry/auto-instrumentations-node\n\n' +
-            '  Alternatively, use the functional API (trace/span) which requires no additional packages.\n' +
-            '  Your integrations config will be ignored until the package is installed.',
-        );
-      } else {
-        logger.warn(
-          `[autolemetry] Failed to configure auto-instrumentations: ${error instanceof Error ? error.message : String(error)}`,
-        );
-      }
+      logger.warn(
+        `[autolemetry] Failed to configure auto-instrumentations: ${error instanceof Error ? error.message : String(error)}`,
+      );
     }
   }
 
@@ -1165,70 +1209,107 @@ async function initializeOpenLLMetry(
 }
 
 /**
- * Get auto-instrumentations based on simple integration names
+ * Extract instrumentation class names from instrumentation instances
+ * Used to detect duplicates between manual and auto instrumentations
  */
-function ensureAutoInstrumentationsModule(): void {
-  if (getNodeAutoInstrumentations) {
-    return;
-  }
+function getInstrumentationNames(
+  instrumentations: NodeSDKConfiguration['instrumentations'],
+): Set<string> {
+  const names = new Set<string>();
 
-  try {
-    // Use createRequire for ESM compatibility
-    // In CJS, require is globally available; in ESM, we need createRequire
-    const requireFn =
-      typeof require === 'undefined' ? createRequire(import.meta.url) : require;
+  if (!instrumentations) return names;
 
-    const autoInstrumentationsModule = requireFn(
-      '@opentelemetry/auto-instrumentations-node',
-    );
-    getNodeAutoInstrumentations =
-      autoInstrumentationsModule.getNodeAutoInstrumentations;
-  } catch (error) {
-    // Only treat MODULE_NOT_FOUND as a missing package
-    // Other errors (syntax errors, etc.) should be re-thrown
-    if ((error as NodeJS.ErrnoException).code === 'MODULE_NOT_FOUND') {
-      throw new AutoInstrumentationsNotFoundError(
-        '@opentelemetry/auto-instrumentations-node is not installed. Install it as a peer dependency to use the integrations option.',
-      );
+  for (const instrumentation of instrumentations) {
+    if (instrumentation && typeof instrumentation === 'object') {
+      names.add(instrumentation.constructor.name);
     }
-    // Re-throw other errors
-    throw error;
   }
+
+  return names;
 }
 
+/**
+ * Map common instrumentation class names to their package names
+ * Used to disable auto-instrumentations when user provides manual configs
+ */
+const INSTRUMENTATION_CLASS_TO_PACKAGE: Record<string, string> = {
+  HttpInstrumentation: '@opentelemetry/instrumentation-http',
+  HttpsInstrumentation: '@opentelemetry/instrumentation-http',
+  ExpressInstrumentation: '@opentelemetry/instrumentation-express',
+  FastifyInstrumentation: '@opentelemetry/instrumentation-fastify',
+  MongoDBInstrumentation: '@opentelemetry/instrumentation-mongodb',
+  MongooseInstrumentation: '@opentelemetry/instrumentation-mongoose',
+  PrismaInstrumentation: '@opentelemetry/instrumentation-prisma',
+  PinoInstrumentation: '@opentelemetry/instrumentation-pino',
+  WinstonInstrumentation: '@opentelemetry/instrumentation-winston',
+  RedisInstrumentation: '@opentelemetry/instrumentation-redis',
+  GraphQLInstrumentation: '@opentelemetry/instrumentation-graphql',
+  GrpcInstrumentation: '@opentelemetry/instrumentation-grpc',
+  IORedisInstrumentation: '@opentelemetry/instrumentation-ioredis',
+  KnexInstrumentation: '@opentelemetry/instrumentation-knex',
+  NestJsInstrumentation: '@opentelemetry/instrumentation-nestjs-core',
+  PgInstrumentation: '@opentelemetry/instrumentation-pg',
+  MySQLInstrumentation: '@opentelemetry/instrumentation-mysql',
+  MySQL2Instrumentation: '@opentelemetry/instrumentation-mysql2',
+};
+
+/**
+ * Get auto-instrumentations based on simple integration names
+ * Excludes instrumentations that are manually provided to avoid conflicts
+ */
 function getAutoInstrumentations(
   integrations: string[] | boolean | Record<string, { enabled?: boolean }>,
+  manualInstrumentationNames: Set<string> = new Set(),
 ): unknown[] {
   if (integrations === false) {
     return [];
   }
 
-  ensureAutoInstrumentationsModule();
-
-  if (!getNodeAutoInstrumentations) {
-    throw new AutoInstrumentationsNotFoundError(
-      'Unable to load @opentelemetry/auto-instrumentations-node',
-    );
+  // Build exclusion config for manual instrumentations
+  const exclusionConfig: Record<string, { enabled: boolean }> = {};
+  for (const className of manualInstrumentationNames) {
+    const packageName = INSTRUMENTATION_CLASS_TO_PACKAGE[className];
+    if (packageName) {
+      exclusionConfig[packageName] = { enabled: false };
+    }
   }
 
   if (integrations === true) {
+    // If exclusions exist, pass them to getNodeAutoInstrumentations
+    if (Object.keys(exclusionConfig).length > 0) {
+      return getNodeAutoInstrumentations(exclusionConfig);
+    }
     return getNodeAutoInstrumentations();
   }
 
   if (Array.isArray(integrations)) {
-    const config: Record<string, { enabled: boolean }> = {};
+    const config: Record<string, { enabled: boolean }> = { ...exclusionConfig };
     for (const name of integrations) {
       const packageName = `@opentelemetry/instrumentation-${name}`;
-      config[packageName] = { enabled: true };
+      // Don't override exclusions
+      if (!exclusionConfig[packageName]) {
+        config[packageName] = { enabled: true };
+      }
     }
     return getNodeAutoInstrumentations(config);
   }
 
-  const config: Record<string, { enabled?: boolean }> = {};
-  for (const [name, options] of Object.entries(integrations)) {
-    const packageName = `@opentelemetry/instrumentation-${name}`;
-    config[packageName] = options;
+  const config: Record<string, { enabled?: boolean }> = {
+    ...exclusionConfig,
+    ...integrations,
+  };
+
+  // Override any integrations that conflict with manual instrumentations
+  for (const packageName of Object.keys(exclusionConfig)) {
+    const integrationsKey = Object.keys(integrations).find((key) =>
+      packageName.includes(key),
+    );
+    if (integrationsKey) {
+      // Manual instrumentation takes precedence
+      config[packageName] = { enabled: false };
+    }
   }
+
   return getNodeAutoInstrumentations(config);
 }
 

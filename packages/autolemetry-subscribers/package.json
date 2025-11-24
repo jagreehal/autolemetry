@@ -9,43 +9,53 @@
   "exports": {
     ".": {
       "types": "./dist/index.d.ts",
-      "import": "./dist/index.js"
+      "import": "./dist/index.js",
+      "require": "./dist/index.cjs"
     },
     "./posthog": {
       "types": "./dist/posthog.d.ts",
-      "import": "./dist/posthog.js"
+      "import": "./dist/posthog.js",
+      "require": "./dist/posthog.cjs"
     },
     "./mixpanel": {
       "types": "./dist/mixpanel.d.ts",
-      "import": "./dist/mixpanel.js"
+      "import": "./dist/mixpanel.js",
+      "require": "./dist/mixpanel.cjs"
     },
     "./segment": {
       "types": "./dist/segment.d.ts",
-      "import": "./dist/segment.js"
+      "import": "./dist/segment.js",
+      "require": "./dist/segment.cjs"
     },
     "./amplitude": {
       "types": "./dist/amplitude.d.ts",
-      "import": "./dist/amplitude.js"
+      "import": "./dist/amplitude.js",
+      "require": "./dist/amplitude.cjs"
     },
     "./webhook": {
       "types": "./dist/webhook.d.ts",
-      "import": "./dist/webhook.js"
+      "import": "./dist/webhook.js",
+      "require": "./dist/webhook.cjs"
     },
     "./slack": {
       "types": "./dist/slack.d.ts",
-      "import": "./dist/slack.js"
+      "import": "./dist/slack.js",
+      "require": "./dist/slack.cjs"
     },
     "./factories": {
       "types": "./dist/factories.d.ts",
-      "import": "./dist/factories.js"
+      "import": "./dist/factories.js",
+      "require": "./dist/factories.cjs"
     },
     "./middleware": {
       "types": "./dist/middleware.d.ts",
-      "import": "./dist/middleware.js"
+      "import": "./dist/middleware.js",
+      "require": "./dist/middleware.cjs"
     },
     "./testing": {
       "types": "./dist/testing/index.d.ts",
-      "import": "./dist/testing/index.js"
+      "import": "./dist/testing/index.js",
+      "require": "./dist/testing/index.cjs"
     }
   },
   "files": [

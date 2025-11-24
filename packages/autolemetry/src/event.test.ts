@@ -538,7 +538,7 @@ describe('Events', () => {
       const { span } = await import('./functional');
 
       const operation = trace('order.process', async () => {
-        await span({ name: 'order.validate' }, async () => {
+        span({ name: 'order.validate' }, () => {
           // Should capture the innermost operation name
           event.trackEvent('order.validated', { orderId: 'ord_123' });
         });
@@ -660,7 +660,7 @@ describe('Events', () => {
 
         // Then create a nested span
         const { span } = await import('./functional');
-        await span({ name: 'child.operation' }, async () => {
+        span({ name: 'child.operation' }, () => {
           event.trackEvent('child.event', { step: 2 });
         });
       });
