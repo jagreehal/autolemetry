@@ -1,5 +1,13 @@
 # @jagreehal/example-adpaters
 
+## 1.0.6
+
+### Patch Changes
+
+- Updated dependencies [53bcbaa]
+  - autolemetry@2.1.0
+  - autolemetry-subscribers@4.0.0
+
 ## 1.0.5
 
 ### Patch Changes
