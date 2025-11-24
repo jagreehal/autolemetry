@@ -11,11 +11,28 @@
  */
 
 import 'dotenv/config';
-import { init, trace, Metric, track, type TraceContext } from 'autolemetry';
+import { init, trace, Metric, track, shutdown, type TraceContext } from 'autolemetry';
+
+import pino from 'pino';
+
+const logger = pino({
+  name: 'example',
+  level: 'info',
+  transport: {
+    target: 'pino-pretty',
+    options: {
+      colorize: true,
+      translateTime: 'yyyy-mm-dd HH:MM:ss',
+      ignore: 'pid,hostname',
+    },
+  },
+});
 
 // Initialize autolemetry
 init({
   service: 'example-service',
+  logger,
+  debug: true,
   // OTLP endpoint for Grafana (set via OTLP_ENDPOINT env var)
   endpoint: process.env.OTLP_ENDPOINT || 'http://localhost:4318',
 });
@@ -25,8 +42,7 @@ const metrics = new Metric('example');
 
 // Example: Basic traced function
 export const createUser = trace((ctx) => async (name: string, email: string) => {
-  console.log(`Creating user: ${name} (${email})`);
-  console.log(`Trace ID: ${ctx.traceId}`);
+  logger.info(`Creating user: ${name} (${email})`);
   
   // Set span attributes
   ctx.setAttribute('user.name', name);
@@ -51,7 +67,7 @@ export const createUser = trace((ctx) => async (name: string, email: string) => 
 
 // Example: Function with error handling
 export const processPayment = trace((ctx: TraceContext) => async (amount: number, userId: string) => {
-  console.log(`Processing payment: $${amount} for user ${userId}`);
+  logger.info(`Processing payment: $${amount} for user ${userId}`);
   
   ctx.setAttribute('payment.amount', amount);
   ctx.setAttribute('payment.userId', userId);
@@ -76,14 +92,15 @@ export const processPayment = trace((ctx: TraceContext) => async (amount: number
 
 // Example: Nested traces
 export const createOrder = trace((ctx: TraceContext) => async (userId: string, items: string[]) => {
-  console.log(`Creating order for user ${userId} with ${items.length} items`);
+  logger.info(`Creating order for user ${userId} with ${items.length} items`);
   
   ctx.setAttribute('order.userId', userId);
   ctx.setAttribute('order.itemCount', items.length);
   
   // Create user (nested trace)
   const user = await createUser(`User-${userId}`, `user${userId}@example.com`);
-  
+  logger.info({ user }, '✅ User created');
+
   // Process payment (nested trace)
   const total = items.length * 10;
   const payment = await processPayment(total, userId);
@@ -107,46 +124,41 @@ export const createOrder = trace((ctx: TraceContext) => async (userId: string, i
 
 // Main function to run examples
 async function main() {
-  console.log('🚀 Starting autolemetry example...\n');
+  logger.info('🚀 Starting autolemetry example...\n');
   
   try {
     // Example 1: Create a user
-    console.log('📝 Example 1: Creating user');
+    logger.info('📝 Example 1: Creating user');
     const user = await createUser('Alice', 'alice@example.com');
-    console.log('✅ User created:', user);
-    console.log('');
+    logger.info({ user }, '✅ User created:');
     
     // Example 2: Process payment
-    console.log('💳 Example 2: Processing payment');
+    logger.info('💳 Example 2: Processing payment');
     try {
       const payment = await processPayment(99.99, 'user-123');
-      console.log('✅ Payment processed:', payment);
+      logger.info({ payment }, '✅ Payment processed:');
     } catch (error) {
-      console.log('❌ Payment failed (this is expected sometimes)');
+      logger.error(error, '❌ Payment failed (this is expected sometimes)');
     }
-    console.log('');
     
     // Example 3: Create order (nested traces)
-    console.log('🛒 Example 3: Creating order (with nested traces)');
+    logger.info('🛒 Example 3: Creating order (with nested traces)');
     const order = await createOrder('user-456', ['item1', 'item2', 'item3']);
-    console.log('✅ Order created:', order);
-    console.log('');
+    logger.info({ order }, '✅ Order created:');
     
     // Wait a bit for traces to be exported
-    console.log('⏳ Waiting 2 seconds for traces to be exported...');
-    await new Promise(resolve => setTimeout(resolve, 2000));
     
-    console.log('✅ Examples completed!');
-    console.log('📊 Check your Grafana instance to see the traces and metrics.');
+    logger.info('✅ Examples completed!');
     
   } catch (error) {
-    console.error('❌ Error:', error);
+    logger.error(error, '❌ Error:');
   }
   
   // Gracefully shutdown
+  await shutdown();
   process.exit(0);
 }
 
 // Run if executed directly
-main().catch(console.error);
+main().catch(error => logger.error(error, '❌ Error:'));
 

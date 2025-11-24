@@ -592,11 +592,21 @@ All components implement graceful shutdown:
 - Some OpenTelemetry features unavailable (auto-instrumentations, resource detectors)
 - Context propagation uses minimal AsyncLocalStorage polyfill
 
+### Auto-Instrumentation Requirements
+- **CommonJS is simpler** - No loader hooks required, just use `--require ./instrumentation.js`
+- **ESM requires experimental loader hook** - Use `--experimental-loader=@opentelemetry/instrumentation/hook.mjs --import ./instrumentation.mjs`
+- This is an OpenTelemetry upstream requirement, not an autolemetry limitation
+- Autolemetry itself works identically in both ESM and CJS
+- The loader hook patches module loading to enable instrumentation in ESM environments
+- For tsx users: `NODE_OPTIONS="--experimental-loader=@opentelemetry/instrumentation/hook.mjs --import ./instrumentation.ts" tsx src/server.ts`
+- See OpenTelemetry's official ESM docs for version-specific NODE_OPTIONS configurations
+
 ### Peer Dependencies
-- OpenTelemetry auto-instrumentations are optional peer dependencies
-- Logger integrations (pino, winston) are optional
-- OpenLLMetry integration (@traceloop/node-server-sdk) is optional
-- Missing peer dependencies should gracefully degrade with helpful error messages
+- OpenTelemetry auto-instrumentations are included as a regular dependency (as of v2.1.0)
+- Logger integrations (pino, winston) are optional peer dependencies
+- OpenLLMetry integration (@traceloop/node-server-sdk) is optional peer dependency
+- gRPC exporters are optional peer dependencies
+- Missing optional peer dependencies gracefully degrade with helpful error messages
 
 ### Build Outputs
 - ESM-first with CJS fallback for index.ts only

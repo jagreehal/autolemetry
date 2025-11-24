@@ -467,7 +467,7 @@ describe('Functional API', () => {
       expect(await service.subtract(5, 3)).toBe(2);
     });
 
-    it('should not wrap non-functions', async () => {
+    it('should not wrap non-functions', () => {
       const service = instrument({
         functions: {
           fn: async () => 'function',

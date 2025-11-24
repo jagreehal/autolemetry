@@ -1,35 +1,43 @@
 /**
- * Autolemetry Plugins - OpenTelemetry instrumentation for ORMs/databases without official support
+ * Autolemetry Plugins - OpenTelemetry instrumentation for libraries without official support
  *
- * This package provides instrumentation for databases and ORMs that don't have
- * official OpenTelemetry contrib packages. When official packages exist, users
- * should prefer those instead (e.g., @opentelemetry/instrumentation-mongodb).
+ * This package provides instrumentation for libraries that don't have official OpenTelemetry support
+ * OR where the official support is fundamentally broken.
  *
  * Currently supported:
  * - Drizzle ORM (no official instrumentation available)
+ * - Mongoose (official package broken in ESM+tsx - see mongoose/index.ts for details)
  *
- * For other databases/ORMs with official instrumentation:
- * - MongoDB: Use @opentelemetry/instrumentation-mongodb
- * - Mongoose: Use @opentelemetry/instrumentation-mongoose
- * - PostgreSQL: Use @opentelemetry/instrumentation-pg
- * - MySQL: Use @opentelemetry/instrumentation-mysql2
- * - Redis: Use @opentelemetry/instrumentation-redis
+ * Philosophy:
+ * Only include plugins for libraries that either:
+ * 1. Have NO official instrumentation (e.g., Drizzle ORM)
+ * 2. Have BROKEN official instrumentation (e.g., Mongoose in ESM+tsx)
+ * 3. Add SIGNIFICANT value beyond official packages
+ *
+ * For databases/ORMs with working official instrumentation, use those directly with the --import pattern:
+ * - MongoDB: @opentelemetry/instrumentation-mongodb
+ * - PostgreSQL: @opentelemetry/instrumentation-pg
+ * - MySQL: @opentelemetry/instrumentation-mysql2
+ * - Redis: @opentelemetry/instrumentation-redis
  *
  * See: https://github.com/open-telemetry/opentelemetry-js-contrib
  *
  * @example
  * ```typescript
- * // Import Drizzle plugin
+ * // Drizzle manual instrumentation
  * import { instrumentDrizzleClient } from 'autolemetry-plugins/drizzle';
+ * import { drizzle } from 'drizzle-orm/node-postgres';
  *
- * // For MongoDB, use official instrumentation:
- * import { MongoDBInstrumentation } from '@opentelemetry/instrumentation-mongodb';
- * import { init } from 'autolemetry';
+ * const db = instrumentDrizzleClient(drizzle(pool));
+ * ```
  *
- * init({
- *   service: 'my-app',
- *   instrumentations: [new MongoDBInstrumentation()]
- * });
+ * @example
+ * ```typescript
+ * // Mongoose runtime patching (works in ESM+tsx)
+ * import mongoose from 'mongoose';
+ * import { instrumentMongoose } from 'autolemetry-plugins/mongoose';
+ *
+ * instrumentMongoose(mongoose, { dbName: 'myapp' });
  * ```
  *
  * @packageDocumentation
@@ -50,4 +58,11 @@ export {
   instrumentDrizzle,
   instrumentDrizzleClient,
   type InstrumentDrizzleConfig,
-} from './drizzle/index.js';
+} from './drizzle';
+
+// Re-export Mongoose plugin
+export {
+  instrumentMongoose,
+  MongooseInstrumentation,
+  type MongooseInstrumentationConfig,
+} from './mongoose';

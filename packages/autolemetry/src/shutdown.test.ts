@@ -6,7 +6,7 @@ import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 import { flush, shutdown } from './shutdown';
 import { init } from './init';
 import { track, getEventQueue } from './track';
-import type { EventSubscriber } from './events-adapter';
+import { EventSubscriber } from './event-subscriber';
 
 // Mock adapter for testing
 class MockAdapter implements EventSubscriber {
@@ -94,7 +94,7 @@ describe('shutdown module', () => {
 
     it('should flush OpenTelemetry spans', async () => {
       // Mock tracer provider with forceFlush
-      const mockForceFlush = vi.fn().mockResolvedValue();
+      const mockForceFlush = vi.fn();
       const mockTracerProvider = {
         forceFlush: mockForceFlush,
       };
@@ -145,7 +145,7 @@ describe('shutdown module', () => {
     });
 
     it('should respect custom timeout', async () => {
-      const mockForceFlush = vi.fn().mockResolvedValue();
+      const mockForceFlush = vi.fn();
       const mockTracerProvider = {
         forceFlush: mockForceFlush,
       };

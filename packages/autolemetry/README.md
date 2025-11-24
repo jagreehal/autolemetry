@@ -111,38 +111,6 @@ npm install autolemetry
 pnpm add autolemetry
 ```
 
-**Optional: Auto-Instrumentations**
-
-For automatic tracing of HTTP servers, Express, databases, and more, install the auto-instrumentations package:
-
-```bash
-npm add @opentelemetry/auto-instrumentations-node
-# or
-pnpm add @opentelemetry/auto-instrumentations-node
-```
-
-This is **optional** and only needed if you want to use the `integrations` option in `init()`. The functional API (`trace()`, `span()`) works without it.
-
-<details>
-<summary>When do I need auto-instrumentations?</summary>
-
-**You need it if:**
-
-- You want automatic tracing of ALL HTTP requests, database queries, etc.
-- You're using frameworks like Express, Fastify, NestJS
-- You prefer "batteries included" setup
-
-**You don't need it if:**
-
-- You're using only the functional API (`trace()`, `span()`)
-- You want minimal bundle size
-- You're deploying to edge runtimes (Cloudflare Workers, Vercel Edge)
-- You want selective instrumentation for specific operations only
-
-The auto-instrumentations package includes 47 instrumentation libraries (~104KB) for frameworks, databases, message queues, cloud SDKs, and more. It's optional to keep autolemetry lightweight by default.
-
-</details>
-
 ### 2. Initialize once at startup
 
 ```typescript
@@ -807,6 +775,93 @@ init({
 });
 ```
 
+### ⚠️ Integrations vs. Manual Instrumentations
+
+When using both `integrations` and `instrumentations`, manual instrumentations always take precedence. If you need custom configs (like `requireParentSpan: false` for standalone scripts), use **one or the other**:
+
+#### Option A: Auto-instrumentations only (all defaults)
+
+```typescript
+init({
+  service: 'my-app',
+  integrations: true, // All libraries with default configs
+});
+```
+
+#### Option B: Manual instrumentations with custom configs
+
+```typescript
+import { MongoDBInstrumentation } from '@opentelemetry/instrumentation-mongodb';
+import { MongooseInstrumentation } from '@opentelemetry/instrumentation-mongoose';
+
+init({
+  service: 'my-app',
+  integrations: false, // Must be false to avoid conflicts
+  instrumentations: [
+    new MongoDBInstrumentation({
+      requireParentSpan: false, // Custom config for scripts/cron jobs
+    }),
+    new MongooseInstrumentation({
+      requireParentSpan: false,
+    }),
+  ],
+});
+```
+
+#### Option C: Mix auto + manual (best of both)
+
+```typescript
+import { MongoDBInstrumentation } from '@opentelemetry/instrumentation-mongodb';
+
+init({
+  service: 'my-app',
+  integrations: ['http', 'express'], // Auto for most libraries
+  instrumentations: [
+    // Manual config only for libraries that need custom settings
+    new MongoDBInstrumentation({
+      requireParentSpan: false,
+    }),
+  ],
+});
+```
+
+**Why `requireParentSpan` matters:** Many instrumentations default to `requireParentSpan: true`, which prevents spans from being created in standalone scripts, cron jobs, or background workers without an active parent span. Set it to `false` for these use cases.
+
+### ⚠️ Auto-Instrumentation Setup Requirements
+
+OpenTelemetry's auto-instrumentation packages require special setup depending on your module system:
+
+**CommonJS (Simpler - Recommended)**
+
+No special flags required. Just use `--require`:
+
+```json
+// package.json
+{
+  "type": "commonjs" // or remove "type" field
+}
+```
+
+```bash
+node --require ./instrumentation.js src/server.js
+```
+
+**ESM (Requires Experimental Loader Hook)**
+
+If you need ESM, use the `--experimental-loader` flag:
+
+```bash
+NODE_OPTIONS="--import ./instrumentation.mjs --experimental-loader=@opentelemetry/instrumentation/hook.mjs" node src/server.js
+```
+
+For tsx users:
+
+```bash
+NODE_OPTIONS="--experimental-loader=@opentelemetry/instrumentation/hook.mjs --import ./instrumentation.ts" tsx src/server.ts
+```
+
+**Note:** The loader hook is an OpenTelemetry upstream requirement for ESM, not an autolemetry limitation. Autolemetry itself works identically in both ESM and CJS. See [OpenTelemetry ESM docs](https://opentelemetry.io/docs/languages/js/getting-started/nodejs/#esm-support) for details.
+
 ## Operational Safety & Runtime Controls
 
 - **Adaptive sampling** – 10% baseline, 100% for errors/slow spans by default (override via `sampler`).
@@ -1340,11 +1395,6 @@ Each API is type-safe, works in both ESM and CJS, and is designed to minimize bo
 - **Can I customize everything?** Yes. Override exporters, readers, resources, validation, or even the full NodeSDK via `sdkFactory`.
 - **Does it work in production?** Yes. Adaptive sampling, redaction, validation, rate limiting, and circuit breakers are enabled out of the box.
 - **What about frameworks?** Use decorators, `withTracing()`, or `instrument()` for NestJS, Fastify, Express, Next.js actions, queues, workers, anything in Node.js.
-- **Why do I need to install @opentelemetry/auto-instrumentations-node separately?** Autolemetry is designed to be lightweight and flexible. The auto-instrumentations package bundles 47 instrumentation libraries (~104KB + dependencies). Making it optional means:
-  - Smaller bundles for users who only need functional tracing (`trace()`, `span()`)
-  - No unnecessary dependencies in edge runtimes (autolemetry-edge/autolemetry-cloudflare)
-  - Freedom to choose specific instrumentations instead of the full bundle
-  - If you want the convenience of `integrations: true`, just install it once: `pnpm add @opentelemetry/auto-instrumentations-node`
 
 **Next steps:**
 
