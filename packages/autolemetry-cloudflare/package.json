@@ -34,6 +34,14 @@
     "./testing": {
       "types": "./dist/testing.d.ts",
       "import": "./dist/testing.js"
+    },
+    "./actors": {
+      "types": "./dist/actors.d.ts",
+      "import": "./dist/actors.js"
+    },
+    "./agents": {
+      "types": "./dist/agents.d.ts",
+      "import": "./dist/agents.js"
     }
   },
   "files": [
