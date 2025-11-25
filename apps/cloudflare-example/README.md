@@ -22,6 +22,8 @@ This example demonstrates all features of `autolemetry-edge` for Cloudflare Work
 - ✅ **Traced Functions** - Custom business logic tracing
 - ✅ **Edge Logger** - Structured logging with trace correlation
 - ✅ **Edge Adapters** - Events event tracking
+- ✅ **Cloudflare Actors Integration** - Full lifecycle tracing for @cloudflare/actors (see [Actor Example](#actor-example))
+- ✅ **Cloudflare Agents SDK Integration** - Full observability for Agents SDK RPC, scheduling, and MCP operations (see [Agent Example](#agent-example))
 
 ## Usage
 
@@ -35,6 +37,7 @@ The worker will start on `http://localhost:8787` and automatically connect to yo
 
 ### Endpoints
 
+**Main Worker (`src/worker.ts`):**
 - `GET /` - Basic request processing with attribute extractors
 - `GET /kv` - Demonstrates KV auto-instrumentation with attribute extractors (requires MY_KV binding)
 - `GET /r2` - Demonstrates R2 auto-instrumentation (requires MY_R2 binding)
@@ -44,6 +47,12 @@ The worker will start on `http://localhost:8787` and automatically connect to yo
 - `GET /external` - Demonstrates distributed tracing with automatic context propagation
 - `POST /payment` - Demonstrates error handling with proper span status codes
 - `POST /users` - Demonstrates nested spans with validation and database operations
+
+**Actor Worker (`src/actor-worker.ts`):**
+See [Actor Example](#actor-example) section below for Actor-specific endpoints.
+
+**Agent Worker (`src/agent-worker.ts`):**
+See [Agent Example](#agent-example) section below for Agent-specific RPC methods.
 
 ### Environment Variables
 
@@ -280,6 +289,325 @@ If you prefer using `wrangler.toml`, see `wrangler.toml.example` for a complete 
 - [ ] Test error handling and verify exceptions are recorded
 - [ ] Verify distributed tracing works across services
 - [ ] Monitor telemetry costs and adjust sampling if needed
+
+## Actor Example
+
+This example includes a complete [Cloudflare Actors](https://github.com/cloudflare/actors) integration demonstrating how to use `autolemetry-cloudflare/actors` to get comprehensive tracing of Actor lifecycle methods, storage operations, and alarms.
+
+### Actor Features Demonstrated
+
+- ✅ **Lifecycle Method Tracing** - `onInit`, `onRequest`, `onAlarm` automatically traced
+- ✅ **Storage Operations** - SQL queries automatically traced with full query details
+- ✅ **Alarm Operations** - Alarm scheduling and execution automatically traced
+- ✅ **Persistent Properties** - Property persistence events traced (optional)
+- ✅ **Request Routing** - Root spans for Actor requests with actor name extraction
+- ✅ **Trace Context Propagation** - Automatic propagation from Worker to Actor
+
+### Actor Endpoints
+
+The Actor example (`src/actor-worker.ts`) provides the following endpoints:
+
+- `GET /?name=<actor-name>` - Get current count for an actor instance
+- `POST /increment?name=<actor-name>` - Increment count (with optional `amount` in body)
+- `POST /reset?name=<actor-name>` - Reset count to 0
+- `GET /storage?name=<actor-name>` - Example SQL storage operations
+- `GET /alarms?name=<actor-name>` - Schedule a custom alarm
+
+### Using the Actor Example
+
+#### Option 1: Separate Worker (Recommended)
+
+Create a separate worker for the Actor:
+
+```typescript
+// alchemy.run.ts
+import { Worker } from 'alchemy/cloudflare';
+
+export const actorWorker = await Worker('counter-actor-worker', {
+  entrypoint: './src/actor-worker.ts',
+  compatibilityFlags: ['nodejs_compat'],
+  durableObjects: {
+    bindings: [
+      {
+        name: 'CounterActor',
+        class_name: 'CounterActor',
+      },
+    ],
+  },
+  migrations: [
+    {
+      new_sqlite_classes: ['CounterActor'],
+      tag: 'v1',
+    },
+  ],
+});
+```
+
+#### Option 2: Integrate into Main Worker
+
+You can also route requests to the Actor from your main worker:
+
+```typescript
+// src/worker.ts
+import actorHandler from './actor-worker';
+
+const handler: ExportedHandler<Env> = {
+  async fetch(request, env, ctx) {
+    const url = new URL(request.url);
+    
+    // Route /actor/* requests to the Actor
+    if (url.pathname.startsWith('/actor')) {
+      return actorHandler.fetch(request, env, ctx);
+    }
+    
+    // ... rest of your handler
+  },
+};
+```
+
+### What Gets Traced
+
+1. **Actor Lifecycle Methods:**
+   - `onInit` - Traced with `actor.lifecycle: 'init'` and cold start detection
+   - `onRequest` - Traced with full HTTP semantics (`http.method`, `url.path`, etc.)
+   - `onAlarm` - Traced with `actor.lifecycle: 'alarm'` and `faas.trigger: 'timer'`
+
+2. **Storage Operations:**
+   - All SQL queries via `actor.storage` are automatically traced
+   - Query text, parameters, and results are captured
+   - Spans include `db.system: 'sqlite'` and `db.operation` attributes
+
+3. **Alarm Operations:**
+   - Alarm scheduling via `actor.alarms.set()` is traced
+   - Alarm execution is traced with alarm data
+
+4. **Request Routing:**
+   - Root span created for each request to the Actor
+   - Actor name extracted from request (via `nameFromRequest` static method)
+   - Trace context automatically propagated from Worker to Actor
+
+### Example Usage
+
+```bash
+# Get count for actor named "counter-1"
+curl http://localhost:8787/?name=counter-1
+
+# Increment count by 5
+curl -X POST http://localhost:8787/increment?name=counter-1 \
+  -H "Content-Type: application/json" \
+  -d '{"amount": 5}'
+
+# Reset count
+curl -X POST http://localhost:8787/reset?name=counter-1
+
+# Schedule an alarm
+curl http://localhost:8787/alarms?name=counter-1
+```
+
+### Configuration
+
+The Actor uses the same configuration as the main worker:
+
+```typescript
+export default tracedHandler(CounterActor, (env: Env) => ({
+  exporter: {
+    url: env.OTLP_ENDPOINT || 'http://localhost:4318/v1/traces',
+  },
+  service: {
+    name: 'counter-actor-service',
+  },
+  sampling: {
+    tailSampler: SamplingPresets.production(),
+  },
+  actors: {
+    instrumentStorage: true,    // Trace SQL queries
+    instrumentAlarms: true,     // Trace alarm operations
+    instrumentSockets: true,     // Trace WebSocket operations
+    capturePersistEvents: true,  // Trace property persistence
+  },
+}));
+```
+
+### Actor-Specific Attributes
+
+All Actor spans include these semantic attributes:
+
+- `actor.name` - The name/ID of the actor instance
+- `actor.class` - The class name of the Actor
+- `actor.lifecycle` - The lifecycle event (`init`, `request`, `alarm`, etc.)
+- `actor.coldstart` - Whether this is a cold start
+- `actor.identifier` - The actor identifier (if available)
+
+### See Also
+
+- [Cloudflare Actors Documentation](https://github.com/cloudflare/actors)
+- [autolemetry-cloudflare Actors Integration](../../packages/autolemetry-cloudflare/src/actors/README.md)
+
+## Agent Example
+
+This example includes a complete [Cloudflare Agents SDK](https://github.com/cloudflare/agents) integration demonstrating how to use `autolemetry-cloudflare/agents` to get comprehensive tracing of Agent RPC calls, scheduled tasks, MCP operations, and lifecycle events.
+
+### Agent Features Demonstrated
+
+- ✅ **RPC Method Tracing** - All `@callable()` methods automatically traced
+- ✅ **Scheduled Task Tracing** - Schedule creation, execution, and cancellation traced
+- ✅ **MCP Operations** - Model Context Protocol operations automatically traced
+- ✅ **Lifecycle Events** - Connect and destroy events traced
+- ✅ **Message Events** - Message request/response/clear events traced
+- ✅ **Error Handling** - Errors in RPC methods automatically captured
+
+### Agent RPC Methods
+
+The Agent example (`src/agent.ts`) provides the following RPC methods:
+
+- `processTask(taskName: string, priority?: number)` - Process a task with priority
+- `processTaskWithError(taskName: string)` - Example with error handling
+- `scheduledCleanup()` - Scheduled task example
+- `callMcpServer(serverId: string, method: string, params?: object)` - MCP operation example
+- `sendMessage(recipient: string, message: string)` - Message sending example
+- `getStats()` - Get agent statistics
+
+### Using the Agent Example
+
+#### Option 1: Separate Worker (Recommended)
+
+Create a separate worker for the Agent:
+
+```typescript
+// alchemy.run.ts
+import { Worker, DurableObjectNamespace } from 'alchemy/cloudflare';
+
+const taskAgentNamespace = DurableObjectNamespace('task-agent', {
+  className: 'TaskAgent',
+});
+
+export const agentWorker = await Worker('task-agent-worker', {
+  entrypoint: './src/agent-worker.ts',
+  compatibilityFlags: ['nodejs_compat'],
+  bindings: {
+    TaskAgent: taskAgentNamespace,
+  },
+});
+```
+
+#### Option 2: Integrate into Main Worker
+
+You can also route requests to the Agent from your main worker using the Agents SDK routing.
+
+### What Gets Traced
+
+1. **RPC Calls:**
+   - All methods decorated with `@callable()` are automatically traced
+   - Span name: `agent.rpc {method}`
+   - Attributes include `agent.rpc.method` and `agent.rpc.streaming` (if applicable)
+   - Errors are automatically captured with proper span status
+
+2. **Scheduled Tasks:**
+   - Schedule creation: `agent.schedule.create {callback}`
+   - Schedule execution: `agent.schedule.execute {callback}`
+   - Schedule cancellation: `agent.schedule.cancel {callback}`
+   - Attributes include `agent.schedule.callback` and `agent.schedule.id`
+
+3. **MCP Operations:**
+   - Preconnect: `mcp.preconnect {serverId}`
+   - Connect: `mcp.connect {url}`
+   - Authorize: `mcp.authorize {serverId}`
+   - Discover: `mcp.discover`
+   - Attributes include MCP-specific details (URL, transport, state, etc.)
+
+4. **Lifecycle Events:**
+   - Connect: `agent.connect` with `agent.connection.id`
+   - Destroy: `agent.destroy`
+
+5. **Message Events:**
+   - Request: `agent.message.request`
+   - Response: `agent.message.response`
+   - Clear: `agent.message.clear`
+
+### Configuration
+
+The Agent uses OpenTelemetry observability configured in the constructor:
+
+```typescript
+class TaskAgent extends Agent<Env> {
+  observability;
+
+  constructor(state: DurableObjectState, env: Env) {
+    super(state, env);
+    
+    this.observability = createOtelObservability({
+      exporter: {
+        url: env.OTLP_ENDPOINT || 'http://localhost:4318/v1/traces',
+      },
+      service: {
+        name: 'task-agent-service',
+      },
+      sampling: {
+        tailSampler: SamplingPresets.production(),
+      },
+      agents: {
+        traceRpc: true,           // Trace RPC calls (default: true)
+        traceSchedule: true,      // Trace scheduled tasks (default: true)
+        traceMcp: true,           // Trace MCP operations (default: true)
+        traceStateUpdates: false, // Skip state updates (default: false)
+        traceMessages: true,      // Trace message events (default: true)
+        traceLifecycle: true,     // Trace connect/destroy (default: true)
+      },
+    });
+  }
+}
+```
+
+### Environment-Based Configuration
+
+You can also use environment variables for configuration:
+
+```typescript
+import { createOtelObservabilityFromEnv } from 'autolemetry-cloudflare/agents';
+
+class TaskAgent extends Agent<Env> {
+  observability;
+
+  constructor(state: DurableObjectState, env: Env) {
+    super(state, env);
+    // Automatically reads OTEL_* environment variables
+    this.observability = createOtelObservabilityFromEnv(env);
+  }
+}
+```
+
+Environment variables:
+- `OTEL_EXPORTER_OTLP_ENDPOINT` - OTLP exporter URL
+- `OTEL_EXPORTER_OTLP_HEADERS` - Headers as comma-separated key=value pairs
+- `OTEL_SERVICE_NAME` - Service name (defaults to 'cloudflare-agent')
+
+### Agent-Specific Attributes
+
+All Agent spans include these semantic attributes:
+
+- `agent.event.type` - The event type (rpc, schedule:create, mcp:client:connect, etc.)
+- `agent.event.id` - Unique event identifier
+- `agent.rpc.method` - RPC method name (for RPC events)
+- `agent.rpc.streaming` - Whether the RPC is streaming (for RPC events)
+- `agent.schedule.callback` - Scheduled callback name (for schedule events)
+- `agent.schedule.id` - Schedule ID (for schedule events)
+- `agent.connection.id` - Connection ID (for connect events)
+- `agent.mcp.*` - MCP-specific attributes (server_id, url, transport, state, etc.)
+
+### Example Usage
+
+The Agents SDK handles RPC routing automatically. You interact with agents via RPC calls:
+
+```typescript
+// From another worker or client
+const agent = env.TaskAgent.get(id);
+const result = await agent.processTask('important-task', 5);
+```
+
+### See Also
+
+- [Cloudflare Agents SDK Documentation](https://github.com/cloudflare/agents)
+- [autolemetry-cloudflare Agents Integration](../../packages/autolemetry-cloudflare/src/agents/README.md)
 
 ## Comparison with Other Examples
 

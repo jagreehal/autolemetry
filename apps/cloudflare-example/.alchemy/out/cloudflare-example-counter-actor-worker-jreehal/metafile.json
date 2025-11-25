@@ -503,6 +503,409 @@
       ],
       "format": "esm"
     },
+    "../../node_modules/.pnpm/@cloudflare+actors@0.0.1-beta.6/node_modules/@cloudflare/actors/dist/storage/src/sql-schema-migrations.js": {
+      "bytes": 8005,
+      "imports": [
+        {
+          "path": "/Users/jreehal/dev/node-examples/autolemetry/node_modules/.pnpm/alchemy@0.78.0_@libsql+client@0.15.15_drizzle-orm@0.44.7_@cloudflare+workers-types@4.20_aa1fc975f5d7adc8e8577ad56500baa1/node_modules/alchemy/lib/cloudflare/bundle/_virtual_unenv_global_polyfill-@cloudflare-unenv-preset-node-process",
+          "kind": "import-statement",
+          "external": true
+        },
+        {
+          "path": "/Users/jreehal/dev/node-examples/autolemetry/node_modules/.pnpm/alchemy@0.78.0_@libsql+client@0.15.15_drizzle-orm@0.44.7_@cloudflare+workers-types@4.20_aa1fc975f5d7adc8e8577ad56500baa1/node_modules/alchemy/lib/cloudflare/bundle/_virtual_unenv_global_polyfill-@cloudflare-unenv-preset-node-console",
+          "kind": "import-statement",
+          "external": true
+        },
+        {
+          "path": "/Users/jreehal/dev/node-examples/autolemetry/node_modules/.pnpm/@cloudflare+unenv-preset@2.7.7_unenv@2.0.0-rc.21_workerd@1.20251118.0/node_modules/@cloudflare/unenv-preset/dist/runtime/polyfill/performance.mjs",
+          "kind": "import-statement",
+          "external": true
+        },
+        {
+          "path": "<runtime>",
+          "kind": "import-statement",
+          "external": true
+        }
+      ],
+      "format": "esm"
+    },
+    "../../node_modules/.pnpm/@cloudflare+actors@0.0.1-beta.6/node_modules/@cloudflare/actors/dist/storage/src/index.js": {
+      "bytes": 4970,
+      "imports": [
+        {
+          "path": "../../node_modules/.pnpm/@cloudflare+actors@0.0.1-beta.6/node_modules/@cloudflare/actors/dist/storage/src/sql-schema-migrations.js",
+          "kind": "import-statement",
+          "original": "./sql-schema-migrations"
+        },
+        {
+          "path": "/Users/jreehal/dev/node-examples/autolemetry/node_modules/.pnpm/alchemy@0.78.0_@libsql+client@0.15.15_drizzle-orm@0.44.7_@cloudflare+workers-types@4.20_aa1fc975f5d7adc8e8577ad56500baa1/node_modules/alchemy/lib/cloudflare/bundle/_virtual_unenv_global_polyfill-@cloudflare-unenv-preset-node-process",
+          "kind": "import-statement",
+          "external": true
+        },
+        {
+          "path": "/Users/jreehal/dev/node-examples/autolemetry/node_modules/.pnpm/alchemy@0.78.0_@libsql+client@0.15.15_drizzle-orm@0.44.7_@cloudflare+workers-types@4.20_aa1fc975f5d7adc8e8577ad56500baa1/node_modules/alchemy/lib/cloudflare/bundle/_virtual_unenv_global_polyfill-@cloudflare-unenv-preset-node-console",
+          "kind": "import-statement",
+          "external": true
+        },
+        {
+          "path": "/Users/jreehal/dev/node-examples/autolemetry/node_modules/.pnpm/@cloudflare+unenv-preset@2.7.7_unenv@2.0.0-rc.21_workerd@1.20251118.0/node_modules/@cloudflare/unenv-preset/dist/runtime/polyfill/performance.mjs",
+          "kind": "import-statement",
+          "external": true
+        },
+        {
+          "path": "<runtime>",
+          "kind": "import-statement",
+          "external": true
+        }
+      ],
+      "format": "esm"
+    },
+    "../../node_modules/.pnpm/cron-schedule@5.0.4/node_modules/cron-schedule/dist/utils.js": {
+      "bytes": 2353,
+      "imports": [
+        {
+          "path": "/Users/jreehal/dev/node-examples/autolemetry/node_modules/.pnpm/alchemy@0.78.0_@libsql+client@0.15.15_drizzle-orm@0.44.7_@cloudflare+workers-types@4.20_aa1fc975f5d7adc8e8577ad56500baa1/node_modules/alchemy/lib/cloudflare/bundle/_virtual_unenv_global_polyfill-@cloudflare-unenv-preset-node-process",
+          "kind": "import-statement",
+          "external": true
+        },
+        {
+          "path": "/Users/jreehal/dev/node-examples/autolemetry/node_modules/.pnpm/alchemy@0.78.0_@libsql+client@0.15.15_drizzle-orm@0.44.7_@cloudflare+workers-types@4.20_aa1fc975f5d7adc8e8577ad56500baa1/node_modules/alchemy/lib/cloudflare/bundle/_virtual_unenv_global_polyfill-@cloudflare-unenv-preset-node-console",
+          "kind": "import-statement",
+          "external": true
+        },
+        {
+          "path": "/Users/jreehal/dev/node-examples/autolemetry/node_modules/.pnpm/@cloudflare+unenv-preset@2.7.7_unenv@2.0.0-rc.21_workerd@1.20251118.0/node_modules/@cloudflare/unenv-preset/dist/runtime/polyfill/performance.mjs",
+          "kind": "import-statement",
+          "external": true
+        },
+        {
+          "path": "<runtime>",
+          "kind": "import-statement",
+          "external": true
+        }
+      ],
+      "format": "esm"
+    },
+    "../../node_modules/.pnpm/cron-schedule@5.0.4/node_modules/cron-schedule/dist/cron.js": {
+      "bytes": 18586,
+      "imports": [
+        {
+          "path": "../../node_modules/.pnpm/cron-schedule@5.0.4/node_modules/cron-schedule/dist/utils.js",
+          "kind": "import-statement",
+          "original": "./utils.js"
+        },
+        {
+          "path": "/Users/jreehal/dev/node-examples/autolemetry/node_modules/.pnpm/alchemy@0.78.0_@libsql+client@0.15.15_drizzle-orm@0.44.7_@cloudflare+workers-types@4.20_aa1fc975f5d7adc8e8577ad56500baa1/node_modules/alchemy/lib/cloudflare/bundle/_virtual_unenv_global_polyfill-@cloudflare-unenv-preset-node-process",
+          "kind": "import-statement",
+          "external": true
+        },
+        {
+          "path": "/Users/jreehal/dev/node-examples/autolemetry/node_modules/.pnpm/alchemy@0.78.0_@libsql+client@0.15.15_drizzle-orm@0.44.7_@cloudflare+workers-types@4.20_aa1fc975f5d7adc8e8577ad56500baa1/node_modules/alchemy/lib/cloudflare/bundle/_virtual_unenv_global_polyfill-@cloudflare-unenv-preset-node-console",
+          "kind": "import-statement",
+          "external": true
+        },
+        {
+          "path": "/Users/jreehal/dev/node-examples/autolemetry/node_modules/.pnpm/@cloudflare+unenv-preset@2.7.7_unenv@2.0.0-rc.21_workerd@1.20251118.0/node_modules/@cloudflare/unenv-preset/dist/runtime/polyfill/performance.mjs",
+          "kind": "import-statement",
+          "external": true
+        },
+        {
+          "path": "<runtime>",
+          "kind": "import-statement",
+          "external": true
+        }
+      ],
+      "format": "esm"
+    },
+    "../../node_modules/.pnpm/cron-schedule@5.0.4/node_modules/cron-schedule/dist/cron-parser.js": {
+      "bytes": 6583,
+      "imports": [
+        {
+          "path": "../../node_modules/.pnpm/cron-schedule@5.0.4/node_modules/cron-schedule/dist/cron.js",
+          "kind": "import-statement",
+          "original": "./cron.js"
+        },
+        {
+          "path": "/Users/jreehal/dev/node-examples/autolemetry/node_modules/.pnpm/alchemy@0.78.0_@libsql+client@0.15.15_drizzle-orm@0.44.7_@cloudflare+workers-types@4.20_aa1fc975f5d7adc8e8577ad56500baa1/node_modules/alchemy/lib/cloudflare/bundle/_virtual_unenv_global_polyfill-@cloudflare-unenv-preset-node-process",
+          "kind": "import-statement",
+          "external": true
+        },
+        {
+          "path": "/Users/jreehal/dev/node-examples/autolemetry/node_modules/.pnpm/alchemy@0.78.0_@libsql+client@0.15.15_drizzle-orm@0.44.7_@cloudflare+workers-types@4.20_aa1fc975f5d7adc8e8577ad56500baa1/node_modules/alchemy/lib/cloudflare/bundle/_virtual_unenv_global_polyfill-@cloudflare-unenv-preset-node-console",
+          "kind": "import-statement",
+          "external": true
+        },
+        {
+          "path": "/Users/jreehal/dev/node-examples/autolemetry/node_modules/.pnpm/@cloudflare+unenv-preset@2.7.7_unenv@2.0.0-rc.21_workerd@1.20251118.0/node_modules/@cloudflare/unenv-preset/dist/runtime/polyfill/performance.mjs",
+          "kind": "import-statement",
+          "external": true
+        },
+        {
+          "path": "<runtime>",
+          "kind": "import-statement",
+          "external": true
+        }
+      ],
+      "format": "esm"
+    },
+    "../../node_modules/.pnpm/cron-schedule@5.0.4/node_modules/cron-schedule/dist/index.js": {
+      "bytes": 94,
+      "imports": [
+        {
+          "path": "../../node_modules/.pnpm/cron-schedule@5.0.4/node_modules/cron-schedule/dist/cron-parser.js",
+          "kind": "import-statement",
+          "original": "./cron-parser.js"
+        },
+        {
+          "path": "../../node_modules/.pnpm/cron-schedule@5.0.4/node_modules/cron-schedule/dist/cron.js",
+          "kind": "import-statement",
+          "original": "./cron.js"
+        },
+        {
+          "path": "/Users/jreehal/dev/node-examples/autolemetry/node_modules/.pnpm/alchemy@0.78.0_@libsql+client@0.15.15_drizzle-orm@0.44.7_@cloudflare+workers-types@4.20_aa1fc975f5d7adc8e8577ad56500baa1/node_modules/alchemy/lib/cloudflare/bundle/_virtual_unenv_global_polyfill-@cloudflare-unenv-preset-node-process",
+          "kind": "import-statement",
+          "external": true
+        },
+        {
+          "path": "/Users/jreehal/dev/node-examples/autolemetry/node_modules/.pnpm/alchemy@0.78.0_@libsql+client@0.15.15_drizzle-orm@0.44.7_@cloudflare+workers-types@4.20_aa1fc975f5d7adc8e8577ad56500baa1/node_modules/alchemy/lib/cloudflare/bundle/_virtual_unenv_global_polyfill-@cloudflare-unenv-preset-node-console",
+          "kind": "import-statement",
+          "external": true
+        },
+        {
+          "path": "/Users/jreehal/dev/node-examples/autolemetry/node_modules/.pnpm/@cloudflare+unenv-preset@2.7.7_unenv@2.0.0-rc.21_workerd@1.20251118.0/node_modules/@cloudflare/unenv-preset/dist/runtime/polyfill/performance.mjs",
+          "kind": "import-statement",
+          "external": true
+        }
+      ],
+      "format": "esm"
+    },
+    "../../node_modules/.pnpm/nanoid@5.1.6/node_modules/nanoid/url-alphabet/index.js": {
+      "bytes": 96,
+      "imports": [
+        {
+          "path": "/Users/jreehal/dev/node-examples/autolemetry/node_modules/.pnpm/alchemy@0.78.0_@libsql+client@0.15.15_drizzle-orm@0.44.7_@cloudflare+workers-types@4.20_aa1fc975f5d7adc8e8577ad56500baa1/node_modules/alchemy/lib/cloudflare/bundle/_virtual_unenv_global_polyfill-@cloudflare-unenv-preset-node-process",
+          "kind": "import-statement",
+          "external": true
+        },
+        {
+          "path": "/Users/jreehal/dev/node-examples/autolemetry/node_modules/.pnpm/alchemy@0.78.0_@libsql+client@0.15.15_drizzle-orm@0.44.7_@cloudflare+workers-types@4.20_aa1fc975f5d7adc8e8577ad56500baa1/node_modules/alchemy/lib/cloudflare/bundle/_virtual_unenv_global_polyfill-@cloudflare-unenv-preset-node-console",
+          "kind": "import-statement",
+          "external": true
+        },
+        {
+          "path": "/Users/jreehal/dev/node-examples/autolemetry/node_modules/.pnpm/@cloudflare+unenv-preset@2.7.7_unenv@2.0.0-rc.21_workerd@1.20251118.0/node_modules/@cloudflare/unenv-preset/dist/runtime/polyfill/performance.mjs",
+          "kind": "import-statement",
+          "external": true
+        }
+      ],
+      "format": "esm"
+    },
+    "../../node_modules/.pnpm/nanoid@5.1.6/node_modules/nanoid/index.browser.js": {
+      "bytes": 973,
+      "imports": [
+        {
+          "path": "../../node_modules/.pnpm/nanoid@5.1.6/node_modules/nanoid/url-alphabet/index.js",
+          "kind": "import-statement",
+          "original": "./url-alphabet/index.js"
+        },
+        {
+          "path": "../../node_modules/.pnpm/nanoid@5.1.6/node_modules/nanoid/url-alphabet/index.js",
+          "kind": "import-statement",
+          "original": "./url-alphabet/index.js"
+        },
+        {
+          "path": "/Users/jreehal/dev/node-examples/autolemetry/node_modules/.pnpm/alchemy@0.78.0_@libsql+client@0.15.15_drizzle-orm@0.44.7_@cloudflare+workers-types@4.20_aa1fc975f5d7adc8e8577ad56500baa1/node_modules/alchemy/lib/cloudflare/bundle/_virtual_unenv_global_polyfill-@cloudflare-unenv-preset-node-process",
+          "kind": "import-statement",
+          "external": true
+        },
+        {
+          "path": "/Users/jreehal/dev/node-examples/autolemetry/node_modules/.pnpm/alchemy@0.78.0_@libsql+client@0.15.15_drizzle-orm@0.44.7_@cloudflare+workers-types@4.20_aa1fc975f5d7adc8e8577ad56500baa1/node_modules/alchemy/lib/cloudflare/bundle/_virtual_unenv_global_polyfill-@cloudflare-unenv-preset-node-console",
+          "kind": "import-statement",
+          "external": true
+        },
+        {
+          "path": "/Users/jreehal/dev/node-examples/autolemetry/node_modules/.pnpm/@cloudflare+unenv-preset@2.7.7_unenv@2.0.0-rc.21_workerd@1.20251118.0/node_modules/@cloudflare/unenv-preset/dist/runtime/polyfill/performance.mjs",
+          "kind": "import-statement",
+          "external": true
+        },
+        {
+          "path": "<runtime>",
+          "kind": "import-statement",
+          "external": true
+        }
+      ],
+      "format": "esm"
+    },
+    "../../node_modules/.pnpm/@cloudflare+actors@0.0.1-beta.6/node_modules/@cloudflare/actors/dist/alarms/src/index.js": {
+      "bytes": 10569,
+      "imports": [
+        {
+          "path": "../../node_modules/.pnpm/cron-schedule@5.0.4/node_modules/cron-schedule/dist/index.js",
+          "kind": "import-statement",
+          "original": "cron-schedule"
+        },
+        {
+          "path": "../../node_modules/.pnpm/nanoid@5.1.6/node_modules/nanoid/index.browser.js",
+          "kind": "import-statement",
+          "original": "nanoid"
+        },
+        {
+          "path": "/Users/jreehal/dev/node-examples/autolemetry/node_modules/.pnpm/alchemy@0.78.0_@libsql+client@0.15.15_drizzle-orm@0.44.7_@cloudflare+workers-types@4.20_aa1fc975f5d7adc8e8577ad56500baa1/node_modules/alchemy/lib/cloudflare/bundle/_virtual_unenv_global_polyfill-@cloudflare-unenv-preset-node-process",
+          "kind": "import-statement",
+          "external": true
+        },
+        {
+          "path": "/Users/jreehal/dev/node-examples/autolemetry/node_modules/.pnpm/alchemy@0.78.0_@libsql+client@0.15.15_drizzle-orm@0.44.7_@cloudflare+workers-types@4.20_aa1fc975f5d7adc8e8577ad56500baa1/node_modules/alchemy/lib/cloudflare/bundle/_virtual_unenv_global_polyfill-@cloudflare-unenv-preset-node-console",
+          "kind": "import-statement",
+          "external": true
+        },
+        {
+          "path": "/Users/jreehal/dev/node-examples/autolemetry/node_modules/.pnpm/@cloudflare+unenv-preset@2.7.7_unenv@2.0.0-rc.21_workerd@1.20251118.0/node_modules/@cloudflare/unenv-preset/dist/runtime/polyfill/performance.mjs",
+          "kind": "import-statement",
+          "external": true
+        },
+        {
+          "path": "<runtime>",
+          "kind": "import-statement",
+          "external": true
+        }
+      ],
+      "format": "esm"
+    },
+    "../../node_modules/.pnpm/@cloudflare+actors@0.0.1-beta.6/node_modules/@cloudflare/actors/dist/sockets/src/index.js": {
+      "bytes": 3504,
+      "imports": [
+        {
+          "path": "/Users/jreehal/dev/node-examples/autolemetry/node_modules/.pnpm/alchemy@0.78.0_@libsql+client@0.15.15_drizzle-orm@0.44.7_@cloudflare+workers-types@4.20_aa1fc975f5d7adc8e8577ad56500baa1/node_modules/alchemy/lib/cloudflare/bundle/_virtual_unenv_global_polyfill-@cloudflare-unenv-preset-node-process",
+          "kind": "import-statement",
+          "external": true
+        },
+        {
+          "path": "/Users/jreehal/dev/node-examples/autolemetry/node_modules/.pnpm/alchemy@0.78.0_@libsql+client@0.15.15_drizzle-orm@0.44.7_@cloudflare+workers-types@4.20_aa1fc975f5d7adc8e8577ad56500baa1/node_modules/alchemy/lib/cloudflare/bundle/_virtual_unenv_global_polyfill-@cloudflare-unenv-preset-node-console",
+          "kind": "import-statement",
+          "external": true
+        },
+        {
+          "path": "/Users/jreehal/dev/node-examples/autolemetry/node_modules/.pnpm/@cloudflare+unenv-preset@2.7.7_unenv@2.0.0-rc.21_workerd@1.20251118.0/node_modules/@cloudflare/unenv-preset/dist/runtime/polyfill/performance.mjs",
+          "kind": "import-statement",
+          "external": true
+        },
+        {
+          "path": "<runtime>",
+          "kind": "import-statement",
+          "external": true
+        }
+      ],
+      "format": "esm"
+    },
+    "../../node_modules/.pnpm/@cloudflare+actors@0.0.1-beta.6/node_modules/@cloudflare/actors/dist/core/src/persist.js": {
+      "bytes": 23711,
+      "imports": [
+        {
+          "path": "/Users/jreehal/dev/node-examples/autolemetry/node_modules/.pnpm/alchemy@0.78.0_@libsql+client@0.15.15_drizzle-orm@0.44.7_@cloudflare+workers-types@4.20_aa1fc975f5d7adc8e8577ad56500baa1/node_modules/alchemy/lib/cloudflare/bundle/_virtual_unenv_global_polyfill-@cloudflare-unenv-preset-node-process",
+          "kind": "import-statement",
+          "external": true
+        },
+        {
+          "path": "/Users/jreehal/dev/node-examples/autolemetry/node_modules/.pnpm/alchemy@0.78.0_@libsql+client@0.15.15_drizzle-orm@0.44.7_@cloudflare+workers-types@4.20_aa1fc975f5d7adc8e8577ad56500baa1/node_modules/alchemy/lib/cloudflare/bundle/_virtual_unenv_global_polyfill-@cloudflare-unenv-preset-node-console",
+          "kind": "import-statement",
+          "external": true
+        },
+        {
+          "path": "/Users/jreehal/dev/node-examples/autolemetry/node_modules/.pnpm/@cloudflare+unenv-preset@2.7.7_unenv@2.0.0-rc.21_workerd@1.20251118.0/node_modules/@cloudflare/unenv-preset/dist/runtime/polyfill/performance.mjs",
+          "kind": "import-statement",
+          "external": true
+        },
+        {
+          "path": "<runtime>",
+          "kind": "import-statement",
+          "external": true
+        }
+      ],
+      "format": "esm"
+    },
+    "../../node_modules/.pnpm/@cloudflare+actors@0.0.1-beta.6/node_modules/@cloudflare/actors/dist/core/src/retries.js": {
+      "bytes": 3999,
+      "imports": [
+        {
+          "path": "/Users/jreehal/dev/node-examples/autolemetry/node_modules/.pnpm/alchemy@0.78.0_@libsql+client@0.15.15_drizzle-orm@0.44.7_@cloudflare+workers-types@4.20_aa1fc975f5d7adc8e8577ad56500baa1/node_modules/alchemy/lib/cloudflare/bundle/_virtual_unenv_global_polyfill-@cloudflare-unenv-preset-node-process",
+          "kind": "import-statement",
+          "external": true
+        },
+        {
+          "path": "/Users/jreehal/dev/node-examples/autolemetry/node_modules/.pnpm/alchemy@0.78.0_@libsql+client@0.15.15_drizzle-orm@0.44.7_@cloudflare+workers-types@4.20_aa1fc975f5d7adc8e8577ad56500baa1/node_modules/alchemy/lib/cloudflare/bundle/_virtual_unenv_global_polyfill-@cloudflare-unenv-preset-node-console",
+          "kind": "import-statement",
+          "external": true
+        },
+        {
+          "path": "/Users/jreehal/dev/node-examples/autolemetry/node_modules/.pnpm/@cloudflare+unenv-preset@2.7.7_unenv@2.0.0-rc.21_workerd@1.20251118.0/node_modules/@cloudflare/unenv-preset/dist/runtime/polyfill/performance.mjs",
+          "kind": "import-statement",
+          "external": true
+        },
+        {
+          "path": "<runtime>",
+          "kind": "import-statement",
+          "external": true
+        }
+      ],
+      "format": "esm"
+    },
+    "../../node_modules/.pnpm/@cloudflare+actors@0.0.1-beta.6/node_modules/@cloudflare/actors/dist/core/src/index.js": {
+      "bytes": 18118,
+      "imports": [
+        {
+          "path": "cloudflare:workers",
+          "kind": "import-statement",
+          "external": true
+        },
+        {
+          "path": "../../node_modules/.pnpm/@cloudflare+actors@0.0.1-beta.6/node_modules/@cloudflare/actors/dist/storage/src/index.js",
+          "kind": "import-statement",
+          "original": "../../storage/src/index"
+        },
+        {
+          "path": "../../node_modules/.pnpm/@cloudflare+actors@0.0.1-beta.6/node_modules/@cloudflare/actors/dist/alarms/src/index.js",
+          "kind": "import-statement",
+          "original": "../../alarms/src/index"
+        },
+        {
+          "path": "../../node_modules/.pnpm/@cloudflare+actors@0.0.1-beta.6/node_modules/@cloudflare/actors/dist/sockets/src/index.js",
+          "kind": "import-statement",
+          "original": "../../sockets/src/index"
+        },
+        {
+          "path": "../../node_modules/.pnpm/@cloudflare+actors@0.0.1-beta.6/node_modules/@cloudflare/actors/dist/core/src/persist.js",
+          "kind": "import-statement",
+          "original": "./persist"
+        },
+        {
+          "path": "../../node_modules/.pnpm/@cloudflare+actors@0.0.1-beta.6/node_modules/@cloudflare/actors/dist/core/src/retries.js",
+          "kind": "import-statement",
+          "original": "./retries"
+        },
+        {
+          "path": "/Users/jreehal/dev/node-examples/autolemetry/node_modules/.pnpm/alchemy@0.78.0_@libsql+client@0.15.15_drizzle-orm@0.44.7_@cloudflare+workers-types@4.20_aa1fc975f5d7adc8e8577ad56500baa1/node_modules/alchemy/lib/cloudflare/bundle/_virtual_unenv_global_polyfill-@cloudflare-unenv-preset-node-process",
+          "kind": "import-statement",
+          "external": true
+        },
+        {
+          "path": "/Users/jreehal/dev/node-examples/autolemetry/node_modules/.pnpm/alchemy@0.78.0_@libsql+client@0.15.15_drizzle-orm@0.44.7_@cloudflare+workers-types@4.20_aa1fc975f5d7adc8e8577ad56500baa1/node_modules/alchemy/lib/cloudflare/bundle/_virtual_unenv_global_polyfill-@cloudflare-unenv-preset-node-console",
+          "kind": "import-statement",
+          "external": true
+        },
+        {
+          "path": "/Users/jreehal/dev/node-examples/autolemetry/node_modules/.pnpm/@cloudflare+unenv-preset@2.7.7_unenv@2.0.0-rc.21_workerd@1.20251118.0/node_modules/@cloudflare/unenv-preset/dist/runtime/polyfill/performance.mjs",
+          "kind": "import-statement",
+          "external": true
+        },
+        {
+          "path": "<runtime>",
+          "kind": "import-statement",
+          "external": true
+        }
+      ],
+      "format": "esm"
+    },
     "../../packages/autolemetry-cloudflare/dist/chunk-SKKRPS5K.js": {
       "bytes": 1175,
       "imports": [
@@ -2034,42 +2437,6 @@
         }
       ],
       "format": "cjs"
-    },
-    "../../packages/autolemetry-cloudflare/dist/chunk-4L7DMWYY.js": {
-      "bytes": 18896,
-      "imports": [
-        {
-          "path": "../../packages/autolemetry-cloudflare/dist/chunk-SKKRPS5K.js",
-          "kind": "import-statement",
-          "original": "./chunk-SKKRPS5K.js"
-        },
-        {
-          "path": "../../node_modules/.pnpm/@opentelemetry+api@1.9.0/node_modules/@opentelemetry/api/build/src/index.js",
-          "kind": "import-statement",
-          "original": "@opentelemetry/api"
-        },
-        {
-          "path": "/Users/jreehal/dev/node-examples/autolemetry/node_modules/.pnpm/alchemy@0.78.0_@libsql+client@0.15.15_drizzle-orm@0.44.7_@cloudflare+workers-types@4.20_aa1fc975f5d7adc8e8577ad56500baa1/node_modules/alchemy/lib/cloudflare/bundle/_virtual_unenv_global_polyfill-@cloudflare-unenv-preset-node-process",
-          "kind": "import-statement",
-          "external": true
-        },
-        {
-          "path": "/Users/jreehal/dev/node-examples/autolemetry/node_modules/.pnpm/alchemy@0.78.0_@libsql+client@0.15.15_drizzle-orm@0.44.7_@cloudflare+workers-types@4.20_aa1fc975f5d7adc8e8577ad56500baa1/node_modules/alchemy/lib/cloudflare/bundle/_virtual_unenv_global_polyfill-@cloudflare-unenv-preset-node-console",
-          "kind": "import-statement",
-          "external": true
-        },
-        {
-          "path": "/Users/jreehal/dev/node-examples/autolemetry/node_modules/.pnpm/@cloudflare+unenv-preset@2.7.7_unenv@2.0.0-rc.21_workerd@1.20251118.0/node_modules/@cloudflare/unenv-preset/dist/runtime/polyfill/performance.mjs",
-          "kind": "import-statement",
-          "external": true
-        },
-        {
-          "path": "<runtime>",
-          "kind": "import-statement",
-          "external": true
-        }
-      ],
-      "format": "esm"
     },
     "../../node_modules/.pnpm/@opentelemetry+core@2.2.0_@opentelemetry+api@1.9.0/node_modules/@opentelemetry/core/build/src/trace/suppress-tracing.js": {
       "bytes": 1404,
@@ -8091,8 +8458,8 @@
       ],
       "format": "esm"
     },
-    "../../packages/autolemetry-cloudflare/dist/chunk-3XK24JK3.js": {
-      "bytes": 9667,
+    "../../packages/autolemetry-cloudflare/dist/actors.js": {
+      "bytes": 37235,
       "imports": [
         {
           "path": "../../packages/autolemetry-cloudflare/dist/chunk-SKKRPS5K.js",
@@ -8126,196 +8493,6 @@
         },
         {
           "path": "<runtime>",
-          "kind": "import-statement",
-          "external": true
-        }
-      ],
-      "format": "esm"
-    },
-    "../../packages/autolemetry-cloudflare/dist/index.js": {
-      "bytes": 18527,
-      "imports": [
-        {
-          "path": "../../packages/autolemetry-cloudflare/dist/chunk-4L7DMWYY.js",
-          "kind": "import-statement",
-          "original": "./chunk-4L7DMWYY.js"
-        },
-        {
-          "path": "../../packages/autolemetry-cloudflare/dist/chunk-4L7DMWYY.js",
-          "kind": "import-statement",
-          "original": "./chunk-4L7DMWYY.js"
-        },
-        {
-          "path": "../../packages/autolemetry-cloudflare/dist/chunk-3XK24JK3.js",
-          "kind": "import-statement",
-          "original": "./chunk-3XK24JK3.js"
-        },
-        {
-          "path": "../../packages/autolemetry-cloudflare/dist/chunk-3XK24JK3.js",
-          "kind": "import-statement",
-          "original": "./chunk-3XK24JK3.js"
-        },
-        {
-          "path": "../../packages/autolemetry-cloudflare/dist/chunk-SKKRPS5K.js",
-          "kind": "import-statement",
-          "original": "./chunk-SKKRPS5K.js"
-        },
-        {
-          "path": "../../packages/autolemetry-edge/dist/index.js",
-          "kind": "import-statement",
-          "original": "autolemetry-edge"
-        },
-        {
-          "path": "../../packages/autolemetry-edge/dist/index.js",
-          "kind": "import-statement",
-          "original": "autolemetry-edge"
-        },
-        {
-          "path": "../../node_modules/.pnpm/@opentelemetry+api@1.9.0/node_modules/@opentelemetry/api/build/src/index.js",
-          "kind": "import-statement",
-          "original": "@opentelemetry/api"
-        },
-        {
-          "path": "../../node_modules/.pnpm/@opentelemetry+resources@2.2.0_@opentelemetry+api@1.9.0/node_modules/@opentelemetry/resources/build/esm/index.js",
-          "kind": "import-statement",
-          "original": "@opentelemetry/resources"
-        },
-        {
-          "path": "/Users/jreehal/dev/node-examples/autolemetry/node_modules/.pnpm/alchemy@0.78.0_@libsql+client@0.15.15_drizzle-orm@0.44.7_@cloudflare+workers-types@4.20_aa1fc975f5d7adc8e8577ad56500baa1/node_modules/alchemy/lib/cloudflare/bundle/_virtual_unenv_global_polyfill-@cloudflare-unenv-preset-node-process",
-          "kind": "import-statement",
-          "external": true
-        },
-        {
-          "path": "/Users/jreehal/dev/node-examples/autolemetry/node_modules/.pnpm/alchemy@0.78.0_@libsql+client@0.15.15_drizzle-orm@0.44.7_@cloudflare+workers-types@4.20_aa1fc975f5d7adc8e8577ad56500baa1/node_modules/alchemy/lib/cloudflare/bundle/_virtual_unenv_global_polyfill-@cloudflare-unenv-preset-node-console",
-          "kind": "import-statement",
-          "external": true
-        },
-        {
-          "path": "/Users/jreehal/dev/node-examples/autolemetry/node_modules/.pnpm/@cloudflare+unenv-preset@2.7.7_unenv@2.0.0-rc.21_workerd@1.20251118.0/node_modules/@cloudflare/unenv-preset/dist/runtime/polyfill/performance.mjs",
-          "kind": "import-statement",
-          "external": true
-        },
-        {
-          "path": "<runtime>",
-          "kind": "import-statement",
-          "external": true
-        }
-      ],
-      "format": "esm"
-    },
-    "../../packages/autolemetry-edge/dist/logger.js": {
-      "bytes": 2402,
-      "imports": [
-        {
-          "path": "../../node_modules/.pnpm/@opentelemetry+api@1.9.0/node_modules/@opentelemetry/api/build/src/index.js",
-          "kind": "import-statement",
-          "original": "@opentelemetry/api"
-        },
-        {
-          "path": "/Users/jreehal/dev/node-examples/autolemetry/node_modules/.pnpm/alchemy@0.78.0_@libsql+client@0.15.15_drizzle-orm@0.44.7_@cloudflare+workers-types@4.20_aa1fc975f5d7adc8e8577ad56500baa1/node_modules/alchemy/lib/cloudflare/bundle/_virtual_unenv_global_polyfill-@cloudflare-unenv-preset-node-process",
-          "kind": "import-statement",
-          "external": true
-        },
-        {
-          "path": "/Users/jreehal/dev/node-examples/autolemetry/node_modules/.pnpm/alchemy@0.78.0_@libsql+client@0.15.15_drizzle-orm@0.44.7_@cloudflare+workers-types@4.20_aa1fc975f5d7adc8e8577ad56500baa1/node_modules/alchemy/lib/cloudflare/bundle/_virtual_unenv_global_polyfill-@cloudflare-unenv-preset-node-console",
-          "kind": "import-statement",
-          "external": true
-        },
-        {
-          "path": "/Users/jreehal/dev/node-examples/autolemetry/node_modules/.pnpm/@cloudflare+unenv-preset@2.7.7_unenv@2.0.0-rc.21_workerd@1.20251118.0/node_modules/@cloudflare/unenv-preset/dist/runtime/polyfill/performance.mjs",
-          "kind": "import-statement",
-          "external": true
-        },
-        {
-          "path": "<runtime>",
-          "kind": "import-statement",
-          "external": true
-        }
-      ],
-      "format": "esm"
-    },
-    "../../packages/autolemetry-cloudflare/dist/logger.js": {
-      "bytes": 110,
-      "imports": [
-        {
-          "path": "../../packages/autolemetry-edge/dist/logger.js",
-          "kind": "import-statement",
-          "original": "autolemetry-edge/logger"
-        },
-        {
-          "path": "/Users/jreehal/dev/node-examples/autolemetry/node_modules/.pnpm/alchemy@0.78.0_@libsql+client@0.15.15_drizzle-orm@0.44.7_@cloudflare+workers-types@4.20_aa1fc975f5d7adc8e8577ad56500baa1/node_modules/alchemy/lib/cloudflare/bundle/_virtual_unenv_global_polyfill-@cloudflare-unenv-preset-node-process",
-          "kind": "import-statement",
-          "external": true
-        },
-        {
-          "path": "/Users/jreehal/dev/node-examples/autolemetry/node_modules/.pnpm/alchemy@0.78.0_@libsql+client@0.15.15_drizzle-orm@0.44.7_@cloudflare+workers-types@4.20_aa1fc975f5d7adc8e8577ad56500baa1/node_modules/alchemy/lib/cloudflare/bundle/_virtual_unenv_global_polyfill-@cloudflare-unenv-preset-node-console",
-          "kind": "import-statement",
-          "external": true
-        },
-        {
-          "path": "/Users/jreehal/dev/node-examples/autolemetry/node_modules/.pnpm/@cloudflare+unenv-preset@2.7.7_unenv@2.0.0-rc.21_workerd@1.20251118.0/node_modules/@cloudflare/unenv-preset/dist/runtime/polyfill/performance.mjs",
-          "kind": "import-statement",
-          "external": true
-        }
-      ],
-      "format": "esm"
-    },
-    "../../packages/autolemetry-edge/dist/events.js": {
-      "bytes": 4845,
-      "imports": [
-        {
-          "path": "../../packages/autolemetry-edge/dist/chunk-ADMIROH3.js",
-          "kind": "import-statement",
-          "original": "./chunk-ADMIROH3.js"
-        },
-        {
-          "path": "../../node_modules/.pnpm/@opentelemetry+api@1.9.0/node_modules/@opentelemetry/api/build/src/index.js",
-          "kind": "import-statement",
-          "original": "@opentelemetry/api"
-        },
-        {
-          "path": "/Users/jreehal/dev/node-examples/autolemetry/node_modules/.pnpm/alchemy@0.78.0_@libsql+client@0.15.15_drizzle-orm@0.44.7_@cloudflare+workers-types@4.20_aa1fc975f5d7adc8e8577ad56500baa1/node_modules/alchemy/lib/cloudflare/bundle/_virtual_unenv_global_polyfill-@cloudflare-unenv-preset-node-process",
-          "kind": "import-statement",
-          "external": true
-        },
-        {
-          "path": "/Users/jreehal/dev/node-examples/autolemetry/node_modules/.pnpm/alchemy@0.78.0_@libsql+client@0.15.15_drizzle-orm@0.44.7_@cloudflare+workers-types@4.20_aa1fc975f5d7adc8e8577ad56500baa1/node_modules/alchemy/lib/cloudflare/bundle/_virtual_unenv_global_polyfill-@cloudflare-unenv-preset-node-console",
-          "kind": "import-statement",
-          "external": true
-        },
-        {
-          "path": "/Users/jreehal/dev/node-examples/autolemetry/node_modules/.pnpm/@cloudflare+unenv-preset@2.7.7_unenv@2.0.0-rc.21_workerd@1.20251118.0/node_modules/@cloudflare/unenv-preset/dist/runtime/polyfill/performance.mjs",
-          "kind": "import-statement",
-          "external": true
-        },
-        {
-          "path": "<runtime>",
-          "kind": "import-statement",
-          "external": true
-        }
-      ],
-      "format": "esm"
-    },
-    "../../packages/autolemetry-cloudflare/dist/events.js": {
-      "bytes": 110,
-      "imports": [
-        {
-          "path": "../../packages/autolemetry-edge/dist/events.js",
-          "kind": "import-statement",
-          "original": "autolemetry-edge/events"
-        },
-        {
-          "path": "/Users/jreehal/dev/node-examples/autolemetry/node_modules/.pnpm/alchemy@0.78.0_@libsql+client@0.15.15_drizzle-orm@0.44.7_@cloudflare+workers-types@4.20_aa1fc975f5d7adc8e8577ad56500baa1/node_modules/alchemy/lib/cloudflare/bundle/_virtual_unenv_global_polyfill-@cloudflare-unenv-preset-node-process",
-          "kind": "import-statement",
-          "external": true
-        },
-        {
-          "path": "/Users/jreehal/dev/node-examples/autolemetry/node_modules/.pnpm/alchemy@0.78.0_@libsql+client@0.15.15_drizzle-orm@0.44.7_@cloudflare+workers-types@4.20_aa1fc975f5d7adc8e8577ad56500baa1/node_modules/alchemy/lib/cloudflare/bundle/_virtual_unenv_global_polyfill-@cloudflare-unenv-preset-node-console",
-          "kind": "import-statement",
-          "external": true
-        },
-        {
-          "path": "/Users/jreehal/dev/node-examples/autolemetry/node_modules/.pnpm/@cloudflare+unenv-preset@2.7.7_unenv@2.0.0-rc.21_workerd@1.20251118.0/node_modules/@cloudflare/unenv-preset/dist/runtime/polyfill/performance.mjs",
           "kind": "import-statement",
           "external": true
         }
@@ -8374,33 +8551,23 @@
       ],
       "format": "esm"
     },
-    "src/worker.ts": {
-      "bytes": 11792,
+    "src/actor.ts": {
+      "bytes": 7235,
       "imports": [
         {
-          "path": "../../packages/autolemetry-cloudflare/dist/index.js",
+          "path": "../../node_modules/.pnpm/@cloudflare+actors@0.0.1-beta.6/node_modules/@cloudflare/actors/dist/core/src/index.js",
           "kind": "import-statement",
-          "original": "autolemetry-cloudflare"
+          "original": "@cloudflare/actors"
         },
         {
-          "path": "../../packages/autolemetry-cloudflare/dist/logger.js",
+          "path": "../../packages/autolemetry-cloudflare/dist/actors.js",
           "kind": "import-statement",
-          "original": "autolemetry-cloudflare/logger"
-        },
-        {
-          "path": "../../packages/autolemetry-cloudflare/dist/events.js",
-          "kind": "import-statement",
-          "original": "autolemetry-cloudflare/events"
+          "original": "autolemetry-cloudflare/actors"
         },
         {
           "path": "../../packages/autolemetry-cloudflare/dist/sampling.js",
           "kind": "import-statement",
           "original": "autolemetry-cloudflare/sampling"
-        },
-        {
-          "path": "../../node_modules/.pnpm/@opentelemetry+api@1.9.0/node_modules/@opentelemetry/api/build/src/index.js",
-          "kind": "import-statement",
-          "original": "@opentelemetry/api"
         },
         {
           "path": "/Users/jreehal/dev/node-examples/autolemetry/node_modules/.pnpm/alchemy@0.78.0_@libsql+client@0.15.15_drizzle-orm@0.44.7_@cloudflare+workers-types@4.20_aa1fc975f5d7adc8e8577ad56500baa1/node_modules/alchemy/lib/cloudflare/bundle/_virtual_unenv_global_polyfill-@cloudflare-unenv-preset-node-process",
@@ -8424,16 +8591,47 @@
         }
       ],
       "format": "esm"
+    },
+    "src/actor-worker.ts": {
+      "bytes": 903,
+      "imports": [
+        {
+          "path": "src/actor.ts",
+          "kind": "import-statement",
+          "original": "./actor"
+        },
+        {
+          "path": "src/actor.ts",
+          "kind": "import-statement",
+          "original": "./actor"
+        },
+        {
+          "path": "/Users/jreehal/dev/node-examples/autolemetry/node_modules/.pnpm/alchemy@0.78.0_@libsql+client@0.15.15_drizzle-orm@0.44.7_@cloudflare+workers-types@4.20_aa1fc975f5d7adc8e8577ad56500baa1/node_modules/alchemy/lib/cloudflare/bundle/_virtual_unenv_global_polyfill-@cloudflare-unenv-preset-node-process",
+          "kind": "import-statement",
+          "external": true
+        },
+        {
+          "path": "/Users/jreehal/dev/node-examples/autolemetry/node_modules/.pnpm/alchemy@0.78.0_@libsql+client@0.15.15_drizzle-orm@0.44.7_@cloudflare+workers-types@4.20_aa1fc975f5d7adc8e8577ad56500baa1/node_modules/alchemy/lib/cloudflare/bundle/_virtual_unenv_global_polyfill-@cloudflare-unenv-preset-node-console",
+          "kind": "import-statement",
+          "external": true
+        },
+        {
+          "path": "/Users/jreehal/dev/node-examples/autolemetry/node_modules/.pnpm/@cloudflare+unenv-preset@2.7.7_unenv@2.0.0-rc.21_workerd@1.20251118.0/node_modules/@cloudflare/unenv-preset/dist/runtime/polyfill/performance.mjs",
+          "kind": "import-statement",
+          "external": true
+        }
+      ],
+      "format": "esm"
     }
   },
   "outputs": {
-    ".alchemy/out/cloudflare-example-hello-worker-jreehal/worker.js.map": {
+    ".alchemy/out/cloudflare-example-counter-actor-worker-jreehal/actor-worker.js.map": {
       "imports": [],
       "exports": [],
       "inputs": {},
-      "bytes": 947437
+      "bytes": 902039
     },
-    ".alchemy/out/cloudflare-example-hello-worker-jreehal/worker.js": {
+    ".alchemy/out/cloudflare-example-counter-actor-worker-jreehal/actor-worker.js": {
       "imports": [
         {
           "path": "node:stream",
@@ -8442,6 +8640,11 @@
         },
         {
           "path": "node:events",
+          "kind": "import-statement",
+          "external": true
+        },
+        {
+          "path": "cloudflare:workers",
           "kind": "import-statement",
           "external": true
         },
@@ -8467,9 +8670,11 @@
         }
       ],
       "exports": [
-        "default"
+        "CounterActor",
+        "default",
+        "handler"
       ],
-      "entryPoint": "src/worker.ts",
+      "entryPoint": "src/actor-worker.ts",
       "inputs": {
         "../../node_modules/.pnpm/unenv@2.0.0-rc.21/node_modules/unenv/dist/runtime/_internal/utils.mjs": {
           "bytesInOutput": 1042
@@ -8532,7 +8737,7 @@
           "bytesInOutput": 3020
         },
         "../../node_modules/.pnpm/@opentelemetry+api@1.9.0/node_modules/@opentelemetry/api/build/src/internal/global-utils.js": {
-          "bytesInOutput": 2659
+          "bytesInOutput": 2653
         },
         "../../node_modules/.pnpm/@opentelemetry+api@1.9.0/node_modules/@opentelemetry/api/build/src/diag/ComponentLogger.js": {
           "bytesInOutput": 1519
@@ -8553,7 +8758,7 @@
           "bytesInOutput": 566
         },
         "../../node_modules/.pnpm/@opentelemetry+api@1.9.0/node_modules/@opentelemetry/api/build/src/baggage/utils.js": {
-          "bytesInOutput": 1382
+          "bytesInOutput": 1380
         },
         "../../node_modules/.pnpm/@opentelemetry+api@1.9.0/node_modules/@opentelemetry/api/build/src/context/context.js": {
           "bytesInOutput": 1663
@@ -8586,13 +8791,13 @@
           "bytesInOutput": 1784
         },
         "../../node_modules/.pnpm/@opentelemetry+api@1.9.0/node_modules/@opentelemetry/api/build/src/trace/context-utils.js": {
-          "bytesInOutput": 1957
+          "bytesInOutput": 1955
         },
         "../../node_modules/.pnpm/@opentelemetry+api@1.9.0/node_modules/@opentelemetry/api/build/src/trace/spancontext-utils.js": {
           "bytesInOutput": 1728
         },
         "../../node_modules/.pnpm/@opentelemetry+api@1.9.0/node_modules/@opentelemetry/api/build/src/trace/NoopTracer.js": {
-          "bytesInOutput": 2537
+          "bytesInOutput": 2534
         },
         "../../node_modules/.pnpm/@opentelemetry+api@1.9.0/node_modules/@opentelemetry/api/build/src/trace/ProxyTracer.js": {
           "bytesInOutput": 1684
@@ -8673,7 +8878,7 @@
           "bytesInOutput": 1616
         },
         "../../node_modules/.pnpm/@opentelemetry+core@2.2.0_@opentelemetry+api@1.9.0/node_modules/@opentelemetry/core/build/src/common/attributes.js": {
-          "bytesInOutput": 2887
+          "bytesInOutput": 2876
         },
         "../../node_modules/.pnpm/@opentelemetry+core@2.2.0_@opentelemetry+api@1.9.0/node_modules/@opentelemetry/core/build/src/common/logging-error-handler.js": {
           "bytesInOutput": 1554
@@ -8730,7 +8935,7 @@
           "bytesInOutput": 2070
         },
         "../../node_modules/.pnpm/@opentelemetry+core@2.2.0_@opentelemetry+api@1.9.0/node_modules/@opentelemetry/core/build/src/common/time.js": {
-          "bytesInOutput": 4862
+          "bytesInOutput": 4856
         },
         "../../node_modules/.pnpm/@opentelemetry+core@2.2.0_@opentelemetry+api@1.9.0/node_modules/@opentelemetry/core/build/src/common/timer-util.js": {
           "bytesInOutput": 686
@@ -8807,23 +9012,53 @@
         "../../node_modules/.pnpm/@opentelemetry+otlp-exporter-base@0.208.0_@opentelemetry+api@1.9.0/node_modules/@opentelemetry/otlp-exporter-base/build/src/index.js": {
           "bytesInOutput": 2265
         },
-        "src/worker.ts": {
-          "bytesInOutput": 10385
+        "src/actor-worker.ts": {
+          "bytesInOutput": 242
         },
-        "../../packages/autolemetry-cloudflare/dist/index.js": {
-          "bytesInOutput": 19664
+        "src/actor.ts": {
+          "bytesInOutput": 5190
         },
-        "../../packages/autolemetry-cloudflare/dist/chunk-4L7DMWYY.js": {
-          "bytesInOutput": 20054
+        "../../node_modules/.pnpm/@cloudflare+actors@0.0.1-beta.6/node_modules/@cloudflare/actors/dist/core/src/index.js": {
+          "bytesInOutput": 9765
         },
-        "../../packages/autolemetry-cloudflare/dist/chunk-SKKRPS5K.js": {
-          "bytesInOutput": 1375
+        "../../node_modules/.pnpm/@cloudflare+actors@0.0.1-beta.6/node_modules/@cloudflare/actors/dist/storage/src/index.js": {
+          "bytesInOutput": 3935
+        },
+        "../../node_modules/.pnpm/@cloudflare+actors@0.0.1-beta.6/node_modules/@cloudflare/actors/dist/storage/src/sql-schema-migrations.js": {
+          "bytesInOutput": 6264
+        },
+        "../../node_modules/.pnpm/@cloudflare+actors@0.0.1-beta.6/node_modules/@cloudflare/actors/dist/alarms/src/index.js": {
+          "bytesInOutput": 8476
+        },
+        "../../node_modules/.pnpm/cron-schedule@5.0.4/node_modules/cron-schedule/dist/cron-parser.js": {
+          "bytesInOutput": 4978
+        },
+        "../../node_modules/.pnpm/cron-schedule@5.0.4/node_modules/cron-schedule/dist/cron.js": {
+          "bytesInOutput": 12952
+        },
+        "../../node_modules/.pnpm/cron-schedule@5.0.4/node_modules/cron-schedule/dist/utils.js": {
+          "bytesInOutput": 827
+        },
+        "../../node_modules/.pnpm/nanoid@5.1.6/node_modules/nanoid/index.browser.js": {
+          "bytesInOutput": 395
+        },
+        "../../node_modules/.pnpm/nanoid@5.1.6/node_modules/nanoid/url-alphabet/index.js": {
+          "bytesInOutput": 257
+        },
+        "../../node_modules/.pnpm/@cloudflare+actors@0.0.1-beta.6/node_modules/@cloudflare/actors/dist/sockets/src/index.js": {
+          "bytesInOutput": 2053
+        },
+        "../../node_modules/.pnpm/@cloudflare+actors@0.0.1-beta.6/node_modules/@cloudflare/actors/dist/core/src/persist.js": {
+          "bytesInOutput": 10525
+        },
+        "../../packages/autolemetry-cloudflare/dist/actors.js": {
+          "bytesInOutput": 4336
         },
         "../../packages/autolemetry-edge/dist/index.js": {
-          "bytesInOutput": 28927
+          "bytesInOutput": 670
         },
         "../../packages/autolemetry-edge/dist/chunk-ADMIROH3.js": {
-          "bytesInOutput": 9816
+          "bytesInOutput": 9638
         },
         "../../node_modules/.pnpm/@opentelemetry+otlp-transformer@0.208.0_@opentelemetry+api@1.9.0/node_modules/@opentelemetry/otlp-transformer/build/esm/index.js": {
           "bytesInOutput": 171
@@ -8837,17 +9072,8 @@
         "../../node_modules/.pnpm/@opentelemetry+otlp-transformer@0.208.0_@opentelemetry+api@1.9.0/node_modules/@opentelemetry/otlp-transformer/build/esm/common/internal.js": {
           "bytesInOutput": 1610
         },
-        "../../node_modules/.pnpm/@opentelemetry+resources@2.2.0_@opentelemetry+api@1.9.0/node_modules/@opentelemetry/resources/build/esm/index.js": {
-          "bytesInOutput": 171
-        },
-        "../../node_modules/.pnpm/@opentelemetry+resources@2.2.0_@opentelemetry+api@1.9.0/node_modules/@opentelemetry/resources/build/esm/ResourceImpl.js": {
-          "bytesInOutput": 4139
-        },
-        "../../node_modules/.pnpm/@opentelemetry+resources@2.2.0_@opentelemetry+api@1.9.0/node_modules/@opentelemetry/resources/build/esm/utils.js": {
-          "bytesInOutput": 330
-        },
         "../../node_modules/.pnpm/@opentelemetry+otlp-transformer@0.208.0_@opentelemetry+api@1.9.0/node_modules/@opentelemetry/otlp-transformer/build/esm/trace/internal.js": {
-          "bytesInOutput": 4850
+          "bytesInOutput": 4833
         },
         "../../node_modules/.pnpm/@opentelemetry+otlp-transformer@0.208.0_@opentelemetry+api@1.9.0/node_modules/@opentelemetry/otlp-transformer/build/esm/trace/json/index.js": {
           "bytesInOutput": 171
@@ -8868,7 +9094,7 @@
           "bytesInOutput": 400
         },
         "../../node_modules/.pnpm/@opentelemetry+sdk-trace-base@2.2.0_@opentelemetry+api@1.9.0/node_modules/@opentelemetry/sdk-trace-base/build/esm/sampler/ParentBasedSampler.js": {
-          "bytesInOutput": 2357
+          "bytesInOutput": 2352
         },
         "../../node_modules/.pnpm/@opentelemetry+sdk-trace-base@2.2.0_@opentelemetry+api@1.9.0/node_modules/@opentelemetry/sdk-trace-base/build/esm/platform/browser/index.js": {
           "bytesInOutput": 171
@@ -8876,17 +9102,11 @@
         "../../node_modules/.pnpm/@opentelemetry+sdk-trace-base@2.2.0_@opentelemetry+api@1.9.0/node_modules/@opentelemetry/sdk-trace-base/build/esm/platform/browser/RandomIdGenerator.js": {
           "bytesInOutput": 1174
         },
-        "../../packages/autolemetry-edge/dist/logger.js": {
-          "bytesInOutput": 2550
-        },
-        "../../packages/autolemetry-edge/dist/events.js": {
-          "bytesInOutput": 5404
-        },
         "../../packages/autolemetry-edge/dist/sampling.js": {
-          "bytesInOutput": 2846
+          "bytesInOutput": 2841
         }
       },
-      "bytes": 444142
+      "bytes": 422761
     }
   }
 }

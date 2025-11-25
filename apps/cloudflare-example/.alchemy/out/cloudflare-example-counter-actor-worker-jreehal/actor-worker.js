@@ -535,10 +535,10 @@ var init_write_stream = __esm({
         callback && callback();
         return false;
       }
-      getColorDepth(env2) {
+      getColorDepth(env3) {
         return 1;
       }
-      hasColors(count3, env2) {
+      hasColors(count3, env3) {
         return false;
       }
       getWindowSize() {
@@ -1293,23 +1293,23 @@ var require_global_utils = __commonJS({
     var major = version_1.VERSION.split(".")[0];
     var GLOBAL_OPENTELEMETRY_API_KEY = Symbol.for(`opentelemetry.js.api.${major}`);
     var _global = platform_1._globalThis;
-    function registerGlobal(type, instance, diag2, allowOverride = false) {
+    function registerGlobal(type, instance, diag, allowOverride = false) {
       var _a;
       const api = _global[GLOBAL_OPENTELEMETRY_API_KEY] = (_a = _global[GLOBAL_OPENTELEMETRY_API_KEY]) !== null && _a !== void 0 ? _a : {
         version: version_1.VERSION
       };
       if (!allowOverride && api[type]) {
         const err = new Error(`@opentelemetry/api: Attempted duplicate registration of API: ${type}`);
-        diag2.error(err.stack || err.message);
+        diag.error(err.stack || err.message);
         return false;
       }
       if (api.version !== version_1.VERSION) {
         const err = new Error(`@opentelemetry/api: Registration of version v${api.version} for ${type} does not match previously registered API v${version_1.VERSION}`);
-        diag2.error(err.stack || err.message);
+        diag.error(err.stack || err.message);
         return false;
       }
       api[type] = instance;
-      diag2.debug(`@opentelemetry/api: Registered a global for ${type} v${version_1.VERSION}.`);
+      diag.debug(`@opentelemetry/api: Registered a global for ${type} v${version_1.VERSION}.`);
       return true;
     }
     __name(registerGlobal, "registerGlobal");
@@ -1324,8 +1324,8 @@ var require_global_utils = __commonJS({
     }
     __name(getGlobal, "getGlobal");
     exports.getGlobal = getGlobal;
-    function unregisterGlobal(type, diag2) {
-      diag2.debug(`@opentelemetry/api: Unregistering a global for ${type} v${version_1.VERSION}.`);
+    function unregisterGlobal(type, diag) {
+      diag.debug(`@opentelemetry/api: Unregistering a global for ${type} v${version_1.VERSION}.`);
       const api = _global[GLOBAL_OPENTELEMETRY_API_KEY];
       if (api) {
         delete api[type];
@@ -1598,7 +1598,7 @@ var require_utils = __commonJS({
     var diag_1 = require_diag();
     var baggage_impl_1 = require_baggage_impl();
     var symbol_1 = require_symbol();
-    var diag2 = diag_1.DiagAPI.instance();
+    var diag = diag_1.DiagAPI.instance();
     function createBaggage(entries = {}) {
       return new baggage_impl_1.BaggageImpl(new Map(Object.entries(entries)));
     }
@@ -1606,7 +1606,7 @@ var require_utils = __commonJS({
     exports.createBaggage = createBaggage;
     function baggageEntryMetadataFromString(str) {
       if (typeof str !== "string") {
-        diag2.error(`Cannot create baggage metadata from unknown type: ${typeof str}`);
+        diag.error(`Cannot create baggage metadata from unknown type: ${typeof str}`);
         str = "";
       }
       return {
@@ -1630,11 +1630,11 @@ var require_context = __commonJS({
     init_performance2();
     Object.defineProperty(exports, "__esModule", { value: true });
     exports.ROOT_CONTEXT = exports.createContextKey = void 0;
-    function createContextKey3(description) {
+    function createContextKey2(description) {
       return Symbol.for(description);
     }
-    __name(createContextKey3, "createContextKey");
-    exports.createContextKey = createContextKey3;
+    __name(createContextKey2, "createContextKey");
+    exports.createContextKey = createContextKey2;
     var BaseContext = class _BaseContext {
       static {
         __name(this, "BaseContext");
@@ -1649,14 +1649,14 @@ var require_context = __commonJS({
         self2._currentContext = parentContext ? new Map(parentContext) : /* @__PURE__ */ new Map();
         self2.getValue = (key) => self2._currentContext.get(key);
         self2.setValue = (key, value) => {
-          const context6 = new _BaseContext(self2._currentContext);
-          context6._currentContext.set(key, value);
-          return context6;
+          const context4 = new _BaseContext(self2._currentContext);
+          context4._currentContext.set(key, value);
+          return context4;
         };
         self2.deleteValue = (key) => {
-          const context6 = new _BaseContext(self2._currentContext);
-          context6._currentContext.delete(key);
-          return context6;
+          const context4 = new _BaseContext(self2._currentContext);
+          context4._currentContext.delete(key);
+          return context4;
         };
       }
     };
@@ -1994,8 +1994,8 @@ var require_context2 = __commonJS({
        * @param thisArg optional receiver to be used for calling fn
        * @param args optional arguments forwarded to fn
        */
-      with(context6, fn, thisArg, ...args) {
-        return this._getContextManager().with(context6, fn, thisArg, ...args);
+      with(context4, fn, thisArg, ...args) {
+        return this._getContextManager().with(context4, fn, thisArg, ...args);
       }
       /**
        * Bind a context to a target function or event emitter
@@ -2003,8 +2003,8 @@ var require_context2 = __commonJS({
        * @param context context to bind to the event emitter or function. Defaults to the currently active context
        * @param target function or event emitter to bind
        */
-      bind(context6, target) {
-        return this._getContextManager().bind(context6, target);
+      bind(context4, target) {
+        return this._getContextManager().bind(context4, target);
       }
       _getContextManager() {
         return (0, global_utils_1.getGlobal)(API_NAME) || NOOP_CONTEXT_MANAGER;
@@ -2131,8 +2131,8 @@ var require_context_utils = __commonJS({
     var NonRecordingSpan_1 = require_NonRecordingSpan();
     var context_2 = require_context2();
     var SPAN_KEY = (0, context_1.createContextKey)("OpenTelemetry Context Key SPAN");
-    function getSpan(context6) {
-      return context6.getValue(SPAN_KEY) || void 0;
+    function getSpan(context4) {
+      return context4.getValue(SPAN_KEY) || void 0;
     }
     __name(getSpan, "getSpan");
     exports.getSpan = getSpan;
@@ -2141,24 +2141,24 @@ var require_context_utils = __commonJS({
     }
     __name(getActiveSpan, "getActiveSpan");
     exports.getActiveSpan = getActiveSpan;
-    function setSpan(context6, span2) {
-      return context6.setValue(SPAN_KEY, span2);
+    function setSpan(context4, span) {
+      return context4.setValue(SPAN_KEY, span);
     }
     __name(setSpan, "setSpan");
     exports.setSpan = setSpan;
-    function deleteSpan(context6) {
-      return context6.deleteValue(SPAN_KEY);
+    function deleteSpan(context4) {
+      return context4.deleteValue(SPAN_KEY);
     }
     __name(deleteSpan, "deleteSpan");
     exports.deleteSpan = deleteSpan;
-    function setSpanContext(context6, spanContext) {
-      return setSpan(context6, new NonRecordingSpan_1.NonRecordingSpan(spanContext));
+    function setSpanContext(context4, spanContext) {
+      return setSpan(context4, new NonRecordingSpan_1.NonRecordingSpan(spanContext));
     }
     __name(setSpanContext, "setSpanContext");
     exports.setSpanContext = setSpanContext;
-    function getSpanContext(context6) {
+    function getSpanContext(context4) {
       var _a;
-      return (_a = getSpan(context6)) === null || _a === void 0 ? void 0 : _a.spanContext();
+      return (_a = getSpan(context4)) === null || _a === void 0 ? void 0 : _a.spanContext();
     }
     __name(getSpanContext, "getSpanContext");
     exports.getSpanContext = getSpanContext;
@@ -2220,12 +2220,12 @@ var require_NoopTracer = __commonJS({
         __name(this, "NoopTracer");
       }
       // startSpan starts a noop span.
-      startSpan(name, options, context6 = contextApi.active()) {
+      startSpan(name, options, context4 = contextApi.active()) {
         const root = Boolean(options === null || options === void 0 ? void 0 : options.root);
         if (root) {
           return new NonRecordingSpan_1.NonRecordingSpan();
         }
-        const parentFromContext = context6 && (0, context_utils_1.getSpanContext)(context6);
+        const parentFromContext = context4 && (0, context_utils_1.getSpanContext)(context4);
         if (isSpanContext(parentFromContext) && (0, spancontext_utils_1.isSpanContextValid)(parentFromContext)) {
           return new NonRecordingSpan_1.NonRecordingSpan(parentFromContext);
         } else {
@@ -2249,9 +2249,9 @@ var require_NoopTracer = __commonJS({
           fn = arg4;
         }
         const parentContext = ctx !== null && ctx !== void 0 ? ctx : contextApi.active();
-        const span2 = this.startSpan(name, opts, parentContext);
-        const contextWithSpanSet = (0, context_utils_1.setSpan)(parentContext, span2);
-        return contextApi.with(contextWithSpanSet, fn, void 0, span2);
+        const span = this.startSpan(name, opts, parentContext);
+        const contextWithSpanSet = (0, context_utils_1.setSpan)(parentContext, span);
+        return contextApi.with(contextWithSpanSet, fn, void 0, span);
       }
     };
     exports.NoopTracer = NoopTracer;
@@ -2283,8 +2283,8 @@ var require_ProxyTracer = __commonJS({
         this.version = version2;
         this.options = options;
       }
-      startSpan(name, options, context6) {
-        return this._getTracer().startSpan(name, options, context6);
+      startSpan(name, options, context4) {
+        return this._getTracer().startSpan(name, options, context4);
       }
       startActiveSpan(_name, _options, _context, _fn) {
         const tracer = this._getTracer();
@@ -2401,14 +2401,14 @@ var require_span_kind = __commonJS({
     init_performance2();
     Object.defineProperty(exports, "__esModule", { value: true });
     exports.SpanKind = void 0;
-    var SpanKind3;
-    (function(SpanKind4) {
-      SpanKind4[SpanKind4["INTERNAL"] = 0] = "INTERNAL";
-      SpanKind4[SpanKind4["SERVER"] = 1] = "SERVER";
-      SpanKind4[SpanKind4["CLIENT"] = 2] = "CLIENT";
-      SpanKind4[SpanKind4["PRODUCER"] = 3] = "PRODUCER";
-      SpanKind4[SpanKind4["CONSUMER"] = 4] = "CONSUMER";
-    })(SpanKind3 = exports.SpanKind || (exports.SpanKind = {}));
+    var SpanKind2;
+    (function(SpanKind3) {
+      SpanKind3[SpanKind3["INTERNAL"] = 0] = "INTERNAL";
+      SpanKind3[SpanKind3["SERVER"] = 1] = "SERVER";
+      SpanKind3[SpanKind3["CLIENT"] = 2] = "CLIENT";
+      SpanKind3[SpanKind3["PRODUCER"] = 3] = "PRODUCER";
+      SpanKind3[SpanKind3["CONSUMER"] = 4] = "CONSUMER";
+    })(SpanKind2 = exports.SpanKind || (exports.SpanKind = {}));
   }
 });
 
@@ -2421,12 +2421,12 @@ var require_status = __commonJS({
     init_performance2();
     Object.defineProperty(exports, "__esModule", { value: true });
     exports.SpanStatusCode = void 0;
-    var SpanStatusCode5;
-    (function(SpanStatusCode6) {
-      SpanStatusCode6[SpanStatusCode6["UNSET"] = 0] = "UNSET";
-      SpanStatusCode6[SpanStatusCode6["OK"] = 1] = "OK";
-      SpanStatusCode6[SpanStatusCode6["ERROR"] = 2] = "ERROR";
-    })(SpanStatusCode5 = exports.SpanStatusCode || (exports.SpanStatusCode = {}));
+    var SpanStatusCode2;
+    (function(SpanStatusCode3) {
+      SpanStatusCode3[SpanStatusCode3["UNSET"] = 0] = "UNSET";
+      SpanStatusCode3[SpanStatusCode3["OK"] = 1] = "OK";
+      SpanStatusCode3[SpanStatusCode3["ERROR"] = 2] = "ERROR";
+    })(SpanStatusCode2 = exports.SpanStatusCode || (exports.SpanStatusCode = {}));
   }
 });
 
@@ -2691,8 +2691,8 @@ var require_NoopTextMapPropagator = __commonJS({
       inject(_context, _carrier) {
       }
       /** Noop extract function does nothing and returns the input context */
-      extract(context6, _carrier) {
-        return context6;
+      extract(context4, _carrier) {
+        return context4;
       }
       fields() {
         return [];
@@ -2714,8 +2714,8 @@ var require_context_helpers = __commonJS({
     var context_1 = require_context2();
     var context_2 = require_context();
     var BAGGAGE_KEY = (0, context_2.createContextKey)("OpenTelemetry Baggage Key");
-    function getBaggage(context6) {
-      return context6.getValue(BAGGAGE_KEY) || void 0;
+    function getBaggage(context4) {
+      return context4.getValue(BAGGAGE_KEY) || void 0;
     }
     __name(getBaggage, "getBaggage");
     exports.getBaggage = getBaggage;
@@ -2724,13 +2724,13 @@ var require_context_helpers = __commonJS({
     }
     __name(getActiveBaggage, "getActiveBaggage");
     exports.getActiveBaggage = getActiveBaggage;
-    function setBaggage(context6, baggage) {
-      return context6.setValue(BAGGAGE_KEY, baggage);
+    function setBaggage(context4, baggage) {
+      return context4.setValue(BAGGAGE_KEY, baggage);
     }
     __name(setBaggage, "setBaggage");
     exports.setBaggage = setBaggage;
-    function deleteBaggage(context6) {
-      return context6.deleteValue(BAGGAGE_KEY);
+    function deleteBaggage(context4) {
+      return context4.deleteValue(BAGGAGE_KEY);
     }
     __name(deleteBaggage, "deleteBaggage");
     exports.deleteBaggage = deleteBaggage;
@@ -2788,8 +2788,8 @@ var require_propagation = __commonJS({
        * @param carrier carrier to inject context into
        * @param setter Function used to set values on the carrier
        */
-      inject(context6, carrier, setter = TextMapPropagator_1.defaultTextMapSetter) {
-        return this._getGlobalPropagator().inject(context6, carrier, setter);
+      inject(context4, carrier, setter = TextMapPropagator_1.defaultTextMapSetter) {
+        return this._getGlobalPropagator().inject(context4, carrier, setter);
       }
       /**
        * Extract context from a carrier
@@ -2798,8 +2798,8 @@ var require_propagation = __commonJS({
        * @param carrier Carrier to extract context from
        * @param getter Function used to extract keys from a carrier
        */
-      extract(context6, carrier, getter = TextMapPropagator_1.defaultTextMapGetter) {
-        return this._getGlobalPropagator().extract(context6, carrier, getter);
+      extract(context4, carrier, getter = TextMapPropagator_1.defaultTextMapGetter) {
+        return this._getGlobalPropagator().extract(context4, carrier, getter);
       }
       /**
        * Return a list of all fields which may be used by the propagator.
@@ -3051,18 +3051,18 @@ var require_suppress_tracing = __commonJS({
     exports.isTracingSuppressed = exports.unsuppressTracing = exports.suppressTracing = void 0;
     var api_1 = require_src();
     var SUPPRESS_TRACING_KEY = (0, api_1.createContextKey)("OpenTelemetry SDK Context Key SUPPRESS_TRACING");
-    function suppressTracing(context6) {
-      return context6.setValue(SUPPRESS_TRACING_KEY, true);
+    function suppressTracing(context4) {
+      return context4.setValue(SUPPRESS_TRACING_KEY, true);
     }
     __name(suppressTracing, "suppressTracing");
     exports.suppressTracing = suppressTracing;
-    function unsuppressTracing(context6) {
-      return context6.deleteValue(SUPPRESS_TRACING_KEY);
+    function unsuppressTracing(context4) {
+      return context4.deleteValue(SUPPRESS_TRACING_KEY);
     }
     __name(unsuppressTracing, "unsuppressTracing");
     exports.unsuppressTracing = unsuppressTracing;
-    function isTracingSuppressed(context6) {
-      return context6.getValue(SUPPRESS_TRACING_KEY) === true;
+    function isTracingSuppressed(context4) {
+      return context4.getValue(SUPPRESS_TRACING_KEY) === true;
     }
     __name(isTracingSuppressed, "isTracingSuppressed");
     exports.isTracingSuppressed = isTracingSuppressed;
@@ -3172,9 +3172,9 @@ var require_W3CBaggagePropagator = __commonJS({
       static {
         __name(this, "W3CBaggagePropagator");
       }
-      inject(context6, carrier, setter) {
-        const baggage = api_1.propagation.getBaggage(context6);
-        if (!baggage || (0, suppress_tracing_1.isTracingSuppressed)(context6))
+      inject(context4, carrier, setter) {
+        const baggage = api_1.propagation.getBaggage(context4);
+        if (!baggage || (0, suppress_tracing_1.isTracingSuppressed)(context4))
           return;
         const keyPairs = (0, utils_1.getKeyPairs)(baggage).filter((pair) => {
           return pair.length <= constants_1.BAGGAGE_MAX_PER_NAME_VALUE_PAIRS;
@@ -3184,14 +3184,14 @@ var require_W3CBaggagePropagator = __commonJS({
           setter.set(carrier, constants_1.BAGGAGE_HEADER, headerValue);
         }
       }
-      extract(context6, carrier, getter) {
+      extract(context4, carrier, getter) {
         const headerValue = getter.get(carrier, constants_1.BAGGAGE_HEADER);
         const baggageString = Array.isArray(headerValue) ? headerValue.join(constants_1.BAGGAGE_ITEMS_SEPARATOR) : headerValue;
         if (!baggageString)
-          return context6;
+          return context4;
         const baggage = {};
         if (baggageString.length === 0) {
-          return context6;
+          return context4;
         }
         const pairs = baggageString.split(constants_1.BAGGAGE_ITEMS_SEPARATOR);
         pairs.forEach((entry) => {
@@ -3205,9 +3205,9 @@ var require_W3CBaggagePropagator = __commonJS({
           }
         });
         if (Object.entries(baggage).length === 0) {
-          return context6;
+          return context4;
         }
-        return api_1.propagation.setBaggage(context6, api_1.propagation.createBaggage(baggage));
+        return api_1.propagation.setBaggage(context4, api_1.propagation.createBaggage(baggage));
       }
       fields() {
         return [constants_1.BAGGAGE_HEADER];
@@ -3267,7 +3267,7 @@ var require_attributes = __commonJS({
     Object.defineProperty(exports, "__esModule", { value: true });
     exports.isAttributeValue = exports.isAttributeKey = exports.sanitizeAttributes = void 0;
     var api_1 = require_src();
-    function sanitizeAttributes2(attributes) {
+    function sanitizeAttributes(attributes) {
       const out = {};
       if (typeof attributes !== "object" || attributes == null) {
         return out;
@@ -3276,12 +3276,12 @@ var require_attributes = __commonJS({
         if (!Object.prototype.hasOwnProperty.call(attributes, key)) {
           continue;
         }
-        if (!isAttributeKey2(key)) {
+        if (!isAttributeKey(key)) {
           api_1.diag.warn(`Invalid attribute key: ${key}`);
           continue;
         }
         const val = attributes[key];
-        if (!isAttributeValue2(val)) {
+        if (!isAttributeValue(val)) {
           api_1.diag.warn(`Invalid attribute value set for key: ${key}`);
           continue;
         }
@@ -3293,14 +3293,14 @@ var require_attributes = __commonJS({
       }
       return out;
     }
-    __name(sanitizeAttributes2, "sanitizeAttributes");
-    exports.sanitizeAttributes = sanitizeAttributes2;
-    function isAttributeKey2(key) {
+    __name(sanitizeAttributes, "sanitizeAttributes");
+    exports.sanitizeAttributes = sanitizeAttributes;
+    function isAttributeKey(key) {
       return typeof key === "string" && key !== "";
     }
-    __name(isAttributeKey2, "isAttributeKey");
-    exports.isAttributeKey = isAttributeKey2;
-    function isAttributeValue2(val) {
+    __name(isAttributeKey, "isAttributeKey");
+    exports.isAttributeKey = isAttributeKey;
+    function isAttributeValue(val) {
       if (val == null) {
         return true;
       }
@@ -3309,8 +3309,8 @@ var require_attributes = __commonJS({
       }
       return isValidPrimitiveAttributeValueType(typeof val);
     }
-    __name(isAttributeValue2, "isAttributeValue");
-    exports.isAttributeValue = isAttributeValue2;
+    __name(isAttributeValue, "isAttributeValue");
+    exports.isAttributeValue = isAttributeValue;
     function isHomogeneousAttributeValueArray(arr) {
       let type;
       for (const element of arr) {
@@ -5205,7 +5205,7 @@ var require_time = __commonJS({
     }
     __name(timeInputToHrTime, "timeInputToHrTime");
     exports.timeInputToHrTime = timeInputToHrTime;
-    function hrTimeDuration2(startTime, endTime) {
+    function hrTimeDuration(startTime, endTime) {
       let seconds = endTime[0] - startTime[0];
       let nanos = endTime[1] - startTime[1];
       if (nanos < 0) {
@@ -5214,8 +5214,8 @@ var require_time = __commonJS({
       }
       return [seconds, nanos];
     }
-    __name(hrTimeDuration2, "hrTimeDuration");
-    exports.hrTimeDuration = hrTimeDuration2;
+    __name(hrTimeDuration, "hrTimeDuration");
+    exports.hrTimeDuration = hrTimeDuration;
     function hrTimeToTimeStamp(time3) {
       const precision = NANOSECOND_DIGITS;
       const tmp = `${"0".repeat(precision)}${time3[1]}Z`;
@@ -5245,11 +5245,11 @@ var require_time = __commonJS({
     }
     __name(isTimeInputHrTime, "isTimeInputHrTime");
     exports.isTimeInputHrTime = isTimeInputHrTime;
-    function isTimeInput2(value) {
+    function isTimeInput(value) {
       return isTimeInputHrTime(value) || typeof value === "number" || value instanceof Date;
     }
-    __name(isTimeInput2, "isTimeInput");
-    exports.isTimeInput = isTimeInput2;
+    __name(isTimeInput, "isTimeInput");
+    exports.isTimeInput = isTimeInput;
     function addHrTimes(time1, time22) {
       const out = [time1[0] + time22[0], time1[1] + time22[1]];
       if (out[1] >= SECOND_TO_NANOSECONDS) {
@@ -5333,10 +5333,10 @@ var require_composite = __commonJS({
        * @param context Context to inject
        * @param carrier Carrier into which context will be injected
        */
-      inject(context6, carrier, setter) {
+      inject(context4, carrier, setter) {
         for (const propagator of this._propagators) {
           try {
-            propagator.inject(context6, carrier, setter);
+            propagator.inject(context4, carrier, setter);
           } catch (err) {
             api_1.diag.warn(`Failed to inject with ${propagator.constructor.name}. Err: ${err.message}`);
           }
@@ -5351,7 +5351,7 @@ var require_composite = __commonJS({
        * @param context Context to add values to
        * @param carrier Carrier from which to extract context
        */
-      extract(context6, carrier, getter) {
+      extract(context4, carrier, getter) {
         return this._propagators.reduce((ctx, propagator) => {
           try {
             return propagator.extract(ctx, carrier, getter);
@@ -5359,7 +5359,7 @@ var require_composite = __commonJS({
             api_1.diag.warn(`Failed to extract with ${propagator.constructor.name}. Err: ${err.message}`);
           }
           return ctx;
-        }, context6);
+        }, context4);
       }
       fields() {
         return this._fields.slice();
@@ -5513,9 +5513,9 @@ var require_W3CTraceContextPropagator = __commonJS({
       static {
         __name(this, "W3CTraceContextPropagator");
       }
-      inject(context6, carrier, setter) {
-        const spanContext = api_1.trace.getSpanContext(context6);
-        if (!spanContext || (0, suppress_tracing_1.isTracingSuppressed)(context6) || !(0, api_1.isSpanContextValid)(spanContext))
+      inject(context4, carrier, setter) {
+        const spanContext = api_1.trace.getSpanContext(context4);
+        if (!spanContext || (0, suppress_tracing_1.isTracingSuppressed)(context4) || !(0, api_1.isSpanContextValid)(spanContext))
           return;
         const traceParent = `${VERSION}-${spanContext.traceId}-${spanContext.spanId}-0${Number(spanContext.traceFlags || api_1.TraceFlags.NONE).toString(16)}`;
         setter.set(carrier, exports.TRACE_PARENT_HEADER, traceParent);
@@ -5523,23 +5523,23 @@ var require_W3CTraceContextPropagator = __commonJS({
           setter.set(carrier, exports.TRACE_STATE_HEADER, spanContext.traceState.serialize());
         }
       }
-      extract(context6, carrier, getter) {
+      extract(context4, carrier, getter) {
         const traceParentHeader = getter.get(carrier, exports.TRACE_PARENT_HEADER);
         if (!traceParentHeader)
-          return context6;
+          return context4;
         const traceParent = Array.isArray(traceParentHeader) ? traceParentHeader[0] : traceParentHeader;
         if (typeof traceParent !== "string")
-          return context6;
+          return context4;
         const spanContext = parseTraceParent(traceParent);
         if (!spanContext)
-          return context6;
+          return context4;
         spanContext.isRemote = true;
         const traceStateHeader = getter.get(carrier, exports.TRACE_STATE_HEADER);
         if (traceStateHeader) {
           const state = Array.isArray(traceStateHeader) ? traceStateHeader.join(",") : traceStateHeader;
           spanContext.traceState = new TraceState_1.TraceState(typeof state === "string" ? state : void 0);
         }
-        return api_1.trace.setSpanContext(context6, spanContext);
+        return api_1.trace.setSpanContext(context4, spanContext);
       }
       fields() {
         return [exports.TRACE_PARENT_HEADER, exports.TRACE_STATE_HEADER];
@@ -5564,18 +5564,18 @@ var require_rpc_metadata = __commonJS({
     (function(RPCType2) {
       RPCType2["HTTP"] = "http";
     })(RPCType = exports.RPCType || (exports.RPCType = {}));
-    function setRPCMetadata(context6, meta) {
-      return context6.setValue(RPC_METADATA_KEY, meta);
+    function setRPCMetadata(context4, meta) {
+      return context4.setValue(RPC_METADATA_KEY, meta);
     }
     __name(setRPCMetadata, "setRPCMetadata");
     exports.setRPCMetadata = setRPCMetadata;
-    function deleteRPCMetadata(context6) {
-      return context6.deleteValue(RPC_METADATA_KEY);
+    function deleteRPCMetadata(context4) {
+      return context4.deleteValue(RPC_METADATA_KEY);
     }
     __name(deleteRPCMetadata, "deleteRPCMetadata");
     exports.deleteRPCMetadata = deleteRPCMetadata;
-    function getRPCMetadata(context6) {
-      return context6.getValue(RPC_METADATA_KEY);
+    function getRPCMetadata(context4) {
+      return context4.getValue(RPC_METADATA_KEY);
     }
     __name(getRPCMetadata, "getRPCMetadata");
     exports.getRPCMetadata = getRPCMetadata;
@@ -6536,598 +6536,1628 @@ var require_src4 = __commonJS({
   }
 });
 
-// src/worker.ts
+// src/actor-worker.ts
 init_virtual_unenv_global_polyfill_cloudflare_unenv_preset_node_process();
 init_virtual_unenv_global_polyfill_cloudflare_unenv_preset_node_console();
 init_performance2();
 
-// ../../packages/autolemetry-cloudflare/dist/index.js
+// src/actor.ts
 init_virtual_unenv_global_polyfill_cloudflare_unenv_preset_node_process();
 init_virtual_unenv_global_polyfill_cloudflare_unenv_preset_node_console();
 init_performance2();
 
-// ../../packages/autolemetry-cloudflare/dist/chunk-4L7DMWYY.js
+// ../../node_modules/.pnpm/@cloudflare+actors@0.0.1-beta.6/node_modules/@cloudflare/actors/dist/core/src/index.js
+init_virtual_unenv_global_polyfill_cloudflare_unenv_preset_node_process();
+init_virtual_unenv_global_polyfill_cloudflare_unenv_preset_node_console();
+init_performance2();
+import { env as env2, DurableObject, WorkerEntrypoint } from "cloudflare:workers";
+
+// ../../node_modules/.pnpm/@cloudflare+actors@0.0.1-beta.6/node_modules/@cloudflare/actors/dist/storage/src/index.js
 init_virtual_unenv_global_polyfill_cloudflare_unenv_preset_node_process();
 init_virtual_unenv_global_polyfill_cloudflare_unenv_preset_node_console();
 init_performance2();
 
-// ../../packages/autolemetry-cloudflare/dist/chunk-SKKRPS5K.js
+// ../../node_modules/.pnpm/@cloudflare+actors@0.0.1-beta.6/node_modules/@cloudflare/actors/dist/storage/src/sql-schema-migrations.js
 init_virtual_unenv_global_polyfill_cloudflare_unenv_preset_node_process();
 init_virtual_unenv_global_polyfill_cloudflare_unenv_preset_node_console();
 init_performance2();
-var PromiseTracker = class {
+var __classPrivateFieldSet = function(receiver, state, value, kind, f) {
+  if (kind === "m") throw new TypeError("Private method is not writable");
+  if (kind === "a" && !f) throw new TypeError("Private accessor was defined without a setter");
+  if (typeof state === "function" ? receiver !== state || !f : !state.has(receiver)) throw new TypeError("Cannot write private member to an object whose class did not declare it");
+  return kind === "a" ? f.call(receiver, value) : f ? f.value = value : state.set(receiver, value), value;
+};
+var __classPrivateFieldGet = function(receiver, state, kind, f) {
+  if (kind === "a" && !f) throw new TypeError("Private accessor was defined without a getter");
+  if (typeof state === "function" ? receiver !== state || !f : !state.has(receiver)) throw new TypeError("Cannot read private member from an object whose class did not declare it");
+  return kind === "m" ? f : kind === "a" ? f.call(receiver) : f ? f.value : state.get(receiver);
+};
+var _SQLSchemaMigrations_instances;
+var _SQLSchemaMigrations__config;
+var _SQLSchemaMigrations__migrations;
+var _SQLSchemaMigrations__lastMigrationMonotonicId;
+var _SQLSchemaMigrations__lastMigrationIDKeyName;
+var SQLSchemaMigrations = class {
   static {
-    __name(this, "PromiseTracker");
+    __name(this, "SQLSchemaMigrations");
   }
-  promises = [];
-  track(promise) {
-    this.promises.push(promise);
+  constructor(config2) {
+    _SQLSchemaMigrations_instances.add(this);
+    _SQLSchemaMigrations__config.set(this, void 0);
+    _SQLSchemaMigrations__migrations.set(this, void 0);
+    _SQLSchemaMigrations__lastMigrationMonotonicId.set(this, -1);
+    __classPrivateFieldSet(this, _SQLSchemaMigrations__config, config2, "f");
+    const migrations = [...config2.migrations];
+    migrations.sort((a, b) => a.idMonotonicInc - b.idMonotonicInc);
+    const idSeen = /* @__PURE__ */ new Set();
+    migrations.forEach((m) => {
+      if (m.idMonotonicInc < 0) {
+        throw new Error(`migration ID cannot be negative: ${m.idMonotonicInc}`);
+      }
+      if (idSeen.has(m.idMonotonicInc)) {
+        throw new Error(`duplicate migration ID detected: ${m.idMonotonicInc}`);
+      }
+      idSeen.add(m.idMonotonicInc);
+    });
+    __classPrivateFieldSet(this, _SQLSchemaMigrations__migrations, migrations, "f");
   }
-  async wait() {
-    await Promise.allSettled(this.promises);
+  /**
+   * This is a quick check based on the in memory tracker of last migration ran,
+   * therefore this always returns `true` until `runAll` runs at least once.
+   * @returns `true` if the `migrations` list provided has not been ran in full yet.
+   */
+  hasMigrationsToRun() {
+    if (!__classPrivateFieldGet(this, _SQLSchemaMigrations__migrations, "f").length) {
+      return false;
+    }
+    return __classPrivateFieldGet(this, _SQLSchemaMigrations__lastMigrationMonotonicId, "f") !== __classPrivateFieldGet(this, _SQLSchemaMigrations__migrations, "f")[__classPrivateFieldGet(this, _SQLSchemaMigrations__migrations, "f").length - 1].idMonotonicInc;
+  }
+  /**
+   * Runs all the migrations that haven't already ran. The `idMonotonicInc` of each migration is used
+   * to track which migrations ran or not. New migrations should always have higher `idMonotonicInc`
+   * than older ones!
+   *
+   * @param sqlGen An optional callback function to generate the SQL statement of a given migration at runtime.
+   *               If the migration entry already has a valid `sql` statement this callback is NOT called.
+   * @returns The numbers of rows read and written throughout the migration execution.
+   */
+  async runAll(sqlGen) {
+    const result = {
+      rowsRead: 0,
+      rowsWritten: 0
+    };
+    if (!this.hasMigrationsToRun()) {
+      return result;
+    }
+    __classPrivateFieldSet(this, _SQLSchemaMigrations__lastMigrationMonotonicId, await __classPrivateFieldGet(this, _SQLSchemaMigrations__config, "f").doStorage.get(__classPrivateFieldGet(this, _SQLSchemaMigrations_instances, "m", _SQLSchemaMigrations__lastMigrationIDKeyName).call(this)) ?? -1, "f");
+    let idx = 0, sz = __classPrivateFieldGet(this, _SQLSchemaMigrations__migrations, "f").length;
+    while (idx < sz && __classPrivateFieldGet(this, _SQLSchemaMigrations__migrations, "f")[idx].idMonotonicInc <= __classPrivateFieldGet(this, _SQLSchemaMigrations__lastMigrationMonotonicId, "f")) {
+      idx += 1;
+    }
+    if (idx >= sz) {
+      return result;
+    }
+    const doSql = __classPrivateFieldGet(this, _SQLSchemaMigrations__config, "f").doStorage.sql;
+    const migrationsToRun = __classPrivateFieldGet(this, _SQLSchemaMigrations__migrations, "f").slice(idx);
+    await __classPrivateFieldGet(this, _SQLSchemaMigrations__config, "f").doStorage.transaction(async () => {
+      let _lastMigrationMonotonicId = __classPrivateFieldGet(this, _SQLSchemaMigrations__lastMigrationMonotonicId, "f");
+      migrationsToRun.forEach((migration) => {
+        let query = migration.sql ?? sqlGen?.(migration.idMonotonicInc);
+        if (!query) {
+          throw new Error(`migration with neither 'sql' nor 'sqlGen' provided: ${migration.idMonotonicInc}`);
+        }
+        const cursor = doSql.exec(query);
+        let _ = cursor.toArray();
+        result.rowsRead += cursor.rowsRead;
+        result.rowsWritten += cursor.rowsWritten;
+        _lastMigrationMonotonicId = migration.idMonotonicInc;
+      });
+      __classPrivateFieldSet(this, _SQLSchemaMigrations__lastMigrationMonotonicId, _lastMigrationMonotonicId, "f");
+      await __classPrivateFieldGet(this, _SQLSchemaMigrations__config, "f").doStorage.put(__classPrivateFieldGet(this, _SQLSchemaMigrations_instances, "m", _SQLSchemaMigrations__lastMigrationIDKeyName).call(this), __classPrivateFieldGet(this, _SQLSchemaMigrations__lastMigrationMonotonicId, "f"));
+    });
+    return result;
   }
 };
-function proxyExecutionContext(ctx) {
-  const tracker = new PromiseTracker();
-  const proxied = new Proxy(ctx, {
-    get(target, prop) {
-      if (prop === "waitUntil") {
-        return (promise) => {
-          tracker.track(promise);
-          return target.waitUntil(promise);
+_SQLSchemaMigrations__config = /* @__PURE__ */ new WeakMap(), _SQLSchemaMigrations__migrations = /* @__PURE__ */ new WeakMap(), _SQLSchemaMigrations__lastMigrationMonotonicId = /* @__PURE__ */ new WeakMap(), _SQLSchemaMigrations_instances = /* @__PURE__ */ new WeakSet(), _SQLSchemaMigrations__lastMigrationIDKeyName = /* @__PURE__ */ __name(function _SQLSchemaMigrations__lastMigrationIDKeyName2() {
+  return "__sql_migrations_lastID";
+}, "_SQLSchemaMigrations__lastMigrationIDKeyName");
+
+// ../../node_modules/.pnpm/@cloudflare+actors@0.0.1-beta.6/node_modules/@cloudflare/actors/dist/storage/src/index.js
+var Storage = class {
+  static {
+    __name(this, "Storage");
+  }
+  /**
+   * Gets the current migrations array
+   */
+  get migrations() {
+    return this._migrationsArray;
+  }
+  /**
+   * Sets the migrations array and updates the SQLSchemaMigrations instance if available
+   */
+  set migrations(value) {
+    this._migrationsArray = value;
+    if (this.raw && this._migrations) {
+      this._migrations = new SQLSchemaMigrations({
+        doStorage: this.raw,
+        migrations: value
+      });
+    }
+  }
+  /**
+   * Creates a new instance of Storage.
+   * @param sql - The SQL storage instance to use for queries
+   * @param storage - The Durable Object storage instance
+   */
+  constructor(storage) {
+    this._migrationsArray = [];
+    this.hasRanMigrations = false;
+    this.raw = storage;
+    this.sqlStorage = storage?.sql;
+    if (storage) {
+      this._migrations = new SQLSchemaMigrations({
+        doStorage: storage,
+        migrations: this._migrationsArray
+      });
+    }
+  }
+  /**
+   * Executes a raw SQL query with optional parameters.
+   * @param opts - Options containing the SQL query and optional parameters
+   * @returns Promise resolving to a cursor containing the query results
+   * @throws Error if the SQL execution fails
+   */
+  async executeRawQuery(opts) {
+    const { sql, params } = opts;
+    try {
+      let cursor;
+      if (params && params.length) {
+        cursor = this.sqlStorage?.exec(sql, ...params);
+      } else {
+        cursor = this.sqlStorage?.exec(sql);
+      }
+      if (!cursor) {
+        console.log("No cursor returned from query");
+        return null;
+      }
+      return cursor;
+    } catch (error3) {
+      console.error("SQL Execution Error:", error3);
+      throw error3;
+    }
+  }
+  /**
+   * Execute SQL queries against the Agent's database
+   * @template T Type of the returned rows
+   * @param strings SQL query template strings
+   * @param values Values to be inserted into the query
+   * @returns Array of query results
+   */
+  sql(strings, ...values) {
+    let query = "";
+    try {
+      query = strings.reduce((acc, str, i) => acc + str + (i < values.length ? "?" : ""), "");
+      if (!this.sqlStorage) {
+        throw new Error("No SQL storage provided");
+      }
+      return [...this.sqlStorage.exec(query, ...values)];
+    } catch (e) {
+      console.error(`failed to execute sql query: ${query}`, e);
+      throw e;
+    }
+  }
+  /**
+   * Executes a SQL query and formats the results based on the specified options.
+   * @param opts - Options containing the SQL query, parameters, and result format preference
+   * @returns Promise resolving to either raw query results or formatted array
+   */
+  async query(sql, params, isRaw) {
+    const cursor = await this.executeRawQuery({ sql, params });
+    if (!cursor)
+      return [];
+    if (isRaw) {
+      return {
+        columns: cursor.columnNames,
+        rows: Array.from(cursor.raw()),
+        meta: {
+          rows_read: cursor.rowsRead,
+          rows_written: cursor.rowsWritten
+        }
+      };
+    }
+    return cursor.toArray();
+  }
+  async runMigrations() {
+    if (this.hasRanMigrations)
+      return;
+    if (!this._migrations) {
+      throw new Error("No migrations provided");
+    }
+    const response = await this._migrations.runAll();
+    this.hasRanMigrations = true;
+    return response;
+  }
+  async __studio(cmd) {
+    const storage = this.raw;
+    if (cmd.type === "query") {
+      return this.query(cmd.statement, cmd.params);
+    } else if (cmd.type === "transaction") {
+      return storage.transaction(async () => {
+        const results = [];
+        for (const statement of cmd.statements) {
+          results.push(await this.query(statement, cmd.params, true));
+        }
+        return results;
+      });
+    }
+  }
+};
+
+// ../../node_modules/.pnpm/@cloudflare+actors@0.0.1-beta.6/node_modules/@cloudflare/actors/dist/alarms/src/index.js
+init_virtual_unenv_global_polyfill_cloudflare_unenv_preset_node_process();
+init_virtual_unenv_global_polyfill_cloudflare_unenv_preset_node_console();
+init_performance2();
+
+// ../../node_modules/.pnpm/cron-schedule@5.0.4/node_modules/cron-schedule/dist/cron-parser.js
+init_virtual_unenv_global_polyfill_cloudflare_unenv_preset_node_process();
+init_virtual_unenv_global_polyfill_cloudflare_unenv_preset_node_console();
+init_performance2();
+
+// ../../node_modules/.pnpm/cron-schedule@5.0.4/node_modules/cron-schedule/dist/cron.js
+init_virtual_unenv_global_polyfill_cloudflare_unenv_preset_node_process();
+init_virtual_unenv_global_polyfill_cloudflare_unenv_preset_node_console();
+init_performance2();
+
+// ../../node_modules/.pnpm/cron-schedule@5.0.4/node_modules/cron-schedule/dist/utils.js
+init_virtual_unenv_global_polyfill_cloudflare_unenv_preset_node_process();
+init_virtual_unenv_global_polyfill_cloudflare_unenv_preset_node_console();
+init_performance2();
+function extractDateElements(date) {
+  return {
+    second: date.getSeconds(),
+    minute: date.getMinutes(),
+    hour: date.getHours(),
+    day: date.getDate(),
+    month: date.getMonth(),
+    weekday: date.getDay(),
+    year: date.getFullYear()
+  };
+}
+__name(extractDateElements, "extractDateElements");
+function getDaysInMonth(year, month) {
+  return new Date(year, month + 1, 0).getDate();
+}
+__name(getDaysInMonth, "getDaysInMonth");
+function getDaysBetweenWeekdays(weekday1, weekday2) {
+  if (weekday1 <= weekday2) {
+    return weekday2 - weekday1;
+  }
+  return 6 - weekday1 + weekday2 + 1;
+}
+__name(getDaysBetweenWeekdays, "getDaysBetweenWeekdays");
+
+// ../../node_modules/.pnpm/cron-schedule@5.0.4/node_modules/cron-schedule/dist/cron.js
+var Cron = class {
+  static {
+    __name(this, "Cron");
+  }
+  constructor({ seconds, minutes, hours, days, months, weekdays }) {
+    if (!seconds || seconds.size === 0)
+      throw new Error("There must be at least one allowed second.");
+    if (!minutes || minutes.size === 0)
+      throw new Error("There must be at least one allowed minute.");
+    if (!hours || hours.size === 0)
+      throw new Error("There must be at least one allowed hour.");
+    if (!months || months.size === 0)
+      throw new Error("There must be at least one allowed month.");
+    if ((!weekdays || weekdays.size === 0) && (!days || days.size === 0))
+      throw new Error("There must be at least one allowed day or weekday.");
+    this.seconds = Array.from(seconds).sort((a, b) => a - b);
+    this.minutes = Array.from(minutes).sort((a, b) => a - b);
+    this.hours = Array.from(hours).sort((a, b) => a - b);
+    this.days = Array.from(days).sort((a, b) => a - b);
+    this.months = Array.from(months).sort((a, b) => a - b);
+    this.weekdays = Array.from(weekdays).sort((a, b) => a - b);
+    const validateData = /* @__PURE__ */ __name((name, data, constraint) => {
+      if (data.some((x) => typeof x !== "number" || x % 1 !== 0 || x < constraint.min || x > constraint.max)) {
+        throw new Error(`${name} must only consist of integers which are within the range of ${constraint.min} and ${constraint.max}`);
+      }
+    }, "validateData");
+    validateData("seconds", this.seconds, { min: 0, max: 59 });
+    validateData("minutes", this.minutes, { min: 0, max: 59 });
+    validateData("hours", this.hours, { min: 0, max: 23 });
+    validateData("days", this.days, { min: 1, max: 31 });
+    validateData("months", this.months, { min: 0, max: 11 });
+    validateData("weekdays", this.weekdays, { min: 0, max: 6 });
+    this.reversed = {
+      seconds: this.seconds.map((x) => x).reverse(),
+      minutes: this.minutes.map((x) => x).reverse(),
+      hours: this.hours.map((x) => x).reverse(),
+      days: this.days.map((x) => x).reverse(),
+      months: this.months.map((x) => x).reverse(),
+      weekdays: this.weekdays.map((x) => x).reverse()
+    };
+  }
+  /**
+   * Find the next or previous hour, starting from the given start hour that matches the hour constraint.
+   * startHour itself might also be allowed.
+   */
+  findAllowedHour(dir3, startHour) {
+    return dir3 === "next" ? this.hours.find((x) => x >= startHour) : this.reversed.hours.find((x) => x <= startHour);
+  }
+  /**
+   * Find the next or previous minute, starting from the given start minute that matches the minute constraint.
+   * startMinute itself might also be allowed.
+   */
+  findAllowedMinute(dir3, startMinute) {
+    return dir3 === "next" ? this.minutes.find((x) => x >= startMinute) : this.reversed.minutes.find((x) => x <= startMinute);
+  }
+  /**
+   * Find the next or previous second, starting from the given start second that matches the second constraint.
+   * startSecond itself IS NOT allowed.
+   */
+  findAllowedSecond(dir3, startSecond) {
+    return dir3 === "next" ? this.seconds.find((x) => x > startSecond) : this.reversed.seconds.find((x) => x < startSecond);
+  }
+  /**
+   * Find the next or previous time, starting from the given start time that matches the hour, minute
+   * and second constraints. startTime itself might also be allowed.
+   */
+  findAllowedTime(dir3, startTime) {
+    let hour = this.findAllowedHour(dir3, startTime.hour);
+    if (hour !== void 0) {
+      if (hour === startTime.hour) {
+        let minute = this.findAllowedMinute(dir3, startTime.minute);
+        if (minute !== void 0) {
+          if (minute === startTime.minute) {
+            const second = this.findAllowedSecond(dir3, startTime.second);
+            if (second !== void 0) {
+              return { hour, minute, second };
+            }
+            minute = this.findAllowedMinute(dir3, dir3 === "next" ? startTime.minute + 1 : startTime.minute - 1);
+            if (minute !== void 0) {
+              return {
+                hour,
+                minute,
+                second: dir3 === "next" ? this.seconds[0] : this.reversed.seconds[0]
+              };
+            }
+          } else {
+            return {
+              hour,
+              minute,
+              second: dir3 === "next" ? this.seconds[0] : this.reversed.seconds[0]
+            };
+          }
+        }
+        hour = this.findAllowedHour(dir3, dir3 === "next" ? startTime.hour + 1 : startTime.hour - 1);
+        if (hour !== void 0) {
+          return {
+            hour,
+            minute: dir3 === "next" ? this.minutes[0] : this.reversed.minutes[0],
+            second: dir3 === "next" ? this.seconds[0] : this.reversed.seconds[0]
+          };
+        }
+      } else {
+        return {
+          hour,
+          minute: dir3 === "next" ? this.minutes[0] : this.reversed.minutes[0],
+          second: dir3 === "next" ? this.seconds[0] : this.reversed.seconds[0]
         };
       }
-      return Reflect.get(target, prop);
     }
-  });
-  return { ctx: proxied, tracker };
-}
-__name(proxyExecutionContext, "proxyExecutionContext");
-var unwrapSymbol = Symbol("unwrap");
-function isWrapped(item) {
-  return item && !!item[unwrapSymbol];
-}
-__name(isWrapped, "isWrapped");
-function unwrap(item) {
-  if (item && isWrapped(item)) {
-    return item[unwrapSymbol];
-  } else {
-    return item;
+    return void 0;
   }
+  /**
+   * Find the next or previous day in the given month, starting from the given startDay
+   * that matches either the day or the weekday constraint. startDay itself might also be allowed.
+   */
+  findAllowedDayInMonth(dir3, year, month, startDay) {
+    var _a, _b;
+    if (startDay < 1)
+      throw new Error("startDay must not be smaller than 1.");
+    const daysInMonth = getDaysInMonth(year, month);
+    const daysRestricted = this.days.length !== 31;
+    const weekdaysRestricted = this.weekdays.length !== 7;
+    if (!daysRestricted && !weekdaysRestricted) {
+      if (startDay > daysInMonth) {
+        return dir3 === "next" ? void 0 : daysInMonth;
+      }
+      return startDay;
+    }
+    let allowedDayByDays;
+    if (daysRestricted) {
+      allowedDayByDays = dir3 === "next" ? this.days.find((x) => x >= startDay) : this.reversed.days.find((x) => x <= startDay);
+      if (allowedDayByDays !== void 0 && allowedDayByDays > daysInMonth) {
+        allowedDayByDays = void 0;
+      }
+    }
+    let allowedDayByWeekdays;
+    if (weekdaysRestricted) {
+      const startWeekday = new Date(year, month, startDay).getDay();
+      const nearestAllowedWeekday = dir3 === "next" ? (_a = this.weekdays.find((x) => x >= startWeekday)) !== null && _a !== void 0 ? _a : this.weekdays[0] : (_b = this.reversed.weekdays.find((x) => x <= startWeekday)) !== null && _b !== void 0 ? _b : this.reversed.weekdays[0];
+      if (nearestAllowedWeekday !== void 0) {
+        const daysBetweenWeekdays = dir3 === "next" ? getDaysBetweenWeekdays(startWeekday, nearestAllowedWeekday) : getDaysBetweenWeekdays(nearestAllowedWeekday, startWeekday);
+        allowedDayByWeekdays = dir3 === "next" ? startDay + daysBetweenWeekdays : startDay - daysBetweenWeekdays;
+        if (allowedDayByWeekdays > daysInMonth || allowedDayByWeekdays < 1) {
+          allowedDayByWeekdays = void 0;
+        }
+      }
+    }
+    if (allowedDayByDays !== void 0 && allowedDayByWeekdays !== void 0) {
+      return dir3 === "next" ? Math.min(allowedDayByDays, allowedDayByWeekdays) : Math.max(allowedDayByDays, allowedDayByWeekdays);
+    }
+    if (allowedDayByDays !== void 0) {
+      return allowedDayByDays;
+    }
+    if (allowedDayByWeekdays !== void 0) {
+      return allowedDayByWeekdays;
+    }
+    return void 0;
+  }
+  /** Gets the next date starting from the given start date or now. */
+  getNextDate(startDate = /* @__PURE__ */ new Date()) {
+    const startDateElements = extractDateElements(startDate);
+    let minYear = startDateElements.year;
+    let startIndexMonth = this.months.findIndex((x) => x >= startDateElements.month);
+    if (startIndexMonth === -1) {
+      startIndexMonth = 0;
+      minYear++;
+    }
+    const maxIterations = this.months.length * 5;
+    for (let i = 0; i < maxIterations; i++) {
+      const year = minYear + Math.floor((startIndexMonth + i) / this.months.length);
+      const month = this.months[(startIndexMonth + i) % this.months.length];
+      const isStartMonth = year === startDateElements.year && month === startDateElements.month;
+      let day = this.findAllowedDayInMonth("next", year, month, isStartMonth ? startDateElements.day : 1);
+      let isStartDay = isStartMonth && day === startDateElements.day;
+      if (day !== void 0 && isStartDay) {
+        const nextTime = this.findAllowedTime("next", startDateElements);
+        if (nextTime !== void 0) {
+          return new Date(year, month, day, nextTime.hour, nextTime.minute, nextTime.second);
+        }
+        day = this.findAllowedDayInMonth("next", year, month, day + 1);
+        isStartDay = false;
+      }
+      if (day !== void 0 && !isStartDay) {
+        return new Date(year, month, day, this.hours[0], this.minutes[0], this.seconds[0]);
+      }
+    }
+    throw new Error("No valid next date was found.");
+  }
+  /** Gets the specified amount of future dates starting from the given start date or now. */
+  getNextDates(amount, startDate) {
+    const dates = [];
+    let nextDate;
+    for (let i = 0; i < amount; i++) {
+      nextDate = this.getNextDate(nextDate !== null && nextDate !== void 0 ? nextDate : startDate);
+      dates.push(nextDate);
+    }
+    return dates;
+  }
+  /**
+   * Get an ES6 compatible iterator which iterates over the next dates starting from startDate or now.
+   * The iterator runs until the optional endDate is reached or forever.
+   */
+  *getNextDatesIterator(startDate, endDate) {
+    let nextDate;
+    while (true) {
+      nextDate = this.getNextDate(nextDate !== null && nextDate !== void 0 ? nextDate : startDate);
+      if (endDate && endDate.getTime() < nextDate.getTime()) {
+        return;
+      }
+      yield nextDate;
+    }
+  }
+  /** Gets the previous date starting from the given start date or now. */
+  getPrevDate(startDate = /* @__PURE__ */ new Date()) {
+    const startDateElements = extractDateElements(startDate);
+    let maxYear = startDateElements.year;
+    let startIndexMonth = this.reversed.months.findIndex((x) => x <= startDateElements.month);
+    if (startIndexMonth === -1) {
+      startIndexMonth = 0;
+      maxYear--;
+    }
+    const maxIterations = this.reversed.months.length * 5;
+    for (let i = 0; i < maxIterations; i++) {
+      const year = maxYear - Math.floor((startIndexMonth + i) / this.reversed.months.length);
+      const month = this.reversed.months[(startIndexMonth + i) % this.reversed.months.length];
+      const isStartMonth = year === startDateElements.year && month === startDateElements.month;
+      let day = this.findAllowedDayInMonth("prev", year, month, isStartMonth ? startDateElements.day : (
+        // Start searching from the last day of the month.
+        getDaysInMonth(year, month)
+      ));
+      let isStartDay = isStartMonth && day === startDateElements.day;
+      if (day !== void 0 && isStartDay) {
+        const prevTime = this.findAllowedTime("prev", startDateElements);
+        if (prevTime !== void 0) {
+          return new Date(year, month, day, prevTime.hour, prevTime.minute, prevTime.second);
+        }
+        if (day > 1) {
+          day = this.findAllowedDayInMonth("prev", year, month, day - 1);
+          isStartDay = false;
+        }
+      }
+      if (day !== void 0 && !isStartDay) {
+        return new Date(year, month, day, this.reversed.hours[0], this.reversed.minutes[0], this.reversed.seconds[0]);
+      }
+    }
+    throw new Error("No valid previous date was found.");
+  }
+  /** Gets the specified amount of previous dates starting from the given start date or now. */
+  getPrevDates(amount, startDate) {
+    const dates = [];
+    let prevDate;
+    for (let i = 0; i < amount; i++) {
+      prevDate = this.getPrevDate(prevDate !== null && prevDate !== void 0 ? prevDate : startDate);
+      dates.push(prevDate);
+    }
+    return dates;
+  }
+  /**
+   * Get an ES6 compatible iterator which iterates over the previous dates starting from startDate or now.
+   * The iterator runs until the optional endDate is reached or forever.
+   */
+  *getPrevDatesIterator(startDate, endDate) {
+    let prevDate;
+    while (true) {
+      prevDate = this.getPrevDate(prevDate !== null && prevDate !== void 0 ? prevDate : startDate);
+      if (endDate && endDate.getTime() > prevDate.getTime()) {
+        return;
+      }
+      yield prevDate;
+    }
+  }
+  /** Returns true when there is a cron date at the given date. */
+  matchDate(date) {
+    const { second, minute, hour, day, month, weekday } = extractDateElements(date);
+    if (this.seconds.indexOf(second) === -1 || this.minutes.indexOf(minute) === -1 || this.hours.indexOf(hour) === -1 || this.months.indexOf(month) === -1) {
+      return false;
+    }
+    if (this.days.length !== 31 && this.weekdays.length !== 7) {
+      return this.days.indexOf(day) !== -1 || this.weekdays.indexOf(weekday) !== -1;
+    }
+    return this.days.indexOf(day) !== -1 && this.weekdays.indexOf(weekday) !== -1;
+  }
+};
+
+// ../../node_modules/.pnpm/cron-schedule@5.0.4/node_modules/cron-schedule/dist/cron-parser.js
+var secondConstraint = {
+  min: 0,
+  max: 59
+};
+var minuteConstraint = {
+  min: 0,
+  max: 59
+};
+var hourConstraint = {
+  min: 0,
+  max: 23
+};
+var dayConstraint = {
+  min: 1,
+  max: 31
+};
+var monthConstraint = {
+  min: 1,
+  max: 12,
+  aliases: {
+    jan: "1",
+    feb: "2",
+    mar: "3",
+    apr: "4",
+    may: "5",
+    jun: "6",
+    jul: "7",
+    aug: "8",
+    sep: "9",
+    oct: "10",
+    nov: "11",
+    dec: "12"
+  }
+};
+var weekdayConstraint = {
+  min: 0,
+  max: 7,
+  aliases: {
+    mon: "1",
+    tue: "2",
+    wed: "3",
+    thu: "4",
+    fri: "5",
+    sat: "6",
+    sun: "7"
+  }
+};
+var timeNicknames = {
+  "@yearly": "0 0 1 1 *",
+  "@annually": "0 0 1 1 *",
+  "@monthly": "0 0 1 * *",
+  "@weekly": "0 0 * * 0",
+  "@daily": "0 0 * * *",
+  "@hourly": "0 * * * *",
+  "@minutely": "* * * * *"
+};
+function parseElement(element, constraint) {
+  const result = /* @__PURE__ */ new Set();
+  if (element === "*") {
+    for (let i = constraint.min; i <= constraint.max; i = i + 1) {
+      result.add(i);
+    }
+    return result;
+  }
+  const listElements = element.split(",");
+  if (listElements.length > 1) {
+    for (const listElement of listElements) {
+      const parsedListElement = parseElement(listElement, constraint);
+      for (const x of parsedListElement) {
+        result.add(x);
+      }
+    }
+    return result;
+  }
+  const parseSingleElement = /* @__PURE__ */ __name((singleElement) => {
+    var _a, _b;
+    singleElement = (_b = (_a = constraint.aliases) === null || _a === void 0 ? void 0 : _a[singleElement.toLowerCase()]) !== null && _b !== void 0 ? _b : singleElement;
+    const parsedElement = Number.parseInt(singleElement, 10);
+    if (Number.isNaN(parsedElement)) {
+      throw new Error(`Failed to parse ${element}: ${singleElement} is NaN.`);
+    }
+    if (parsedElement < constraint.min || parsedElement > constraint.max) {
+      throw new Error(`Failed to parse ${element}: ${singleElement} is outside of constraint range of ${constraint.min} - ${constraint.max}.`);
+    }
+    return parsedElement;
+  }, "parseSingleElement");
+  const rangeSegments = /^(([0-9a-zA-Z]+)-([0-9a-zA-Z]+)|\*)(\/([0-9]+))?$/.exec(element);
+  if (rangeSegments === null) {
+    result.add(parseSingleElement(element));
+    return result;
+  }
+  let parsedStart = rangeSegments[1] === "*" ? constraint.min : parseSingleElement(rangeSegments[2]);
+  const parsedEnd = rangeSegments[1] === "*" ? constraint.max : parseSingleElement(rangeSegments[3]);
+  if (constraint === weekdayConstraint && parsedStart === 7 && // this check ensures that sun-sun is not incorrectly parsed as [0,1,2,3,4,5,6]
+  parsedEnd !== 7) {
+    parsedStart = 0;
+  }
+  if (parsedStart > parsedEnd) {
+    throw new Error(`Failed to parse ${element}: Invalid range (start: ${parsedStart}, end: ${parsedEnd}).`);
+  }
+  const step = rangeSegments[5];
+  let parsedStep = 1;
+  if (step !== void 0) {
+    parsedStep = Number.parseInt(step, 10);
+    if (Number.isNaN(parsedStep)) {
+      throw new Error(`Failed to parse step: ${step} is NaN.`);
+    }
+    if (parsedStep < 1) {
+      throw new Error(`Failed to parse step: Expected ${step} to be greater than 0.`);
+    }
+  }
+  for (let i = parsedStart; i <= parsedEnd; i = i + parsedStep) {
+    result.add(i);
+  }
+  return result;
 }
-__name(unwrap, "unwrap");
-function wrap(item, handler2) {
-  const proxy = new Proxy(item, handler2);
-  Object.defineProperty(proxy, unwrapSymbol, {
-    value: item,
-    writable: false,
-    enumerable: false,
-    configurable: false
+__name(parseElement, "parseElement");
+function parseCronExpression(cronExpression) {
+  var _a;
+  if (typeof cronExpression !== "string") {
+    throw new TypeError("Invalid cron expression: must be of type string.");
+  }
+  cronExpression = (_a = timeNicknames[cronExpression.toLowerCase()]) !== null && _a !== void 0 ? _a : cronExpression;
+  const elements = cronExpression.split(" ").filter((elem) => elem.length > 0);
+  if (elements.length < 5 || elements.length > 6) {
+    throw new Error("Invalid cron expression: expected 5 or 6 elements.");
+  }
+  const rawSeconds = elements.length === 6 ? elements[0] : "0";
+  const rawMinutes = elements.length === 6 ? elements[1] : elements[0];
+  const rawHours = elements.length === 6 ? elements[2] : elements[1];
+  const rawDays = elements.length === 6 ? elements[3] : elements[2];
+  const rawMonths = elements.length === 6 ? elements[4] : elements[3];
+  const rawWeekdays = elements.length === 6 ? elements[5] : elements[4];
+  return new Cron({
+    seconds: parseElement(rawSeconds, secondConstraint),
+    minutes: parseElement(rawMinutes, minuteConstraint),
+    hours: parseElement(rawHours, hourConstraint),
+    days: parseElement(rawDays, dayConstraint),
+    // months in cron are indexed by 1, but Cron expects indexes by 0, so we need to reduce all set values by one.
+    months: new Set(Array.from(parseElement(rawMonths, monthConstraint)).map((x) => x - 1)),
+    weekdays: new Set(Array.from(parseElement(rawWeekdays, weekdayConstraint)).map((x) => x % 7))
+  });
+}
+__name(parseCronExpression, "parseCronExpression");
+
+// ../../node_modules/.pnpm/nanoid@5.1.6/node_modules/nanoid/index.browser.js
+init_virtual_unenv_global_polyfill_cloudflare_unenv_preset_node_process();
+init_virtual_unenv_global_polyfill_cloudflare_unenv_preset_node_console();
+init_performance2();
+
+// ../../node_modules/.pnpm/nanoid@5.1.6/node_modules/nanoid/url-alphabet/index.js
+init_virtual_unenv_global_polyfill_cloudflare_unenv_preset_node_process();
+init_virtual_unenv_global_polyfill_cloudflare_unenv_preset_node_console();
+init_performance2();
+var urlAlphabet = "useandom-26T198340PX75pxJACKVERYMINDBUSHWOLF_GQZbfghjklqvwyzrict";
+
+// ../../node_modules/.pnpm/nanoid@5.1.6/node_modules/nanoid/index.browser.js
+var nanoid = /* @__PURE__ */ __name((size = 21) => {
+  let id = "";
+  let bytes = crypto.getRandomValues(new Uint8Array(size |= 0));
+  while (size--) {
+    id += urlAlphabet[bytes[size] & 63];
+  }
+  return id;
+}, "nanoid");
+
+// ../../node_modules/.pnpm/@cloudflare+actors@0.0.1-beta.6/node_modules/@cloudflare/actors/dist/alarms/src/index.js
+function getNextCronTime(cron) {
+  const interval = parseCronExpression(cron);
+  return interval.getNextDate();
+}
+__name(getNextCronTime, "getNextCronTime");
+var Alarms = class {
+  static {
+    __name(this, "Alarms");
+  }
+  constructor(ctx, parent) {
+    this.alarm = async (alarmInfo) => {
+      const now = Math.floor(Date.now() / 1e3);
+      const result = this.sql`
+          SELECT *, COALESCE(identifier, 'default') as identifier FROM _actor_alarms WHERE time <= ${now}
+        `;
+      for (const row of result || []) {
+        const callback = this.parent[row.callback];
+        if (!callback) {
+          console.error(`callback ${row.callback} not found`);
+          continue;
+        }
+        try {
+          const identifier = row.identifier || "default";
+          this.parent.setName(identifier);
+        } catch (error3) {
+          console.error(`error setting identifier`, error3);
+        }
+        try {
+          await callback.bind(this.parent)(JSON.parse(row.payload), row);
+        } catch (e) {
+          console.error(`error executing callback "${row.callback}"`, e);
+        }
+        if (row.type === "cron") {
+          const nextExecutionTime = getNextCronTime(row.cron);
+          const nextTimestamp = Math.floor(nextExecutionTime.getTime() / 1e3);
+          this.sql`
+              UPDATE _actor_alarms SET time = ${nextTimestamp} WHERE id = ${row.id}
+            `;
+        } else {
+          this.sql`
+              DELETE FROM _actor_alarms WHERE id = ${row.id}
+            `;
+        }
+      }
+      await this._scheduleNextAlarm();
+    };
+    this.storage = ctx?.storage;
+    this.parent = parent;
+    void ctx?.blockConcurrencyWhile(async () => {
+      return this._tryCatch(async () => {
+        ctx?.storage.sql.exec(`
+                CREATE TABLE IF NOT EXISTS _actor_alarms (
+                    id TEXT PRIMARY KEY NOT NULL DEFAULT (randomblob(9)),
+                    callback TEXT,
+                    payload TEXT,
+                    type TEXT NOT NULL CHECK(type IN ('scheduled', 'delayed', 'cron')),
+                    time INTEGER,
+                    delayInSeconds INTEGER,
+                    cron TEXT,
+                    created_at INTEGER DEFAULT (unixepoch())
+                )
+            `);
+        try {
+          ctx?.storage.sql.exec(`SELECT identifier FROM _actor_alarms LIMIT 1`);
+        } catch (error3) {
+          try {
+            ctx?.storage.sql.exec(`ALTER TABLE _actor_alarms ADD COLUMN identifier TEXT DEFAULT 'default'`);
+          } catch (addError) {
+            console.error("Failed to add identifier column:", addError);
+          }
+        }
+        await this.alarm();
+      });
+    });
+  }
+  /**
+   * Schedule a task to be executed in the future
+   * @template T Type of the payload data
+   * @param when When to execute the task (Date, seconds delay, or cron expression)
+   * @param callback Name of the method to call
+   * @param payload Data to pass to the callback
+   * @returns Schedule object representing the scheduled task
+   */
+  async schedule(when, callback, payload) {
+    const id = nanoid(9);
+    if (typeof callback !== "string") {
+      throw new Error("Callback must be a string");
+    }
+    if (typeof this.parent[callback] !== "function") {
+      throw new Error(`this.parent.${callback} is not a function`);
+    }
+    if (when instanceof Date) {
+      const timestamp = Math.floor(when.getTime() / 1e3);
+      this.sql`
+            INSERT OR REPLACE INTO _actor_alarms (id, callback, payload, type, time, identifier)
+            VALUES (${id}, ${callback}, ${JSON.stringify(payload)}, 'scheduled', ${timestamp}, ${this.actorName ?? "default"})
+          `;
+      await this._scheduleNextAlarm();
+      return {
+        id,
+        callback,
+        payload,
+        time: timestamp,
+        type: "scheduled",
+        identifier: this.actorName ?? "default"
+      };
+    }
+    if (typeof when === "number") {
+      const time3 = new Date(Date.now() + when * 1e3);
+      const timestamp = Math.floor(time3.getTime() / 1e3);
+      this.sql`
+            INSERT OR REPLACE INTO _actor_alarms (id, callback, payload, type, delayInSeconds, time, identifier)
+            VALUES (${id}, ${callback}, ${JSON.stringify(payload)}, 'delayed', ${when}, ${timestamp}, ${this.actorName ?? "default"})
+          `;
+      await this._scheduleNextAlarm();
+      return {
+        id,
+        callback,
+        payload,
+        delayInSeconds: when,
+        time: timestamp,
+        type: "delayed",
+        identifier: this.actorName ?? "default"
+      };
+    }
+    if (typeof when === "string") {
+      const nextExecutionTime = getNextCronTime(when);
+      const timestamp = Math.floor(nextExecutionTime.getTime() / 1e3);
+      this.sql`
+            INSERT OR REPLACE INTO _actor_alarms (id, callback, payload, type, cron, time, identifier)
+            VALUES (${id}, ${callback}, ${JSON.stringify(payload)}, 'cron', ${when}, ${timestamp}, ${this.actorName ?? "default"})
+          `;
+      await this._scheduleNextAlarm();
+      return {
+        id,
+        callback,
+        payload,
+        cron: when,
+        time: timestamp,
+        type: "cron",
+        identifier: this.actorName ?? "default"
+      };
+    }
+    throw new Error("Invalid schedule type");
+  }
+  /**
+   * Get a scheduled task by ID
+   * @template T Type of the payload data
+   * @param id ID of the scheduled task
+   * @returns The Schedule object or undefined if not found
+   */
+  async getSchedule(id) {
+    const result = this.sql`
+          SELECT * FROM _actor_alarms WHERE id = ${id}
+        `;
+    if (!result) {
+      console.error(`schedule ${id} not found`);
+      return void 0;
+    }
+    return { ...result[0], payload: JSON.parse(result[0].payload) };
+  }
+  /**
+   * Get scheduled tasks matching the given criteria
+   * @template T Type of the payload data
+   * @param criteria Criteria to filter schedules
+   * @returns Array of matching Schedule objects
+   */
+  getSchedules(criteria = {}) {
+    let query = "SELECT * FROM _actor_alarms WHERE 1=1";
+    const params = [];
+    if (criteria.id) {
+      query += " AND id = ?";
+      params.push(criteria.id);
+    }
+    if (criteria.type) {
+      query += " AND type = ?";
+      params.push(criteria.type);
+    }
+    if (criteria.timeRange) {
+      query += " AND time >= ? AND time <= ?";
+      const start = criteria.timeRange.start || /* @__PURE__ */ new Date(0);
+      const end = criteria.timeRange.end || /* @__PURE__ */ new Date(999999999999999);
+      params.push(Math.floor(start.getTime() / 1e3), Math.floor(end.getTime() / 1e3));
+    }
+    if (!this.storage?.sql) {
+      return [];
+    }
+    const result = this.storage.sql.exec(query, ...params).toArray().map((row) => ({
+      ...row,
+      payload: JSON.parse(row.payload)
+    }));
+    return result;
+  }
+  /**
+   * Cancel a scheduled task
+   * @param id ID of the task to cancel
+   * @returns true if the task was cancelled, false otherwise
+   */
+  async cancelSchedule(id) {
+    this.sql`DELETE FROM _actor_alarms WHERE id = ${id}`;
+    await this._scheduleNextAlarm();
+    return true;
+  }
+  async _scheduleNextAlarm() {
+    const result = this.sql`
+          SELECT time, COALESCE(identifier, 'default') as identifier FROM _actor_alarms 
+          WHERE time > ${Math.floor(Date.now() / 1e3)}
+          ORDER BY time ASC 
+          LIMIT 1
+        `;
+    if (!result || !this.storage)
+      return;
+    if (result.length > 0 && "time" in result[0]) {
+      const nextTime = result[0].time * 1e3;
+      await this.storage.setAlarm(nextTime);
+    }
+  }
+  /**
+   * Execute SQL queries against the Agent's database
+   * @template T Type of the returned rows
+   * @param strings SQL query template strings
+   * @param values Values to be inserted into the query
+   * @returns Array of query results
+   */
+  sql(strings, ...values) {
+    let query = "";
+    try {
+      query = strings.reduce((acc, str, i) => acc + str + (i < values.length ? "?" : ""), "");
+      if (!this.storage) {
+        throw new Error("Storage not initialized");
+      }
+      return [...this.storage.sql.exec(query, ...values)];
+    } catch (e) {
+      console.error(`failed to execute sql query: ${query}`, e);
+      throw e;
+    }
+  }
+  async _tryCatch(fn) {
+    try {
+      return await fn();
+    } catch (e) {
+      throw e;
+    }
+  }
+};
+
+// ../../node_modules/.pnpm/@cloudflare+actors@0.0.1-beta.6/node_modules/@cloudflare/actors/dist/sockets/src/index.js
+init_virtual_unenv_global_polyfill_cloudflare_unenv_preset_node_process();
+init_virtual_unenv_global_polyfill_cloudflare_unenv_preset_node_console();
+init_performance2();
+var Sockets = class {
+  static {
+    __name(this, "Sockets");
+  }
+  constructor(ctx, parent) {
+    this.connections = /* @__PURE__ */ new Map();
+    this.context = ctx;
+    this.parent = parent;
+    if (ctx) {
+      const webSockets = ctx.getWebSockets();
+      this.connections = /* @__PURE__ */ new Map();
+      webSockets.forEach((socket) => {
+        const attachment = socket.deserializeAttachment?.() || {};
+        const connectionId = attachment.connectionId || crypto.randomUUID();
+        this.connections.set(connectionId, socket);
+      });
+    }
+  }
+  message(message, to, exclude) {
+    for (const [id, socket] of this.connections.entries()) {
+      if (exclude?.includes(id) || exclude?.includes(socket)) {
+        continue;
+      }
+      if (to === "*" || !to?.length || to.includes(id) || to.includes(socket)) {
+        socket.send(message);
+      }
+    }
+  }
+  async webSocketMessage(ws, message) {
+  }
+  async webSocketClose(ws, code) {
+    for (const [id, socket] of this.connections.entries()) {
+      if (socket === ws) {
+        this.connections.delete(id);
+        break;
+      }
+    }
+    ws.close(code, "Durable Object is closing WebSocket");
+  }
+  acceptWebSocket(request) {
+    const webSocketPair = new WebSocketPair();
+    const [client, server] = Object.values(webSocketPair);
+    const url = new URL(request.url);
+    const params = url.searchParams;
+    const queryParams = {};
+    params.forEach((value, key) => {
+      queryParams[key] = value;
+    });
+    const connectionId = queryParams.id || crypto.randomUUID();
+    if (!queryParams.id) {
+      queryParams.id = connectionId;
+    }
+    if (server.serializeAttachment) {
+      server.serializeAttachment({
+        connectionId,
+        queryParams
+      });
+    }
+    this.connections.set(connectionId, server);
+    this.context?.acceptWebSocket(server);
+    return { client, server };
+  }
+};
+
+// ../../node_modules/.pnpm/@cloudflare+actors@0.0.1-beta.6/node_modules/@cloudflare/actors/dist/core/src/persist.js
+init_virtual_unenv_global_polyfill_cloudflare_unenv_preset_node_process();
+init_virtual_unenv_global_polyfill_cloudflare_unenv_preset_node_console();
+init_performance2();
+var PERSISTED_PROPERTIES = Symbol("PERSISTED_PROPERTIES");
+var PERSISTED_VALUES = Symbol("PERSISTED_VALUES");
+var IS_PROXIED = Symbol("IS_PROXIED");
+function createDeepProxy(value, instance, propertyKey, triggerPersist) {
+  if (value === null || value === void 0 || typeof value !== "object" || typeof value === "function") {
+    return value;
+  }
+  try {
+    if (value[IS_PROXIED] === true) {
+      return value;
+    }
+  } catch (e) {
+  }
+  if (value instanceof Date || value instanceof RegExp || value instanceof Error || value instanceof ArrayBuffer || ArrayBuffer.isView(value)) {
+    return value;
+  }
+  const proxy = new Proxy(value, {
+    get(target, key) {
+      if (key === IS_PROXIED)
+        return true;
+      if (typeof key === "symbol" || key === "toString" || key === "valueOf" || key === "constructor" || key === "toJSON") {
+        return Reflect.get(target, key);
+      }
+      try {
+        if (!Reflect.has(target, key)) {
+          const newObj = {};
+          Reflect.set(target, key, newObj);
+          return createDeepProxy(newObj, instance, propertyKey, triggerPersist);
+        }
+        const prop = Reflect.get(target, key);
+        if ((prop === null || prop === void 0) && typeof key === "string" && !key.startsWith("_") && key !== "length") {
+          const newObj = {};
+          Reflect.set(target, key, newObj);
+          return createDeepProxy(newObj, instance, propertyKey, triggerPersist);
+        }
+        if (Array.isArray(target) && typeof prop === "function") {
+          const mutatingArrayMethods = ["push", "pop", "shift", "unshift", "splice", "sort", "reverse", "fill"];
+          if (mutatingArrayMethods.includes(key)) {
+            return function(...args) {
+              const result = prop.apply(target, args);
+              triggerPersist();
+              return result;
+            };
+          }
+        }
+        if ((target instanceof Map || target instanceof Set) && typeof prop === "function") {
+          const mutatingCollectionMethods = ["set", "delete", "clear", "add"];
+          if (mutatingCollectionMethods.includes(key)) {
+            return function(...args) {
+              const result = prop.apply(target, args);
+              triggerPersist();
+              return result;
+            };
+          }
+        }
+        if (prop !== null && typeof prop === "object" && !Object.isFrozen(prop)) {
+          return createDeepProxy(prop, instance, propertyKey, triggerPersist);
+        }
+        return prop;
+      } catch (e) {
+        console.error(`Error accessing property ${String(key)}:`, e);
+        const newObj = {};
+        Reflect.set(target, key, newObj);
+        return createDeepProxy(newObj, instance, propertyKey, triggerPersist);
+      }
+    },
+    set(target, key, newValue) {
+      if (typeof key === "symbol") {
+        Reflect.set(target, key, newValue);
+        return true;
+      }
+      try {
+        const currentValue = Reflect.get(target, key);
+        if (currentValue !== null && typeof currentValue === "object" && newValue !== null && typeof newValue === "object" && !Array.isArray(currentValue) && !Array.isArray(newValue)) {
+          Object.assign(currentValue, newValue);
+        } else if (newValue !== null && typeof newValue === "object" && !Object.isFrozen(newValue)) {
+          const proxiedValue = createDeepProxy(newValue, instance, propertyKey, triggerPersist);
+          Reflect.set(target, key, proxiedValue);
+        } else {
+          Reflect.set(target, key, newValue);
+        }
+        triggerPersist();
+        return true;
+      } catch (e) {
+        const error3 = e;
+        console.error(`Error setting property ${String(key)}:`, error3);
+        try {
+          if (error3.message && error3.message.includes("Cannot create property")) {
+            const emptyObj = {};
+            Reflect.set(target, key, createDeepProxy(emptyObj, instance, propertyKey, triggerPersist));
+            return true;
+          }
+        } catch (recoveryErr) {
+          console.error("Error during recovery attempt:", recoveryErr);
+        }
+        return false;
+      }
+    },
+    deleteProperty(target, key) {
+      try {
+        if (Reflect.has(target, key)) {
+          Reflect.deleteProperty(target, key);
+          triggerPersist();
+        }
+        return true;
+      } catch (e) {
+        console.error(`Error deleting property ${String(key)}:`, e);
+        return false;
+      }
+    }
   });
   return proxy;
 }
-__name(wrap, "wrap");
-
-// ../../packages/autolemetry-cloudflare/dist/chunk-4L7DMWYY.js
-var import_api = __toESM(require_src(), 1);
-function instrumentKV(kv, namespaceName) {
-  const name = namespaceName || "kv";
-  const kvHandler = {
-    get(target, prop) {
-      const value = Reflect.get(target, prop);
-      if (prop === "get" && typeof value === "function") {
-        return new Proxy(value, {
-          apply: /* @__PURE__ */ __name((fnTarget, thisArg, args) => {
-            const [key, options] = args;
-            const tracer = import_api.trace.getTracer("autolemetry-edge");
-            return tracer.startActiveSpan(
-              `KV ${name}: get`,
-              {
-                kind: import_api.SpanKind.CLIENT,
-                attributes: {
-                  "db.system": "cloudflare-kv",
-                  "db.operation": "get",
-                  "db.namespace": name,
-                  "db.key": key,
-                  "db.cache_hit": options?.cacheTtl !== void 0
-                }
-              },
-              async (span2) => {
-                try {
-                  const result = await Reflect.apply(fnTarget, thisArg, args);
-                  span2.setAttribute("db.result.type", result === null ? "null" : typeof result);
-                  span2.setStatus({ code: import_api.SpanStatusCode.OK });
-                  return result;
-                } catch (error3) {
-                  span2.recordException(error3);
-                  span2.setStatus({
-                    code: import_api.SpanStatusCode.ERROR,
-                    message: error3 instanceof Error ? error3.message : String(error3)
-                  });
-                  throw error3;
-                } finally {
-                  span2.end();
-                }
-              }
-            );
-          }, "apply")
-        });
-      }
-      if (prop === "put" && typeof value === "function") {
-        return new Proxy(value, {
-          apply: /* @__PURE__ */ __name((fnTarget, thisArg, args) => {
-            const [key] = args;
-            const tracer = import_api.trace.getTracer("autolemetry-edge");
-            return tracer.startActiveSpan(
-              `KV ${name}: put`,
-              {
-                kind: import_api.SpanKind.CLIENT,
-                attributes: {
-                  "db.system": "cloudflare-kv",
-                  "db.operation": "put",
-                  "db.namespace": name,
-                  "db.key": key
-                }
-              },
-              async (span2) => {
-                try {
-                  const result = await Reflect.apply(fnTarget, thisArg, args);
-                  span2.setStatus({ code: import_api.SpanStatusCode.OK });
-                  return result;
-                } catch (error3) {
-                  span2.recordException(error3);
-                  span2.setStatus({
-                    code: import_api.SpanStatusCode.ERROR,
-                    message: error3 instanceof Error ? error3.message : String(error3)
-                  });
-                  throw error3;
-                } finally {
-                  span2.end();
-                }
-              }
-            );
-          }, "apply")
-        });
-      }
-      if (prop === "delete" && typeof value === "function") {
-        return new Proxy(value, {
-          apply: /* @__PURE__ */ __name((fnTarget, thisArg, args) => {
-            const [key] = args;
-            const tracer = import_api.trace.getTracer("autolemetry-edge");
-            return tracer.startActiveSpan(
-              `KV ${name}: delete`,
-              {
-                kind: import_api.SpanKind.CLIENT,
-                attributes: {
-                  "db.system": "cloudflare-kv",
-                  "db.operation": "delete",
-                  "db.namespace": name,
-                  "db.key": key
-                }
-              },
-              async (span2) => {
-                try {
-                  const result = await Reflect.apply(fnTarget, thisArg, args);
-                  span2.setStatus({ code: import_api.SpanStatusCode.OK });
-                  return result;
-                } catch (error3) {
-                  span2.recordException(error3);
-                  span2.setStatus({
-                    code: import_api.SpanStatusCode.ERROR,
-                    message: error3 instanceof Error ? error3.message : String(error3)
-                  });
-                  throw error3;
-                } finally {
-                  span2.end();
-                }
-              }
-            );
-          }, "apply")
-        });
-      }
-      if (prop === "list" && typeof value === "function") {
-        return new Proxy(value, {
-          apply: /* @__PURE__ */ __name((fnTarget, thisArg, args) => {
-            const [options] = args;
-            const tracer = import_api.trace.getTracer("autolemetry-edge");
-            return tracer.startActiveSpan(
-              `KV ${name}: list`,
-              {
-                kind: import_api.SpanKind.CLIENT,
-                attributes: {
-                  "db.system": "cloudflare-kv",
-                  "db.operation": "list",
-                  "db.namespace": name,
-                  "db.prefix": options?.prefix || void 0,
-                  "db.limit": options?.limit || void 0
-                }
-              },
-              async (span2) => {
-                try {
-                  const result = await Reflect.apply(fnTarget, thisArg, args);
-                  span2.setAttribute("db.result.keys_count", result.keys.length);
-                  span2.setStatus({ code: import_api.SpanStatusCode.OK });
-                  return result;
-                } catch (error3) {
-                  span2.recordException(error3);
-                  span2.setStatus({
-                    code: import_api.SpanStatusCode.ERROR,
-                    message: error3 instanceof Error ? error3.message : String(error3)
-                  });
-                  throw error3;
-                } finally {
-                  span2.end();
-                }
-              }
-            );
-          }, "apply")
-        });
-      }
-      return value;
+__name(createDeepProxy, "createDeepProxy");
+async function initializePersistedProperties(instance) {
+  if (!instance.storage?.raw)
+    return;
+  try {
+    await instance.storage.__studio({
+      type: "query",
+      statement: "CREATE TABLE IF NOT EXISTS _actor_persist (property TEXT PRIMARY KEY, value TEXT)"
+    });
+    const constructor = instance.constructor;
+    const persistedProps = constructor[PERSISTED_PROPERTIES];
+    if (!persistedProps || persistedProps.size === 0)
+      return;
+    if (!instance[PERSISTED_VALUES]) {
+      instance[PERSISTED_VALUES] = /* @__PURE__ */ new Map();
     }
-  };
-  return wrap(kv, kvHandler);
-}
-__name(instrumentKV, "instrumentKV");
-function instrumentR2(r2, bucketName) {
-  const name = bucketName || "r2";
-  const r2Handler = {
-    get(target, prop) {
-      const value = Reflect.get(target, prop);
-      if (prop === "get" && typeof value === "function") {
-        return new Proxy(value, {
-          apply: /* @__PURE__ */ __name((fnTarget, thisArg, args) => {
-            const [key] = args;
-            const tracer = import_api.trace.getTracer("autolemetry-edge");
-            return tracer.startActiveSpan(
-              `R2 ${name}: get`,
-              {
-                kind: import_api.SpanKind.CLIENT,
-                attributes: {
-                  "db.system": "cloudflare-r2",
-                  "db.operation": "get",
-                  "db.bucket": name,
-                  "db.key": key
+    const results = await instance.storage.__studio({
+      type: "query",
+      statement: "SELECT property, value FROM _actor_persist"
+    });
+    for (const row of results) {
+      if (persistedProps.has(row.property)) {
+        try {
+          let ensureObjectStructure = function(target, template) {
+            if (target === null || typeof target !== "object" || template === null || typeof template !== "object") {
+              return;
+            }
+            for (const key in template) {
+              if (template[key] !== null && typeof template[key] === "object") {
+                if (!target[key] || typeof target[key] !== "object") {
+                  target[key] = Array.isArray(template[key]) ? [] : {};
                 }
-              },
-              async (span2) => {
-                try {
-                  const result = await Reflect.apply(fnTarget, thisArg, args);
-                  if (result) {
-                    span2.setAttribute("db.result.size", result.size);
-                    span2.setAttribute("db.result.etag", result.etag);
-                    span2.setAttribute("db.result.content_type", result.httpMetadata?.contentType);
-                  } else {
-                    span2.setAttribute("db.result.exists", false);
-                  }
-                  span2.setStatus({ code: import_api.SpanStatusCode.OK });
-                  return result;
-                } catch (error3) {
-                  span2.recordException(error3);
-                  span2.setStatus({
-                    code: import_api.SpanStatusCode.ERROR,
-                    message: error3 instanceof Error ? error3.message : String(error3)
-                  });
-                  throw error3;
-                } finally {
-                  span2.end();
-                }
+                ensureObjectStructure(target[key], template[key]);
               }
-            );
-          }, "apply")
-        });
-      }
-      if (prop === "put" && typeof value === "function") {
-        return new Proxy(value, {
-          apply: /* @__PURE__ */ __name((fnTarget, thisArg, args) => {
-            const [key] = args;
-            const tracer = import_api.trace.getTracer("autolemetry-edge");
-            return tracer.startActiveSpan(
-              `R2 ${name}: put`,
-              {
-                kind: import_api.SpanKind.CLIENT,
-                attributes: {
-                  "db.system": "cloudflare-r2",
-                  "db.operation": "put",
-                  "db.bucket": name,
-                  "db.key": key
-                }
-              },
-              async (span2) => {
-                try {
-                  const result = await Reflect.apply(fnTarget, thisArg, args);
-                  span2.setAttribute("db.result.etag", result.etag);
-                  span2.setAttribute("db.result.uploaded", result.uploaded);
-                  span2.setStatus({ code: import_api.SpanStatusCode.OK });
-                  return result;
-                } catch (error3) {
-                  span2.recordException(error3);
-                  span2.setStatus({
-                    code: import_api.SpanStatusCode.ERROR,
-                    message: error3 instanceof Error ? error3.message : String(error3)
-                  });
-                  throw error3;
-                } finally {
-                  span2.end();
-                }
+            }
+          };
+          __name(ensureObjectStructure, "ensureObjectStructure");
+          let parsedValue;
+          try {
+            parsedValue = safeParse(row.value);
+            if (parsedValue && parsedValue.__error === "Serialization failed") {
+              console.warn(`Property ${row.property} had serialization issues: ${parsedValue.value}`);
+              parsedValue = typeof parsedValue.value === "string" ? parsedValue.value : {};
+            }
+            const initialValue = instance[row.property];
+            if (initialValue !== void 0 && typeof initialValue === "object" && initialValue !== null) {
+              if (typeof parsedValue !== "object" || parsedValue === null) {
+                console.warn(`Property ${row.property} type mismatch: expected object, got ${typeof parsedValue}. Resetting to initial structure.`);
+                parsedValue = structuredClone(initialValue);
+              } else {
+                ensureObjectStructure(parsedValue, initialValue);
               }
-            );
-          }, "apply")
-        });
-      }
-      if (prop === "delete" && typeof value === "function") {
-        return new Proxy(value, {
-          apply: /* @__PURE__ */ __name((fnTarget, thisArg, args) => {
-            const keys = args;
-            const tracer = import_api.trace.getTracer("autolemetry-edge");
-            return tracer.startActiveSpan(
-              `R2 ${name}: delete`,
-              {
-                kind: import_api.SpanKind.CLIENT,
-                attributes: {
-                  "db.system": "cloudflare-r2",
-                  "db.operation": "delete",
-                  "db.bucket": name,
-                  "db.keys_count": keys.length
-                }
-              },
-              async (span2) => {
-                try {
-                  const result = await Reflect.apply(fnTarget, thisArg, args);
-                  span2.setStatus({ code: import_api.SpanStatusCode.OK });
-                  return result;
-                } catch (error3) {
-                  span2.recordException(error3);
-                  span2.setStatus({
-                    code: import_api.SpanStatusCode.ERROR,
-                    message: error3 instanceof Error ? error3.message : String(error3)
-                  });
-                  throw error3;
-                } finally {
-                  span2.end();
-                }
-              }
-            );
-          }, "apply")
-        });
-      }
-      if (prop === "list" && typeof value === "function") {
-        return new Proxy(value, {
-          apply: /* @__PURE__ */ __name((fnTarget, thisArg, args) => {
-            const [options] = args;
-            const tracer = import_api.trace.getTracer("autolemetry-edge");
-            return tracer.startActiveSpan(
-              `R2 ${name}: list`,
-              {
-                kind: import_api.SpanKind.CLIENT,
-                attributes: {
-                  "db.system": "cloudflare-r2",
-                  "db.operation": "list",
-                  "db.bucket": name,
-                  "db.prefix": options?.prefix || void 0,
-                  "db.limit": options?.limit || void 0
-                }
-              },
-              async (span2) => {
-                try {
-                  const result = await Reflect.apply(fnTarget, thisArg, args);
-                  span2.setAttribute("db.result.objects_count", result.objects.length);
-                  span2.setAttribute("db.result.truncated", result.truncated);
-                  span2.setStatus({ code: import_api.SpanStatusCode.OK });
-                  return result;
-                } catch (error3) {
-                  span2.recordException(error3);
-                  span2.setStatus({
-                    code: import_api.SpanStatusCode.ERROR,
-                    message: error3 instanceof Error ? error3.message : String(error3)
-                  });
-                  throw error3;
-                } finally {
-                  span2.end();
-                }
-              }
-            );
-          }, "apply")
-        });
-      }
-      return value;
-    }
-  };
-  return wrap(r2, r2Handler);
-}
-__name(instrumentR2, "instrumentR2");
-function instrumentD1(d1, databaseName) {
-  const name = databaseName || "d1";
-  const d1Handler = {
-    get(target, prop) {
-      const value = Reflect.get(target, prop);
-      if (prop === "prepare" && typeof value === "function") {
-        return new Proxy(value, {
-          apply: /* @__PURE__ */ __name((fnTarget, thisArg, args) => {
-            const [query] = args;
-            const tracer = import_api.trace.getTracer("autolemetry-edge");
-            const prepared = Reflect.apply(fnTarget, thisArg, args);
-            const preparedHandler = {
-              get(target2, prop2) {
-                const value2 = Reflect.get(target2, prop2);
-                if (prop2 === "first" || prop2 === "run" || prop2 === "all" || prop2 === "raw") {
-                  return new Proxy(value2, {
-                    apply: /* @__PURE__ */ __name((fnTarget2, thisArg2, args2) => {
-                      return tracer.startActiveSpan(
-                        `D1 ${name}: ${prop2}`,
-                        {
-                          kind: import_api.SpanKind.CLIENT,
-                          attributes: {
-                            "db.system": "cloudflare-d1",
-                            "db.operation": prop2,
-                            "db.name": name,
-                            "db.statement": query
-                          }
-                        },
-                        async (span2) => {
-                          try {
-                            const result = await Reflect.apply(fnTarget2, thisArg2, args2);
-                            if (prop2 === "all" && Array.isArray(result)) {
-                              span2.setAttribute("db.result.rows_count", result.length);
-                            } else if (prop2 === "first" && result) {
-                              span2.setAttribute("db.result.exists", true);
-                            }
-                            span2.setStatus({ code: import_api.SpanStatusCode.OK });
-                            return result;
-                          } catch (error3) {
-                            span2.recordException(error3);
-                            span2.setStatus({
-                              code: import_api.SpanStatusCode.ERROR,
-                              message: error3 instanceof Error ? error3.message : String(error3)
-                            });
-                            throw error3;
-                          } finally {
-                            span2.end();
-                          }
-                        }
-                      );
-                    }, "apply")
-                  });
-                }
-                return value2;
-              }
-            };
-            return wrap(prepared, preparedHandler);
-          }, "apply")
-        });
-      }
-      if (prop === "exec" && typeof value === "function") {
-        return new Proxy(value, {
-          apply: /* @__PURE__ */ __name((fnTarget, thisArg, args) => {
-            const [query] = args;
-            const tracer = import_api.trace.getTracer("autolemetry-edge");
-            return tracer.startActiveSpan(
-              `D1 ${name}: exec`,
-              {
-                kind: import_api.SpanKind.CLIENT,
-                attributes: {
-                  "db.system": "cloudflare-d1",
-                  "db.operation": "exec",
-                  "db.name": name,
-                  "db.statement": query
-                }
-              },
-              async (span2) => {
-                try {
-                  const result = await Reflect.apply(fnTarget, thisArg, args);
-                  span2.setAttribute("db.result.count", result.count);
-                  span2.setStatus({ code: import_api.SpanStatusCode.OK });
-                  return result;
-                } catch (error3) {
-                  span2.recordException(error3);
-                  span2.setStatus({
-                    code: import_api.SpanStatusCode.ERROR,
-                    message: error3 instanceof Error ? error3.message : String(error3)
-                  });
-                  throw error3;
-                } finally {
-                  span2.end();
-                }
-              }
-            );
-          }, "apply")
-        });
-      }
-      return value;
-    }
-  };
-  return wrap(d1, d1Handler);
-}
-__name(instrumentD1, "instrumentD1");
-function instrumentServiceBinding(fetcher, serviceName) {
-  const name = serviceName || "service";
-  const fetcherHandler = {
-    get(target, prop) {
-      const value = Reflect.get(target, prop);
-      if (prop === "fetch" && typeof value === "function") {
-        return new Proxy(value, {
-          apply: /* @__PURE__ */ __name((fnTarget, thisArg, args) => {
-            const [input, init] = args;
-            const request = new Request(input, init);
-            const tracer = import_api.trace.getTracer("autolemetry-edge");
-            return tracer.startActiveSpan(
-              `Service ${name}: ${request.method}`,
-              {
-                kind: import_api.SpanKind.CLIENT,
-                attributes: {
-                  "rpc.system": "cloudflare-service-binding",
-                  "rpc.service": name,
-                  "http.request.method": request.method,
-                  "url.full": request.url
-                }
-              },
-              async (span2) => {
-                try {
-                  const response = await Reflect.apply(fnTarget, thisArg, args);
-                  span2.setAttribute("http.response.status_code", response.status);
-                  span2.setStatus({ code: import_api.SpanStatusCode.OK });
-                  return response;
-                } catch (error3) {
-                  span2.recordException(error3);
-                  span2.setStatus({
-                    code: import_api.SpanStatusCode.ERROR,
-                    message: error3 instanceof Error ? error3.message : String(error3)
-                  });
-                  throw error3;
-                } finally {
-                  span2.end();
-                }
-              }
-            );
-          }, "apply")
-        });
-      }
-      return value;
-    }
-  };
-  return wrap(fetcher, fetcherHandler);
-}
-__name(instrumentServiceBinding, "instrumentServiceBinding");
-function instrumentBindings(env2) {
-  const instrumented = {};
-  for (const [key, value] of Object.entries(env2)) {
-    if (!value || typeof value !== "object") {
-      instrumented[key] = value;
-      continue;
-    }
-    if ("get" in value && "put" in value && "delete" in value && "list" in value) {
-      try {
-        instrumented[key] = instrumentKV(value, key);
-        continue;
-      } catch {
+            }
+          } catch (parseErr) {
+            console.error(`Failed to parse persisted value for ${row.property}:`, parseErr);
+            parsedValue = {};
+          }
+          const triggerPersist = /* @__PURE__ */ __name(() => {
+            const currentValue = instance[PERSISTED_VALUES].get(row.property);
+            if (instance.storage?.raw) {
+              instance._persistProperty(row.property, currentValue).catch((err) => {
+                console.error(`Failed to persist property ${row.property}:`, err);
+              });
+            }
+          }, "triggerPersist");
+          const proxiedValue = parsedValue !== null && typeof parsedValue === "object" ? createDeepProxy(parsedValue, instance, row.property, triggerPersist) : parsedValue;
+          instance[PERSISTED_VALUES].set(row.property, proxiedValue);
+        } catch (err) {
+          console.error(`Failed to process persisted value for ${row.property}:`, err);
+          instance[PERSISTED_VALUES].set(row.property, {});
+        }
       }
     }
-    if ("get" in value && "put" in value && "delete" in value && "list" in value && "head" in value) {
-      try {
-        instrumented[key] = instrumentR2(value, key);
-        continue;
-      } catch {
-      }
-    }
-    if ("prepare" in value && "exec" in value && typeof value.prepare === "function") {
-      try {
-        instrumented[key] = instrumentD1(value, key);
-        continue;
-      } catch {
-      }
-    }
-    if ("fetch" in value && typeof value.fetch === "function") {
-      try {
-        instrumented[key] = instrumentServiceBinding(value, key);
-        continue;
-      } catch {
-      }
-    }
-    instrumented[key] = value;
+  } catch (err) {
+    console.error("Error initializing persisted properties:", err);
   }
-  return instrumented;
 }
-__name(instrumentBindings, "instrumentBindings");
+__name(initializePersistedProperties, "initializePersistedProperties");
+function safeStringify(obj) {
+  const seen = /* @__PURE__ */ new WeakSet();
+  return JSON.stringify(obj, (key, value) => {
+    if (value instanceof Date) {
+      return { __type: "Date", value: value.toISOString() };
+    }
+    if (value instanceof RegExp) {
+      return { __type: "RegExp", source: value.source, flags: value.flags };
+    }
+    if (value instanceof Error) {
+      return { __type: "Error", message: value.message, stack: value.stack };
+    }
+    if (typeof value === "object" && value !== null) {
+      if (seen.has(value)) {
+        return "[Circular]";
+      }
+      seen.add(value);
+    }
+    return value;
+  });
+}
+__name(safeStringify, "safeStringify");
+function safeParse(json) {
+  return JSON.parse(json, (key, value) => {
+    if (value && typeof value === "object" && value.__type) {
+      switch (value.__type) {
+        case "Date":
+          return new Date(value.value);
+        case "RegExp":
+          return new RegExp(value.source, value.flags);
+        case "Error":
+          const error3 = new Error(value.message);
+          error3.stack = value.stack;
+          return error3;
+      }
+    }
+    return value;
+  });
+}
+__name(safeParse, "safeParse");
+async function persistProperty(instance, propertyKey, value) {
+  if (!instance.storage?.raw)
+    return;
+  try {
+    let rawValue = value;
+    let serializedValue;
+    try {
+      serializedValue = safeStringify(rawValue);
+    } catch (jsonErr) {
+      console.error(`Failed to serialize property ${propertyKey}:`, jsonErr);
+      serializedValue = JSON.stringify({ __error: "Serialization failed", value: String(rawValue) });
+    }
+    await instance.storage.__studio({
+      type: "query",
+      statement: "INSERT INTO _actor_persist (property, value) VALUES (?, ?) ON CONFLICT(property) DO UPDATE SET value = ?",
+      params: [propertyKey, serializedValue, serializedValue]
+    });
+    if (typeof instance.onPersist === "function") {
+      try {
+        await instance.onPersist(propertyKey, value);
+      } catch (hookErr) {
+        console.error(`Error in onPersist hook for property ${propertyKey}:`, hookErr);
+      }
+    }
+  } catch (err) {
+    console.error(`Error persisting property ${propertyKey}:`, err);
+    throw err;
+  }
+}
+__name(persistProperty, "persistProperty");
+
+// ../../node_modules/.pnpm/@cloudflare+actors@0.0.1-beta.6/node_modules/@cloudflare/actors/dist/core/src/index.js
+var DEFAULT_ACTOR_NAME = "default";
+var TRACKING_ACTOR_NAME = "_cf_actors";
+var Actor = class extends DurableObject {
+  static {
+    __name(this, "Actor");
+  }
+  get name() {
+    return this._name;
+  }
+  __studio(_) {
+    return this.storage.__studio(_);
+  }
+  /**
+   * Set the identifier for the actor as named by the client
+   * @param id The identifier to set
+   */
+  async setName(id) {
+    this.identifier = id;
+    this._name = id;
+    this._setNameCalled = true;
+    this.alarms.actorName = this.identifier;
+    if (!this._onInitCalled) {
+      this._onInitCalled = true;
+      await this.onInit();
+    }
+  }
+  /**
+   * Static method to extract an ID from a request URL. Default response "default".
+   * @param request - The incoming request
+   * @returns The name string value defined by the client application to reference an instance
+   */
+  static async nameFromRequest(request) {
+    return DEFAULT_ACTOR_NAME;
+  }
+  /**
+   * Static method to get an actor instance by ID
+   * @param id - The ID of the actor to get
+   * @returns The actor instance
+   */
+  static get(id) {
+    const stub = getActor(this, id);
+    stub.setName(id);
+    return stub;
+  }
+  /**
+   * Creates a new instance of Actor.
+   * @param ctx - The DurableObjectState for this actor
+   * @param env - The environment object containing bindings and configuration
+   */
+  constructor(ctx, env3) {
+    if (ctx && env3) {
+      super(ctx, env3);
+    } else {
+      super();
+    }
+    this._onInitCalled = false;
+    this._setNameCalled = false;
+    if (ctx && env3) {
+      this.storage = new Storage(ctx.storage);
+      this.alarms = new Alarms(ctx, this);
+      this.sockets = new Sockets(ctx, this);
+      this[PERSISTED_VALUES] = /* @__PURE__ */ new Map();
+      ctx.blockConcurrencyWhile(async () => {
+        await this._initializePersistedProperties();
+      });
+    } else {
+      this.storage = new Storage(void 0);
+      this.alarms = new Alarms(void 0, this);
+      this.sockets = new Sockets(void 0, this);
+      this[PERSISTED_VALUES] = /* @__PURE__ */ new Map();
+    }
+    if (!this.identifier) {
+      this.identifier = DEFAULT_ACTOR_NAME;
+    }
+    if (!this.name) {
+      this._name = DEFAULT_ACTOR_NAME;
+    }
+  }
+  /**
+   * Initializes the persisted properties table and loads any stored values.
+   * This is called during construction to ensure properties are loaded before any code uses them.
+   * @private
+   */
+  async _initializePersistedProperties() {
+    await initializePersistedProperties(this);
+  }
+  /**
+   * Waits for setName to be called before proceeding with request handling.
+   * This ensures that onRequest has access to the correct identifier.
+   * @private
+   */
+  async _waitForSetName() {
+    const timeout = 5e3;
+    const startTime = Date.now();
+    while (!this._setNameCalled) {
+      const elapsed = Date.now() - startTime;
+      if (elapsed > timeout) {
+        throw new Error(`setName() was not called within ${timeout}ms. Actor may not be properly initialized.`);
+      }
+      await scheduler.wait(0);
+    }
+  }
+  /**
+   * Persists a property value to the Durable Object storage.
+   * @param propertyKey The name of the property to persist
+   * @param value The value to persist
+   * @private
+   */
+  async _persistProperty(propertyKey, value) {
+    await persistProperty(this, propertyKey, value);
+  }
+  /**
+   * Abstract method that must be implemented by derived classes to handle incoming requests.
+   * @param request - The incoming request to handle
+   * @returns A Promise that resolves to a Response
+   */
+  async fetch(request) {
+    const config2 = this.constructor.configuration(request);
+    const url = new URL(request.url);
+    const upgradePath = config2?.sockets?.upgradePath ?? "/ws";
+    if (url.pathname === upgradePath || url.pathname.startsWith(`${upgradePath}/`)) {
+      const shouldUpgrade = this.shouldUpgradeSocket(request);
+      if (shouldUpgrade) {
+        return Promise.resolve(this.onWebSocketUpgrade(request));
+      }
+    }
+    if (config2?.sockets?.autoResponse) {
+      this.ctx.setWebSocketAutoResponse(new WebSocketRequestResponsePair(config2.sockets.autoResponse.ping, config2.sockets.autoResponse.pong));
+    }
+    if (!this._setNameCalled) {
+      try {
+        await this._waitForSetName();
+      } catch (error3) {
+        console.error("Failed to wait for setName:", error3);
+        return new Response("Actor initialization timeout", { status: 503 });
+      }
+    }
+    return this.onRequest(request);
+  }
+  /**
+   * Lifecycle method that is called when the actor is initialized.
+   * @protected
+   */
+  async onInit() {
+  }
+  /**
+   * Lifecycle method that is called when the actor is notified of an alarm.
+   * @protected
+   * @param alarmInfo - Information about the alarm that was triggered
+   */
+  async onAlarm(alarmInfo) {
+  }
+  /**
+   * Hook that is called whenever a @Persist decorated property is stored in the database.
+   * Override this method to listen to persistence events.
+   * @param key The property key that was persisted
+   * @param value The value that was persisted
+   */
+  onPersist(key, value) {
+  }
+  onRequest(request) {
+    return Promise.resolve(new Response("Not Found", { status: 404 }));
+  }
+  shouldUpgradeSocket(request) {
+    return false;
+  }
+  // Only need to override if you want to handle the socket upgrade yourself.
+  // Otherwise this is all handled for you automatically.
+  onWebSocketUpgrade(request) {
+    const { client, server } = this.sockets.acceptWebSocket(request);
+    const response = new Response(null, {
+      status: 101,
+      webSocket: client
+    });
+    Promise.resolve().then(() => {
+      this.onWebSocketConnect(server, request);
+    });
+    return response;
+  }
+  onWebSocketConnect(ws, request) {
+  }
+  onWebSocketDisconnect(ws) {
+  }
+  onWebSocketMessage(ws, message) {
+  }
+  async webSocketMessage(ws, message) {
+    this.sockets.webSocketMessage(ws, message);
+    this.onWebSocketMessage(ws, message);
+  }
+  async webSocketClose(ws, code) {
+    this.sockets.webSocketClose(ws, code);
+    this.onWebSocketDisconnect(ws);
+  }
+  async alarm(alarmInfo) {
+    await this.onAlarm(alarmInfo);
+    if (this.alarms) {
+      return this.alarms.alarm(alarmInfo);
+    }
+    return;
+  }
+  /**
+   * Execute SQL queries against the Agent's database
+   * @template T Type of the returned rows
+   * @param strings SQL query template strings
+   * @param values Values to be inserted into the query
+   * @returns Array of query results
+   */
+  sql(strings, ...values) {
+    let query = "";
+    try {
+      query = strings.reduce((acc, str, i) => acc + str + (i < values.length ? "?" : ""), "");
+      return [...this.ctx.storage.sql.exec(query, ...values)];
+    } catch (e) {
+      console.error(`failed to execute sql query: ${query}`, e);
+      throw e;
+    }
+  }
+  /**
+   * Tracks the last access time of an actor instance.
+   * @param idString The identifier of the actor instance to track.
+   */
+  async track(idString) {
+    if (TRACKING_ACTOR_NAME === idString) {
+      throw new Error(`Cannot track instance with same name as tracking instance, change value to differ from "${TRACKING_ACTOR_NAME}"`);
+    }
+    const trackingStub = getActor(this.constructor, TRACKING_ACTOR_NAME);
+    const currentDateTime = (/* @__PURE__ */ new Date()).toISOString();
+    await trackingStub.__studio({ type: "query", statement: "CREATE TABLE IF NOT EXISTS actors (identifier TEXT PRIMARY KEY, last_accessed TEXT)" });
+    await trackingStub.__studio({ type: "query", statement: `INSERT INTO actors (identifier, last_accessed) VALUES (?, ?) ON CONFLICT(identifier) DO UPDATE SET last_accessed = ?`, params: [idString, currentDateTime, currentDateTime] });
+  }
+  /**
+   * Destroy the Actor by removing all actor library specific tables and state
+   * that is associated with the actor.
+   * @param _ - Optional configuration object
+   * @param _.trackingInstance - Optional tracking instance name
+   * @param _.forceEviction - When true, forces eviction of the actor from the cache
+   * @throws Will throw an exception when forceEviction is true
+   */
+  async destroy(_) {
+    if (this.name) {
+      try {
+        const trackerActor = getActor(this.constructor, TRACKING_ACTOR_NAME);
+        if (trackerActor) {
+          await trackerActor.sql`DELETE FROM actors WHERE identifier = ${this.name};`;
+        }
+      } catch (e) {
+        console.error(`Failed to delete actor from tracking instance: ${e instanceof Error ? e.message : "Unknown error"}`);
+      }
+    }
+    await this.ctx.storage.deleteAlarm();
+    await this.ctx.storage.deleteAll();
+    if (_?.forceEviction) {
+      this.ctx.abort("destroyed");
+    }
+  }
+};
+Actor.configuration = (request) => {
+  return {
+    locationHint: void 0,
+    sockets: {
+      upgradePath: "/ws"
+    }
+  };
+};
+function getActor(ActorClass, id) {
+  const className = ActorClass.name;
+  const envObj = env2;
+  const locationHint = ActorClass.configuration().locationHint;
+  const bindingName = Object.keys(envObj).find((key) => {
+    const binding2 = env2.__DURABLE_OBJECT_BINDINGS?.[key];
+    return key === className || binding2?.class_name === className;
+  });
+  if (!bindingName) {
+    throw new Error(`No Durable Object binding found for actor class ${className}. Check update your wrangler.jsonc to match the binding "name" and "class_name" to be the same as the class name.`);
+  }
+  const namespace = envObj[bindingName];
+  const stub = namespace.getByName(id, { locationHint });
+  stub.setName(id);
+  return stub;
+}
+__name(getActor, "getActor");
+
+// ../../packages/autolemetry-cloudflare/dist/actors.js
+init_virtual_unenv_global_polyfill_cloudflare_unenv_preset_node_process();
+init_virtual_unenv_global_polyfill_cloudflare_unenv_preset_node_console();
+init_performance2();
+var import_api3 = __toESM(require_src(), 1);
 
 // ../../packages/autolemetry-edge/dist/index.js
 init_virtual_unenv_global_polyfill_cloudflare_unenv_preset_node_process();
@@ -7288,146 +8318,6 @@ function toAnyValue(value) {
 }
 __name(toAnyValue, "toAnyValue");
 
-// ../../node_modules/.pnpm/@opentelemetry+resources@2.2.0_@opentelemetry+api@1.9.0/node_modules/@opentelemetry/resources/build/esm/index.js
-init_virtual_unenv_global_polyfill_cloudflare_unenv_preset_node_process();
-init_virtual_unenv_global_polyfill_cloudflare_unenv_preset_node_console();
-init_performance2();
-
-// ../../node_modules/.pnpm/@opentelemetry+resources@2.2.0_@opentelemetry+api@1.9.0/node_modules/@opentelemetry/resources/build/esm/ResourceImpl.js
-init_virtual_unenv_global_polyfill_cloudflare_unenv_preset_node_process();
-init_virtual_unenv_global_polyfill_cloudflare_unenv_preset_node_console();
-init_performance2();
-var import_api2 = __toESM(require_src());
-
-// ../../node_modules/.pnpm/@opentelemetry+resources@2.2.0_@opentelemetry+api@1.9.0/node_modules/@opentelemetry/resources/build/esm/utils.js
-init_virtual_unenv_global_polyfill_cloudflare_unenv_preset_node_process();
-init_virtual_unenv_global_polyfill_cloudflare_unenv_preset_node_console();
-init_performance2();
-var isPromiseLike = /* @__PURE__ */ __name((val) => {
-  return val !== null && typeof val === "object" && typeof val.then === "function";
-}, "isPromiseLike");
-
-// ../../node_modules/.pnpm/@opentelemetry+resources@2.2.0_@opentelemetry+api@1.9.0/node_modules/@opentelemetry/resources/build/esm/ResourceImpl.js
-var ResourceImpl = class _ResourceImpl {
-  static {
-    __name(this, "ResourceImpl");
-  }
-  _rawAttributes;
-  _asyncAttributesPending = false;
-  _schemaUrl;
-  _memoizedAttributes;
-  static FromAttributeList(attributes, options) {
-    const res = new _ResourceImpl({}, options);
-    res._rawAttributes = guardedRawAttributes(attributes);
-    res._asyncAttributesPending = attributes.filter(([_, val]) => isPromiseLike(val)).length > 0;
-    return res;
-  }
-  constructor(resource, options) {
-    const attributes = resource.attributes ?? {};
-    this._rawAttributes = Object.entries(attributes).map(([k, v]) => {
-      if (isPromiseLike(v)) {
-        this._asyncAttributesPending = true;
-      }
-      return [k, v];
-    });
-    this._rawAttributes = guardedRawAttributes(this._rawAttributes);
-    this._schemaUrl = validateSchemaUrl(options?.schemaUrl);
-  }
-  get asyncAttributesPending() {
-    return this._asyncAttributesPending;
-  }
-  async waitForAsyncAttributes() {
-    if (!this.asyncAttributesPending) {
-      return;
-    }
-    for (let i = 0; i < this._rawAttributes.length; i++) {
-      const [k, v] = this._rawAttributes[i];
-      this._rawAttributes[i] = [k, isPromiseLike(v) ? await v : v];
-    }
-    this._asyncAttributesPending = false;
-  }
-  get attributes() {
-    if (this.asyncAttributesPending) {
-      import_api2.diag.error("Accessing resource attributes before async attributes settled");
-    }
-    if (this._memoizedAttributes) {
-      return this._memoizedAttributes;
-    }
-    const attrs = {};
-    for (const [k, v] of this._rawAttributes) {
-      if (isPromiseLike(v)) {
-        import_api2.diag.debug(`Unsettled resource attribute ${k} skipped`);
-        continue;
-      }
-      if (v != null) {
-        attrs[k] ??= v;
-      }
-    }
-    if (!this._asyncAttributesPending) {
-      this._memoizedAttributes = attrs;
-    }
-    return attrs;
-  }
-  getRawAttributes() {
-    return this._rawAttributes;
-  }
-  get schemaUrl() {
-    return this._schemaUrl;
-  }
-  merge(resource) {
-    if (resource == null)
-      return this;
-    const mergedSchemaUrl = mergeSchemaUrl(this, resource);
-    const mergedOptions = mergedSchemaUrl ? { schemaUrl: mergedSchemaUrl } : void 0;
-    return _ResourceImpl.FromAttributeList([...resource.getRawAttributes(), ...this.getRawAttributes()], mergedOptions);
-  }
-};
-function resourceFromAttributes(attributes, options) {
-  return ResourceImpl.FromAttributeList(Object.entries(attributes), options);
-}
-__name(resourceFromAttributes, "resourceFromAttributes");
-function guardedRawAttributes(attributes) {
-  return attributes.map(([k, v]) => {
-    if (isPromiseLike(v)) {
-      return [
-        k,
-        v.catch((err) => {
-          import_api2.diag.debug("promise rejection for resource attribute: %s - %s", k, err);
-          return void 0;
-        })
-      ];
-    }
-    return [k, v];
-  });
-}
-__name(guardedRawAttributes, "guardedRawAttributes");
-function validateSchemaUrl(schemaUrl) {
-  if (typeof schemaUrl === "string" || schemaUrl === void 0) {
-    return schemaUrl;
-  }
-  import_api2.diag.warn("Schema URL must be string or undefined, got %s. Schema URL will be ignored.", schemaUrl);
-  return void 0;
-}
-__name(validateSchemaUrl, "validateSchemaUrl");
-function mergeSchemaUrl(old, updating) {
-  const oldSchemaUrl = old?.schemaUrl;
-  const updatingSchemaUrl = updating?.schemaUrl;
-  const isOldEmpty = oldSchemaUrl === void 0 || oldSchemaUrl === "";
-  const isUpdatingEmpty = updatingSchemaUrl === void 0 || updatingSchemaUrl === "";
-  if (isOldEmpty) {
-    return updatingSchemaUrl;
-  }
-  if (isUpdatingEmpty) {
-    return oldSchemaUrl;
-  }
-  if (oldSchemaUrl === updatingSchemaUrl) {
-    return oldSchemaUrl;
-  }
-  import_api2.diag.warn('Schema URL merge conflict: old resource has "%s", updating resource has "%s". Resulting resource will have undefined Schema URL.', oldSchemaUrl, updatingSchemaUrl);
-  return void 0;
-}
-__name(mergeSchemaUrl, "mergeSchemaUrl");
-
 // ../../node_modules/.pnpm/@opentelemetry+otlp-transformer@0.208.0_@opentelemetry+api@1.9.0/node_modules/@opentelemetry/otlp-transformer/build/esm/trace/internal.js
 init_virtual_unenv_global_polyfill_cloudflare_unenv_preset_node_process();
 init_virtual_unenv_global_polyfill_cloudflare_unenv_preset_node_console();
@@ -7442,32 +8332,32 @@ function buildSpanFlagsFrom(traceFlags, isRemote) {
   return flags;
 }
 __name(buildSpanFlagsFrom, "buildSpanFlagsFrom");
-function sdkSpanToOtlpSpan(span2, encoder) {
-  const ctx = span2.spanContext();
-  const status = span2.status;
-  const parentSpanId = span2.parentSpanContext?.spanId ? encoder.encodeSpanContext(span2.parentSpanContext?.spanId) : void 0;
+function sdkSpanToOtlpSpan(span, encoder) {
+  const ctx = span.spanContext();
+  const status = span.status;
+  const parentSpanId = span.parentSpanContext?.spanId ? encoder.encodeSpanContext(span.parentSpanContext?.spanId) : void 0;
   return {
     traceId: encoder.encodeSpanContext(ctx.traceId),
     spanId: encoder.encodeSpanContext(ctx.spanId),
     parentSpanId,
     traceState: ctx.traceState?.serialize(),
-    name: span2.name,
+    name: span.name,
     // Span kind is offset by 1 because the API does not define a value for unset
-    kind: span2.kind == null ? 0 : span2.kind + 1,
-    startTimeUnixNano: encoder.encodeHrTime(span2.startTime),
-    endTimeUnixNano: encoder.encodeHrTime(span2.endTime),
-    attributes: toAttributes(span2.attributes),
-    droppedAttributesCount: span2.droppedAttributesCount,
-    events: span2.events.map((event) => toOtlpSpanEvent(event, encoder)),
-    droppedEventsCount: span2.droppedEventsCount,
+    kind: span.kind == null ? 0 : span.kind + 1,
+    startTimeUnixNano: encoder.encodeHrTime(span.startTime),
+    endTimeUnixNano: encoder.encodeHrTime(span.endTime),
+    attributes: toAttributes(span.attributes),
+    droppedAttributesCount: span.droppedAttributesCount,
+    events: span.events.map((event) => toOtlpSpanEvent(event, encoder)),
+    droppedEventsCount: span.droppedEventsCount,
     status: {
       // API and proto enums share the same values
       code: status.code,
       message: status.message
     },
-    links: span2.links.map((link) => toOtlpLink(link, encoder)),
-    droppedLinksCount: span2.droppedLinksCount,
-    flags: buildSpanFlagsFrom(ctx.traceFlags, span2.parentSpanContext?.isRemote)
+    links: span.links.map((link) => toOtlpLink(link, encoder)),
+    droppedLinksCount: span.droppedLinksCount,
+    flags: buildSpanFlagsFrom(ctx.traceFlags, span.parentSpanContext?.isRemote)
   };
 }
 __name(sdkSpanToOtlpSpan, "sdkSpanToOtlpSpan");
@@ -7637,7 +8527,7 @@ var AlwaysOnSampler = class {
 init_virtual_unenv_global_polyfill_cloudflare_unenv_preset_node_process();
 init_virtual_unenv_global_polyfill_cloudflare_unenv_preset_node_console();
 init_performance2();
-var import_api3 = __toESM(require_src());
+var import_api = __toESM(require_src());
 var import_core2 = __toESM(require_src3());
 var ParentBasedSampler = class {
   static {
@@ -7659,21 +8549,21 @@ var ParentBasedSampler = class {
     this._localParentSampled = config2.localParentSampled ?? new AlwaysOnSampler();
     this._localParentNotSampled = config2.localParentNotSampled ?? new AlwaysOffSampler();
   }
-  shouldSample(context6, traceId, spanName, spanKind, attributes, links) {
-    const parentContext = import_api3.trace.getSpanContext(context6);
-    if (!parentContext || !(0, import_api3.isSpanContextValid)(parentContext)) {
-      return this._root.shouldSample(context6, traceId, spanName, spanKind, attributes, links);
+  shouldSample(context4, traceId, spanName, spanKind, attributes, links) {
+    const parentContext = import_api.trace.getSpanContext(context4);
+    if (!parentContext || !(0, import_api.isSpanContextValid)(parentContext)) {
+      return this._root.shouldSample(context4, traceId, spanName, spanKind, attributes, links);
     }
     if (parentContext.isRemote) {
-      if (parentContext.traceFlags & import_api3.TraceFlags.SAMPLED) {
-        return this._remoteParentSampled.shouldSample(context6, traceId, spanName, spanKind, attributes, links);
+      if (parentContext.traceFlags & import_api.TraceFlags.SAMPLED) {
+        return this._remoteParentSampled.shouldSample(context4, traceId, spanName, spanKind, attributes, links);
       }
-      return this._remoteParentNotSampled.shouldSample(context6, traceId, spanName, spanKind, attributes, links);
+      return this._remoteParentNotSampled.shouldSample(context4, traceId, spanName, spanKind, attributes, links);
     }
-    if (parentContext.traceFlags & import_api3.TraceFlags.SAMPLED) {
-      return this._localParentSampled.shouldSample(context6, traceId, spanName, spanKind, attributes, links);
+    if (parentContext.traceFlags & import_api.TraceFlags.SAMPLED) {
+      return this._localParentSampled.shouldSample(context4, traceId, spanName, spanKind, attributes, links);
     }
-    return this._localParentNotSampled.shouldSample(context6, traceId, spanName, spanKind, attributes, links);
+    return this._localParentNotSampled.shouldSample(context4, traceId, spanName, spanKind, attributes, links);
   }
   toString() {
     return `ParentBased{root=${this._root.toString()}, remoteParentSampled=${this._remoteParentSampled.toString()}, remoteParentNotSampled=${this._remoteParentNotSampled.toString()}, localParentSampled=${this._localParentSampled.toString()}, localParentNotSampled=${this._localParentNotSampled.toString()}}`;
@@ -7721,7 +8611,7 @@ function getIdGenerator(bytes) {
 __name(getIdGenerator, "getIdGenerator");
 
 // ../../packages/autolemetry-edge/dist/chunk-ADMIROH3.js
-var import_api4 = __toESM(require_src(), 1);
+var import_api2 = __toESM(require_src(), 1);
 var PACKAGE_VERSION = "3.0.0";
 var defaultHeaders = {
   accept: "application/json",
@@ -7803,12 +8693,12 @@ var SpanProcessorWithFlush = class {
   }
   onStart(_span, _parentContext) {
   }
-  onEnd(span2) {
-    const traceId = span2.spanContext().traceId;
+  onEnd(span) {
+    const traceId = span.spanContext().traceId;
     if (!this.spans.has(traceId)) {
       this.spans.set(traceId, []);
     }
-    this.spans.get(traceId).push(span2);
+    this.spans.get(traceId).push(span);
   }
   /**
    * Force flush spans for a specific trace
@@ -7877,13 +8767,13 @@ var TailSamplingSpanProcessor = class {
     this.wrapped = new SpanProcessorWithFlush(exporter, postProcessor);
     this.tailSampler = tailSampler;
   }
-  onStart(span2, parentContext) {
-    this.wrapped.onStart(span2, parentContext);
+  onStart(span, parentContext) {
+    this.wrapped.onStart(span, parentContext);
   }
-  onEnd(span2) {
-    const traceId = span2.spanContext().traceId;
-    const spanId = span2.spanContext().spanId;
-    const parentSpanId = "parentSpanId" in span2 ? span2.parentSpanId : void 0;
+  onEnd(span) {
+    const traceId = span.spanContext().traceId;
+    const spanId = span.spanContext().spanId;
+    const parentSpanId = "parentSpanId" in span ? span.parentSpanId : void 0;
     if (!this.traces.has(traceId)) {
       this.traces.set(traceId, {
         traceId,
@@ -7892,25 +8782,25 @@ var TailSamplingSpanProcessor = class {
         // Will be set when we identify the local root
       });
     }
-    const trace9 = this.traces.get(traceId);
-    const hasLocalParent = parentSpanId && trace9.spans.some((s) => s.spanContext().spanId === parentSpanId);
+    const trace5 = this.traces.get(traceId);
+    const hasLocalParent = parentSpanId && trace5.spans.some((s) => s.spanContext().spanId === parentSpanId);
     if (!hasLocalParent) {
-      trace9.localRootSpan = span2;
+      trace5.localRootSpan = span;
     }
-    trace9.spans.push(span2);
+    trace5.spans.push(span);
     const isDefinitiveRoot = !parentSpanId;
-    const shouldAutoFlush = isDefinitiveRoot && trace9.localRootSpan && trace9.localRootSpan.spanContext().spanId === spanId;
+    const shouldAutoFlush = isDefinitiveRoot && trace5.localRootSpan && trace5.localRootSpan.spanContext().spanId === spanId;
     if (shouldAutoFlush) {
       if (this.tailSampler) {
-        const shouldKeep = this.tailSampler(trace9);
+        const shouldKeep = this.tailSampler(trace5);
         if (shouldKeep) {
-          for (const bufferedSpan of trace9.spans) {
+          for (const bufferedSpan of trace5.spans) {
             this.wrapped.onEnd(bufferedSpan);
           }
           void this.wrapped.forceFlush(traceId);
         }
       } else {
-        for (const bufferedSpan of trace9.spans) {
+        for (const bufferedSpan of trace5.spans) {
           this.wrapped.onEnd(bufferedSpan);
         }
         void this.wrapped.forceFlush(traceId);
@@ -7920,20 +8810,20 @@ var TailSamplingSpanProcessor = class {
   }
   async forceFlush(traceId) {
     if (traceId) {
-      const trace9 = this.traces.get(traceId);
-      if (trace9) {
-        if (!trace9.localRootSpan && trace9.spans.length > 0) {
-          trace9.localRootSpan = trace9.spans[0];
+      const trace5 = this.traces.get(traceId);
+      if (trace5) {
+        if (!trace5.localRootSpan && trace5.spans.length > 0) {
+          trace5.localRootSpan = trace5.spans[0];
         }
         if (this.tailSampler) {
-          const shouldKeep = this.tailSampler(trace9);
+          const shouldKeep = this.tailSampler(trace5);
           if (shouldKeep) {
-            for (const bufferedSpan of trace9.spans) {
+            for (const bufferedSpan of trace5.spans) {
               this.wrapped.onEnd(bufferedSpan);
             }
           }
         } else {
-          for (const bufferedSpan of trace9.spans) {
+          for (const bufferedSpan of trace5.spans) {
             this.wrapped.onEnd(bufferedSpan);
           }
         }
@@ -7947,14 +8837,9 @@ var TailSamplingSpanProcessor = class {
     return this.wrapped.shutdown();
   }
 };
-var CONFIG_KEY = (0, import_api4.createContextKey)("autolemetry-edge-config");
-function getActiveConfig() {
-  const value = import_api4.context.active().getValue(CONFIG_KEY);
-  return value ?? null;
-}
-__name(getActiveConfig, "getActiveConfig");
+var CONFIG_KEY = (0, import_api2.createContextKey)("autolemetry-edge-config");
 function setConfig(config2) {
-  return import_api4.context.active().setValue(CONFIG_KEY, config2);
+  return import_api2.context.active().setValue(CONFIG_KEY, config2);
 }
 __name(setConfig, "setConfig");
 function parseConfig(config2) {
@@ -8019,8 +8904,8 @@ function createParentRatioSampler(config2) {
 __name(createParentRatioSampler, "createParentRatioSampler");
 function createInitialiser(config2) {
   if (typeof config2 === "function") {
-    return (env2, trigger) => {
-      const conf = parseConfig(config2(env2, trigger));
+    return (env3, trigger) => {
+      const conf = parseConfig(config2(env3, trigger));
       return conf;
     };
   } else {
@@ -8031,1722 +8916,123 @@ function createInitialiser(config2) {
 __name(createInitialiser, "createInitialiser");
 
 // ../../packages/autolemetry-edge/dist/index.js
-var import_core4 = __toESM(require_src3(), 1);
-var import_semantic_conventions = __toESM(require_src2(), 1);
-var import_api5 = __toESM(require_src(), 1);
 import { AsyncLocalStorage } from "async_hooks";
 import { EventEmitter as EventEmitter2 } from "events";
 import { Buffer as Buffer2 } from "buffer";
 import { Buffer as Buffer3 } from "buffer";
-function transformExceptionAttributes(exception) {
-  const attributes = {};
-  if (typeof exception === "string") {
-    attributes[import_semantic_conventions.SEMATTRS_EXCEPTION_MESSAGE] = exception;
-  } else {
-    if (exception.code) {
-      attributes[import_semantic_conventions.SEMATTRS_EXCEPTION_TYPE] = exception.code.toString();
-    } else if (exception.name) {
-      attributes[import_semantic_conventions.SEMATTRS_EXCEPTION_TYPE] = exception.name;
-    }
-    if (exception.message) {
-      attributes[import_semantic_conventions.SEMATTRS_EXCEPTION_MESSAGE] = exception.message;
-    }
-    if (exception.stack) {
-      attributes[import_semantic_conventions.SEMATTRS_EXCEPTION_STACKTRACE] = exception.stack;
-    }
-  }
-  return attributes;
-}
-__name(transformExceptionAttributes, "transformExceptionAttributes");
-function millisToHr(millis) {
-  return [Math.trunc(millis / 1e3), millis % 1e3 * 1e6];
-}
-__name(millisToHr, "millisToHr");
-function getHrTime(input) {
-  const now = Date.now();
-  if (!input) {
-    return millisToHr(now);
-  } else if (input instanceof Date) {
-    return millisToHr(input.getTime());
-  } else if (typeof input === "number") {
-    return millisToHr(input);
-  } else if (Array.isArray(input)) {
-    return input;
-  }
-  const v = input;
-  throw new Error(`unreachable value: ${JSON.stringify(v)}`);
-}
-__name(getHrTime, "getHrTime");
-function isAttributeKey(key) {
-  return typeof key === "string" && key.length > 0;
-}
-__name(isAttributeKey, "isAttributeKey");
-var SpanImpl = class {
-  static {
-    __name(this, "SpanImpl");
-  }
-  name;
-  _spanContext;
-  onEnd;
-  parentSpanId;
-  parentSpanContext;
-  kind;
-  attributes;
-  status = {
-    code: 0
-    // SpanStatusCode.UNSET
-  };
-  endTime = [0, 0];
-  _duration = [0, 0];
-  startTime;
-  events = [];
-  links;
-  resource;
-  instrumentationScope = {
-    name: "autolemetry-edge"
-  };
-  _ended = false;
-  _droppedAttributesCount = 0;
-  _droppedEventsCount = 0;
-  _droppedLinksCount = 0;
-  constructor(init) {
-    this.name = init.name;
-    this._spanContext = init.spanContext;
-    this.parentSpanId = init.parentSpanId;
-    this.parentSpanContext = init.parentSpanContext;
-    this.kind = init.spanKind || 0;
-    this.attributes = (0, import_core4.sanitizeAttributes)(init.attributes);
-    this.startTime = getHrTime(init.startTime);
-    this.links = init.links || [];
-    this.resource = init.resource;
-    this.onEnd = init.onEnd;
-  }
-  addLink(link) {
-    this.links.push(link);
-    return this;
-  }
-  addLinks(links) {
-    this.links.push(...links);
-    return this;
-  }
-  spanContext() {
-    return this._spanContext;
-  }
-  setAttribute(key, value) {
-    if (isAttributeKey(key) && (0, import_core4.isAttributeValue)(value)) {
-      this.attributes[key] = value;
-    }
-    return this;
-  }
-  setAttributes(attributes) {
-    for (const [key, value] of Object.entries(attributes)) {
-      this.setAttribute(key, value);
-    }
-    return this;
-  }
-  addEvent(name, attributesOrStartTime, startTime) {
-    if ((0, import_core4.isTimeInput)(attributesOrStartTime)) {
-      startTime = attributesOrStartTime;
-      attributesOrStartTime = void 0;
-    }
-    const attributes = (0, import_core4.sanitizeAttributes)(attributesOrStartTime);
-    const time3 = getHrTime(startTime);
-    this.events.push({ name, attributes, time: time3 });
-    return this;
-  }
-  setStatus(status) {
-    this.status = status;
-    return this;
-  }
-  updateName(name) {
-    this.name = name;
-    return this;
-  }
-  end(endTime) {
-    if (this._ended) {
-      return;
-    }
-    this._ended = true;
-    this.endTime = getHrTime(endTime);
-    this._duration = (0, import_core4.hrTimeDuration)(this.startTime, this.endTime);
-    this.onEnd(this);
-  }
-  isRecording() {
-    return !this._ended;
-  }
-  recordException(exception, time3) {
-    const attributes = transformExceptionAttributes(exception);
-    this.addEvent("exception", attributes, time3);
-  }
-  get duration() {
-    return this._duration;
-  }
-  get ended() {
-    return this._ended;
-  }
-  get droppedAttributesCount() {
-    return this._droppedAttributesCount;
-  }
-  get droppedEventsCount() {
-    return this._droppedEventsCount;
-  }
-  get droppedLinksCount() {
-    return this._droppedLinksCount;
-  }
-};
-var NewTraceFlags = {
-  RANDOM_TRACE_ID_SET: 2
-};
 var idGenerator = new RandomIdGenerator();
-var withNextSpanAttributes;
-function getFlagAt(flagSequence, position) {
-  return (flagSequence >> position - 1 & 1) * position;
-}
-__name(getFlagAt, "getFlagAt");
-var WorkerTracer = class {
-  static {
-    __name(this, "WorkerTracer");
-  }
-  spanProcessors;
-  resource;
-  headSampler;
-  // Will be set via setHeadSampler
-  constructor(spanProcessors, resource) {
-    this.spanProcessors = spanProcessors;
-    this.resource = resource;
-  }
-  /**
-   * Set the head sampler (called from config)
-   */
-  setHeadSampler(sampler) {
-    this.headSampler = sampler;
-  }
-  /**
-   * Force flush spans for a specific trace
-   */
-  async forceFlush(traceId) {
-    const promises = this.spanProcessors.map(async (spanProcessor) => {
-      await spanProcessor.forceFlush(traceId);
-    });
-    await Promise.allSettled(promises);
-  }
-  /**
-   * Add extra resource attributes
-   */
-  addToResource(extra) {
-    this.resource.merge(extra);
-  }
-  /**
-   * Start a new span
-   */
-  startSpan(name, options = {}, context22 = import_api5.context.active()) {
-    if (options.root) {
-      context22 = import_api5.trace.deleteSpan(context22);
-    }
-    if (!this.headSampler) {
-      throw new Error(
-        "Head sampler not configured. This is a bug in the instrumentation logic"
-      );
-    }
-    const parentSpanContext = import_api5.trace.getSpan(context22)?.spanContext();
-    const { traceId, randomTraceFlag } = getTraceInfo(parentSpanContext);
-    const spanKind = options.kind || 0;
-    const sanitisedAttrs = (0, import_core4.sanitizeAttributes)(options.attributes);
-    const optionsWithSampler = options;
-    const sampler = optionsWithSampler.sampler || this.headSampler;
-    const samplingDecision = sampler.shouldSample(
-      context22,
-      traceId,
-      name,
-      spanKind,
-      sanitisedAttrs,
-      []
-    );
-    const { decision, traceState, attributes: attrs } = samplingDecision;
-    const attributes = Object.assign(
-      {},
-      options.attributes,
-      attrs,
-      withNextSpanAttributes
-    );
-    withNextSpanAttributes = {};
-    const spanId = idGenerator.generateSpanId();
-    const parentSpanId = parentSpanContext?.spanId;
-    const sampleFlag = decision === SamplingDecision.RECORD_AND_SAMPLED ? 1 : 0;
-    const traceFlags = sampleFlag + randomTraceFlag;
-    const spanContext = { traceId, spanId, traceFlags, traceState };
-    const span2 = new SpanImpl({
-      attributes: (0, import_core4.sanitizeAttributes)(attributes),
-      name,
-      onEnd: /* @__PURE__ */ __name((span3) => {
-        for (const sp of this.spanProcessors) {
-          sp.onEnd(span3);
-        }
-      }, "onEnd"),
-      resource: this.resource,
-      spanContext,
-      parentSpanContext,
-      parentSpanId,
-      spanKind,
-      startTime: options.startTime
-    });
-    for (const sp of this.spanProcessors) {
-      sp.onStart(span2, context22);
-    }
-    return span2;
-  }
-  startActiveSpan(name, ...args) {
-    const options = args.length > 1 ? args[0] : void 0;
-    const parentContext = args.length > 2 ? args[1] : import_api5.context.active();
-    const fn = args.at(-1);
-    const span2 = this.startSpan(name, options, parentContext);
-    const contextWithSpanSet = import_api5.trace.setSpan(parentContext, span2);
-    return import_api5.context.with(contextWithSpanSet, fn, void 0, span2);
-  }
-};
-function getTraceInfo(parentSpanContext) {
-  if (parentSpanContext && import_api5.trace.isSpanContextValid(parentSpanContext)) {
-    const { traceId, traceFlags } = parentSpanContext;
-    return { traceId, randomTraceFlag: getFlagAt(traceFlags, 2) };
-  } else {
-    return {
-      traceId: idGenerator.generateTraceId(),
-      randomTraceFlag: NewTraceFlags.RANDOM_TRACE_ID_SET
-    };
-  }
-}
-__name(getTraceInfo, "getTraceInfo");
-var ADD_LISTENER_METHODS = [
-  "addListener",
-  "on",
-  "once",
-  "prependListener",
-  "prependOnceListener"
-];
-var AbstractAsyncHooksContextManager = class {
-  static {
-    __name(this, "AbstractAsyncHooksContextManager");
-  }
-  /**
-   * Binds a context to the target function or event emitter
-   */
-  bind(context22, target) {
-    if (target instanceof EventEmitter2) {
-      return this._bindEventEmitter(context22, target);
-    }
-    if (typeof target === "function") {
-      return this._bindFunction(context22, target);
-    }
-    return target;
-  }
-  _bindFunction(context22, target) {
-    const manager = this;
-    const contextWrapper = /* @__PURE__ */ __name(function(...args) {
-      return manager.with(context22, () => target.apply(this, args));
-    }, "contextWrapper");
-    Object.defineProperty(contextWrapper, "length", {
-      enumerable: false,
-      configurable: true,
-      writable: false,
-      value: target.length
-    });
-    return contextWrapper;
-  }
-  /**
-   * By default, EventEmitter calls callbacks with their context, which we do
-   * not want. Instead we bind a specific context to all callbacks.
-   */
-  _bindEventEmitter(context22, ee) {
-    const map = this._getPatchMap(ee);
-    if (map !== void 0) return ee;
-    this._createPatchMap(ee);
-    for (const methodName of ADD_LISTENER_METHODS) {
-      if (ee[methodName] === void 0) continue;
-      ee[methodName] = this._patchAddListener(ee, ee[methodName], context22);
-    }
-    if (typeof ee.removeListener === "function") {
-      ee.removeListener = this._patchRemoveListener(ee, ee.removeListener);
-    }
-    if (typeof ee.off === "function") {
-      ee.off = this._patchRemoveListener(ee, ee.off);
-    }
-    if (typeof ee.removeAllListeners === "function") {
-      ee.removeAllListeners = this._patchRemoveAllListeners(
-        ee,
-        ee.removeAllListeners
-      );
-    }
-    return ee;
-  }
-  _patchRemoveListener(ee, original) {
-    const contextManager = this;
-    return function(event, listener) {
-      const events = contextManager._getPatchMap(ee)?.[event];
-      if (events === void 0) {
-        return original.call(this, event, listener);
-      }
-      const patchedListener = events.get(listener);
-      return original.call(this, event, patchedListener || listener);
-    };
-  }
-  _patchRemoveAllListeners(ee, original) {
-    const contextManager = this;
-    return function(event) {
-      const map = contextManager._getPatchMap(ee);
-      if (map !== void 0) {
-        if (arguments.length === 0) {
-          contextManager._createPatchMap(ee);
-        } else if (map[event] !== void 0) {
-          delete map[event];
-        }
-      }
-      return Reflect.apply(original, this, arguments);
-    };
-  }
-  _patchAddListener(ee, original, context22) {
-    const contextManager = this;
-    return function(event, listener) {
-      if (contextManager._wrapped) {
-        return original.call(this, event, listener);
-      }
-      let map = contextManager._getPatchMap(ee);
-      if (map === void 0) {
-        map = contextManager._createPatchMap(ee);
-      }
-      let listeners2 = map[event];
-      if (listeners2 === void 0) {
-        listeners2 = /* @__PURE__ */ new WeakMap();
-        map[event] = listeners2;
-      }
-      const patchedListener = contextManager.bind(context22, listener);
-      listeners2.set(listener, patchedListener);
-      contextManager._wrapped = true;
-      try {
-        return original.call(this, event, patchedListener);
-      } finally {
-        contextManager._wrapped = false;
-      }
-    };
-  }
-  _createPatchMap(ee) {
-    const map = /* @__PURE__ */ Object.create(null);
-    ee[this._kOtListeners] = map;
-    return map;
-  }
-  _getPatchMap(ee) {
-    return ee[this._kOtListeners];
-  }
-  _kOtListeners = Symbol("OtListeners");
-  _wrapped = false;
-};
-var AsyncLocalStorageContextManager = class extends AbstractAsyncHooksContextManager {
-  static {
-    __name(this, "AsyncLocalStorageContextManager");
-  }
-  _asyncLocalStorage;
-  constructor() {
-    super();
-    this._asyncLocalStorage = new AsyncLocalStorage();
-  }
-  active() {
-    return this._asyncLocalStorage.getStore() ?? import_api5.ROOT_CONTEXT;
-  }
-  with(context22, fn, thisArg, ...args) {
-    const cb = thisArg == null ? fn : fn.bind(thisArg);
-    return this._asyncLocalStorage.run(context22, cb, ...args);
-  }
-  enable() {
-    return this;
-  }
-  disable() {
-    this._asyncLocalStorage.disable();
-    return this;
-  }
-};
-var WorkerTracerProvider = class {
-  static {
-    __name(this, "WorkerTracerProvider");
-  }
-  tracer;
-  contextManager;
-  constructor(spanProcessors, resource) {
-    this.tracer = new WorkerTracer(spanProcessors, resource);
-    this.contextManager = new AsyncLocalStorageContextManager();
-  }
-  /**
-   * Get the tracer instance
-   */
-  getTracer(_name, _version, _config) {
-    return this.tracer;
-  }
-  /**
-   * Register this provider as the global tracer
-   */
-  register() {
-    this.contextManager.enable();
-    const provider = {
-      getTracer: /* @__PURE__ */ __name((_name, _version) => this.tracer, "getTracer")
-    };
-    import_api5.trace.setGlobalTracerProvider(provider);
-  }
-};
 globalThis.Buffer = Buffer2;
-var spanNameMap = /* @__PURE__ */ new WeakMap();
-function createTraceContext(span2) {
-  const spanContext = span2.spanContext();
-  return {
-    traceId: spanContext.traceId,
-    spanId: spanContext.spanId,
-    correlationId: spanContext.traceId.slice(0, 16),
-    "code.function": spanNameMap.get(span2),
-    setAttribute: span2.setAttribute.bind(span2),
-    setAttributes: span2.setAttributes.bind(span2),
-    setStatus: span2.setStatus.bind(span2),
-    recordException: span2.recordException.bind(span2)
-  };
-}
-__name(createTraceContext, "createTraceContext");
-function setSpanName(span2, name) {
-  spanNameMap.set(span2, name);
-}
-__name(setSpanName, "setSpanName");
 var TRACE_FACTORY_SYMBOL = Symbol.for("autolemetry.edge.functional.factory");
-var FACTORY_NAME_HINTS = /* @__PURE__ */ new Set(["ctx", "_ctx", "context", "tracecontext", "tracectx"]);
-var SINGLE_LINE_COMMENT_REGEX = /\/\/.*$/gm;
-var MULTI_LINE_COMMENT_REGEX = /\/\*[\s\S]*?\*\//gm;
 var PARAM_TOKEN_SANITIZE_REGEX = new RegExp(String.raw`[{}\[\]\s]`, "g");
-function markAsTraceFactory(fn) {
-  try {
-    Object.defineProperty(fn, TRACE_FACTORY_SYMBOL, {
-      value: true,
-      configurable: true
-    });
-  } catch {
-    fn[TRACE_FACTORY_SYMBOL] = true;
-  }
-}
-__name(markAsTraceFactory, "markAsTraceFactory");
-function hasFactoryMark(fn) {
-  return Boolean(fn[TRACE_FACTORY_SYMBOL]);
-}
-__name(hasFactoryMark, "hasFactoryMark");
-function sanitizeParameterToken(token) {
-  const [firstToken] = token.split("=");
-  return (firstToken ?? "").replaceAll(PARAM_TOKEN_SANITIZE_REGEX, "").trim();
-}
-__name(sanitizeParameterToken, "sanitizeParameterToken");
-function getFirstParameterToken(fn) {
-  let source = Function.prototype.toString.call(fn);
-  source = source.replaceAll(MULTI_LINE_COMMENT_REGEX, "").replaceAll(SINGLE_LINE_COMMENT_REGEX, "").trim();
-  const arrowMatch = source.match(/^(?:async\s*)?(?:\(([^)]*)\)|([^=()]+))\s*=>/);
-  if (arrowMatch) {
-    const params = (arrowMatch[1] ?? arrowMatch[2] ?? "").split(",");
-    const first = params[0]?.trim();
-    if (first) {
-      return sanitizeParameterToken(first);
-    }
-    return null;
-  }
-  const functionMatch = source.match(/^[^(]*\(([^)]*)\)/);
-  if (functionMatch) {
-    const params = functionMatch[1]?.split(",");
-    const first = params?.[0]?.trim();
-    if (first) {
-      return sanitizeParameterToken(first);
-    }
-  }
-  return null;
-}
-__name(getFirstParameterToken, "getFirstParameterToken");
-function looksLikeTraceFactory(fn) {
-  if (hasFactoryMark(fn)) {
-    return true;
-  }
-  if (fn.length === 0) {
-    return false;
-  }
-  const firstParam = getFirstParameterToken(fn);
-  if (!firstParam) {
-    return false;
-  }
-  const normalized = firstParam.toLowerCase();
-  if (FACTORY_NAME_HINTS.has(normalized) || normalized.startsWith("ctx") || normalized.startsWith("_ctx") || normalized.startsWith("trace")) {
-    return true;
-  }
-  return false;
-}
-__name(looksLikeTraceFactory, "looksLikeTraceFactory");
-function isFactoryReturningFunction(fnWithCtx) {
-  try {
-    const result = fnWithCtx(createDummyCtx());
-    return typeof result === "function";
-  } catch {
-    return false;
-  }
-}
-__name(isFactoryReturningFunction, "isFactoryReturningFunction");
-function isTraceFactoryFunction(fn) {
-  if (typeof fn !== "function") {
-    return false;
-  }
-  if (hasFactoryMark(fn)) {
-    return true;
-  }
-  if (looksLikeTraceFactory(fn)) {
-    markAsTraceFactory(fn);
-    return true;
-  }
-  return false;
-}
-__name(isTraceFactoryFunction, "isTraceFactoryFunction");
-function ensureTraceFactory(fnOrFactory) {
-  if (isTraceFactoryFunction(fnOrFactory)) {
-    return fnOrFactory;
-  }
-  const plainFn = fnOrFactory;
-  const factory = /* @__PURE__ */ __name((ctx) => {
-    return plainFn;
-  }, "factory");
-  markAsTraceFactory(factory);
-  return factory;
-}
-__name(ensureTraceFactory, "ensureTraceFactory");
-var MAX_ERROR_MESSAGE_LENGTH = 500;
-function createDummyCtx() {
-  return {
-    traceId: "",
-    spanId: "",
-    correlationId: "",
-    setAttribute: /* @__PURE__ */ __name(() => {
-    }, "setAttribute"),
-    setAttributes: /* @__PURE__ */ __name(() => {
-    }, "setAttributes"),
-    setStatus: /* @__PURE__ */ __name(() => {
-    }, "setStatus"),
-    recordException: /* @__PURE__ */ __name(() => {
-    }, "recordException")
-  };
-}
-__name(createDummyCtx, "createDummyCtx");
-function truncateErrorMessage(message) {
-  if (message.length <= MAX_ERROR_MESSAGE_LENGTH) {
-    return message;
-  }
-  return `${message.slice(0, MAX_ERROR_MESSAGE_LENGTH)}... (truncated)`;
-}
-__name(truncateErrorMessage, "truncateErrorMessage");
-function inferFunctionName(fn) {
-  const displayName = fn.displayName;
-  if (displayName) {
-    return displayName;
-  }
-  if (fn.name && fn.name !== "anonymous") {
-    return fn.name;
-  }
-  const source = Function.prototype.toString.call(fn);
-  const match = source.match(/function\s+([^(\s]+)/);
-  if (match && match[1] && match[1] !== "anonymous") {
-    return match[1];
-  }
-  return void 0;
-}
-__name(inferFunctionName, "inferFunctionName");
-function getSpanName(options, fn, variableName) {
-  if (options.name) {
-    return options.name;
-  }
-  let fnName = variableName ?? inferFunctionName(fn);
-  fnName = fnName || "anonymous";
-  if (options.serviceName) {
-    return `${options.serviceName}.${fnName}`;
-  }
-  if (fnName && fnName !== "anonymous") {
-    return fnName;
-  }
-  return "unknown";
-}
-__name(getSpanName, "getSpanName");
-function isAsyncFunction(fn) {
-  return typeof fn === "function" && fn.constructor?.name === "AsyncFunction";
-}
-__name(isAsyncFunction, "isAsyncFunction");
 var INSTRUMENTED_SYMBOL = Symbol.for("autolemetry.edge.functional.instrumented");
-function wrapWithTracingAsync(fnFactory, options, variableName) {
-  const tempFn = fnFactory(createDummyCtx());
-  const spanName = getSpanName(options, tempFn, variableName);
-  const wrappedFunction = /* @__PURE__ */ __name(async function wrappedFunction2(...args) {
-    const tracer = import_api5.trace.getTracer("autolemetry-edge");
-    const spanOptions = options.sampler ? { sampler: options.sampler } : {};
-    return tracer.startActiveSpan(spanName, spanOptions, async (span2) => {
-      setSpanName(span2, spanName);
-      try {
-        const actualFn = fnFactory(createTraceContext(span2));
-        if (options.attributes) {
-          span2.setAttributes(options.attributes);
-        }
-        if (options.attributesFromArgs) {
-          const argsAttrs = options.attributesFromArgs(args);
-          span2.setAttributes(argsAttrs);
-        }
-        const result = await actualFn(...args);
-        if (options.attributesFromResult) {
-          const resultAttrs = options.attributesFromResult(result);
-          span2.setAttributes(resultAttrs);
-        }
-        span2.setAttribute("code.function", spanName);
-        span2.setStatus({ code: import_api5.SpanStatusCode.OK });
-        span2.end();
-        return result;
-      } catch (error3) {
-        const message = truncateErrorMessage(
-          error3 instanceof Error ? error3.message : String(error3 ?? "Unknown error")
-        );
-        span2.setAttribute("code.function", spanName);
-        span2.setStatus({ code: import_api5.SpanStatusCode.ERROR, message });
-        span2.recordException(error3 instanceof Error ? error3 : new Error(String(error3)));
-        span2.end();
-        throw error3;
-      }
-    });
-  }, "wrappedFunction2");
-  Object.defineProperty(wrappedFunction, "name", {
-    value: tempFn.name || "trace",
-    configurable: true
-  });
-  wrappedFunction[INSTRUMENTED_SYMBOL] = true;
-  return wrappedFunction;
-}
-__name(wrapWithTracingAsync, "wrapWithTracingAsync");
-function wrapWithTracingSync(fnFactory, options, variableName) {
-  const tempFn = fnFactory(createDummyCtx());
-  const spanName = getSpanName(options, tempFn, variableName);
-  const wrappedFunction = /* @__PURE__ */ __name(function wrappedFunction2(...args) {
-    const tracer = import_api5.trace.getTracer("autolemetry-edge");
-    const spanOptions = options.sampler ? { sampler: options.sampler } : {};
-    return tracer.startActiveSpan(spanName, spanOptions, (span2) => {
-      setSpanName(span2, spanName);
-      try {
-        const actualFn = fnFactory(createTraceContext(span2));
-        if (options.attributes) {
-          span2.setAttributes(options.attributes);
-        }
-        if (options.attributesFromArgs) {
-          const argsAttrs = options.attributesFromArgs(args);
-          span2.setAttributes(argsAttrs);
-        }
-        const result = actualFn(...args);
-        if (options.attributesFromResult) {
-          const resultAttrs = options.attributesFromResult(result);
-          span2.setAttributes(resultAttrs);
-        }
-        span2.setAttribute("code.function", spanName);
-        span2.setStatus({ code: import_api5.SpanStatusCode.OK });
-        span2.end();
-        return result;
-      } catch (error3) {
-        const message = truncateErrorMessage(
-          error3 instanceof Error ? error3.message : String(error3 ?? "Unknown error")
-        );
-        span2.setAttribute("code.function", spanName);
-        span2.setStatus({ code: import_api5.SpanStatusCode.ERROR, message });
-        span2.recordException(error3 instanceof Error ? error3 : new Error(String(error3)));
-        span2.end();
-        throw error3;
-      }
-    });
-  }, "wrappedFunction2");
-  Object.defineProperty(wrappedFunction, "name", {
-    value: tempFn.name || "trace",
-    configurable: true
-  });
-  wrappedFunction[INSTRUMENTED_SYMBOL] = true;
-  return wrappedFunction;
-}
-__name(wrapWithTracingSync, "wrapWithTracingSync");
-function wrapFactoryWithTracing(fnOrFactory, options, variableName) {
-  const factory = ensureTraceFactory(fnOrFactory);
-  const sampleFn = factory(createDummyCtx());
-  const useAsyncWrapper = isAsyncFunction(sampleFn);
-  if (useAsyncWrapper) {
-    return wrapWithTracingAsync(
-      factory,
-      options,
-      variableName
-    );
-  }
-  return wrapWithTracingSync(
-    factory,
-    options,
-    variableName
-  );
-}
-__name(wrapFactoryWithTracing, "wrapFactoryWithTracing");
-function executeImmediately(fn, options) {
-  const tracer = import_api5.trace.getTracer("@autolemetry/edge");
-  const spanName = options.name || "anonymous";
-  return tracer.startActiveSpan(spanName, (span2) => {
-    try {
-      setSpanName(span2, spanName);
-      const ctxValue = createTraceContext(span2);
-      const onSuccess = /* @__PURE__ */ __name((result2) => {
-        span2.setStatus({ code: import_api5.SpanStatusCode.OK });
-        if (options.attributes) {
-          for (const [key, value] of Object.entries(options.attributes)) {
-            span2.setAttribute(key, value);
-          }
-        }
-        span2.end();
-        return result2;
-      }, "onSuccess");
-      const onError = /* @__PURE__ */ __name((error3) => {
-        const errorMessage = error3 instanceof Error ? error3.message : "Unknown error";
-        const truncatedMessage = truncateErrorMessage(errorMessage);
-        span2.setStatus({
-          code: import_api5.SpanStatusCode.ERROR,
-          message: truncatedMessage
-        });
-        span2.setAttribute("error", true);
-        span2.setAttribute(
-          "exception.type",
-          error3 instanceof Error ? error3.constructor.name : "Error"
-        );
-        span2.setAttribute("exception.message", truncatedMessage);
-        span2.recordException(
-          error3 instanceof Error ? error3 : new Error(String(error3))
-        );
-        span2.end();
-        throw error3;
-      }, "onError");
-      const result = fn(ctxValue);
-      if (result instanceof Promise) {
-        return result.then(onSuccess, onError);
-      }
-      return onSuccess(result);
-    } catch (error3) {
-      const errorMessage = error3 instanceof Error ? error3.message : "Unknown error";
-      const truncatedMessage = truncateErrorMessage(errorMessage);
-      span2.setStatus({
-        code: import_api5.SpanStatusCode.ERROR,
-        message: truncatedMessage
-      });
-      span2.setAttribute("error", true);
-      span2.setAttribute("exception.message", truncatedMessage);
-      span2.recordException(
-        error3 instanceof Error ? error3 : new Error(String(error3))
-      );
-      span2.end();
-      throw error3;
-    }
-  });
-}
-__name(executeImmediately, "executeImmediately");
-function trace32(fnOrNameOrOptions, maybeFn) {
-  if (typeof fnOrNameOrOptions === "function") {
-    if (looksLikeTraceFactory(fnOrNameOrOptions) && !isFactoryReturningFunction(fnOrNameOrOptions)) {
-      return executeImmediately(
-        fnOrNameOrOptions,
-        {}
-      );
-    }
-    return wrapFactoryWithTracing(
-      fnOrNameOrOptions,
-      {}
-    );
-  }
-  if (typeof fnOrNameOrOptions === "string") {
-    if (!maybeFn) {
-      throw new Error("trace(name, fn): fn is required");
-    }
-    if (looksLikeTraceFactory(maybeFn) && !isFactoryReturningFunction(maybeFn)) {
-      return executeImmediately(
-        maybeFn,
-        { name: fnOrNameOrOptions }
-      );
-    }
-    return wrapFactoryWithTracing(
-      maybeFn,
-      { name: fnOrNameOrOptions }
-    );
-  }
-  if (!maybeFn) {
-    throw new Error("trace(options, fn): fn is required");
-  }
-  if (looksLikeTraceFactory(maybeFn) && !isFactoryReturningFunction(maybeFn)) {
-    return executeImmediately(
-      maybeFn,
-      fnOrNameOrOptions
-    );
-  }
-  return wrapFactoryWithTracing(
-    maybeFn,
-    fnOrNameOrOptions
-  );
-}
-__name(trace32, "trace3");
-function span(options, fn) {
-  const tracer = import_api5.trace.getTracer("autolemetry-edge");
-  const execute = /* @__PURE__ */ __name((span2) => {
-    setSpanName(span2, options.name);
-    try {
-      if (options.attributes) {
-        for (const [key, value] of Object.entries(options.attributes)) {
-          span2.setAttribute(key, value);
-        }
-      }
-      const result2 = fn(span2);
-      if (result2 instanceof Promise) {
-        return result2.then((value) => {
-          span2.setAttribute("code.function", options.name);
-          span2.setStatus({ code: import_api5.SpanStatusCode.OK });
-          span2.end();
-          return value;
-        }).catch((error3) => {
-          const message = truncateErrorMessage(
-            error3 instanceof Error ? error3.message : String(error3 ?? "Unknown error")
-          );
-          span2.setAttribute("code.function", options.name);
-          span2.setStatus({ code: import_api5.SpanStatusCode.ERROR, message });
-          span2.recordException(error3 instanceof Error ? error3 : new Error(String(error3)));
-          span2.end();
-          throw error3;
-        });
-      }
-      span2.setAttribute("code.function", options.name);
-      span2.setStatus({ code: import_api5.SpanStatusCode.OK });
-      span2.end();
-      return result2;
-    } catch (error3) {
-      const message = truncateErrorMessage(
-        error3 instanceof Error ? error3.message : String(error3 ?? "Unknown error")
-      );
-      span2.setAttribute("code.function", options.name);
-      span2.setStatus({ code: import_api5.SpanStatusCode.ERROR, message });
-      span2.recordException(error3 instanceof Error ? error3 : new Error(String(error3)));
-      span2.end();
-      throw error3;
-    }
-  }, "execute");
-  const result = tracer.startActiveSpan(options.name, execute);
-  if (result instanceof Promise) {
-    return result;
-  }
-  return result;
-}
-__name(span, "span");
 
-// ../../packages/autolemetry-cloudflare/dist/index.js
-var import_api6 = __toESM(require_src(), 1);
-function gatherRequestAttributes(request) {
-  const url = new URL(request.url);
-  return {
-    "http.request.method": request.method.toUpperCase(),
-    "url.full": request.url,
-    "url.scheme": url.protocol.replace(":", ""),
-    "server.address": url.host,
-    "url.path": url.pathname,
-    "url.query": url.search,
-    "network.protocol.name": "http",
-    "user_agent.original": request.headers.get("user-agent") || void 0
-  };
+// ../../packages/autolemetry-cloudflare/dist/actors.js
+function getTracer5() {
+  return import_api3.trace.getTracer("autolemetry-cloudflare-actors");
 }
-__name(gatherRequestAttributes, "gatherRequestAttributes");
-function gatherResponseAttributes(response) {
+__name(getTracer5, "getTracer5");
+function tracedHandler(actorClass, config2) {
+  const initialiser = createInitialiser(config2);
   return {
-    "http.response.status_code": response.status,
-    "http.response.body.size": response.headers.get("content-length") || void 0
-  };
-}
-__name(gatherResponseAttributes, "gatherResponseAttributes");
-function instrumentGlobalFetch() {
-  const originalFetch = globalThis.fetch;
-  const instrumentedFetch = /* @__PURE__ */ __name(function fetch2(input, init) {
-    const request = new Request(input, init);
-    if (!request.url.startsWith("http")) {
-      return originalFetch(input, init);
-    }
-    const config2 = getActiveConfig();
-    if (!config2) {
-      return originalFetch(input, init);
-    }
-    const tracer = import_api6.trace.getTracer("autolemetry-edge");
-    const url = new URL(request.url);
-    const spanName = `${request.method} ${url.host}`;
-    return tracer.startActiveSpan(
-      spanName,
-      {
-        kind: import_api6.SpanKind.CLIENT,
-        attributes: gatherRequestAttributes(request)
-      },
-      async (span2) => {
-        try {
-          const shouldIncludeContext = typeof config2.fetch?.includeTraceContext === "function" ? config2.fetch.includeTraceContext(request) : config2.fetch?.includeTraceContext ?? true;
-          if (shouldIncludeContext) {
-            import_api6.propagation.inject(import_api6.context.active(), request.headers, {
-              set: /* @__PURE__ */ __name((headers, key, value) => {
-                if (typeof value === "string") {
-                  headers.set(key, value);
-                }
-              }, "set")
-            });
-          }
-          const response = await originalFetch(request);
-          span2.setAttributes(gatherResponseAttributes(response));
-          if (response.ok) {
-            span2.setStatus({ code: import_api6.SpanStatusCode.OK });
-          } else {
-            span2.setStatus({ code: import_api6.SpanStatusCode.ERROR });
-          }
-          return response;
-        } catch (error3) {
-          span2.recordException(error3);
-          span2.setStatus({
-            code: import_api6.SpanStatusCode.ERROR,
-            message: error3 instanceof Error ? error3.message : String(error3)
-          });
-          throw error3;
-        } finally {
-          span2.end();
+    async fetch(request, env3, _ctx) {
+      const telemetryConfig = initialiser(env3, { type: "http" });
+      const configContext = setConfig(telemetryConfig);
+      const parentContext = import_api3.propagation.extract(configContext, request.headers);
+      const tracer = getTracer5();
+      const url = new URL(request.url);
+      const actorClassName = actorClass.name || "Actor";
+      let actorName;
+      try {
+        if (actorClass.nameFromRequest) {
+          actorName = await actorClass.nameFromRequest(request);
         }
+      } catch {
+        actorName = void 0;
       }
-    );
-  }, "fetch");
-  globalThis.fetch = instrumentedFetch;
-}
-__name(instrumentGlobalFetch, "instrumentGlobalFetch");
-function sanitizeURL(url) {
-  const u = new URL(url);
-  return `${u.protocol}//${u.host}${u.pathname}`;
-}
-__name(sanitizeURL, "sanitizeURL");
-function instrumentCacheMethod(fn, cacheName, operation) {
-  const handler2 = {
-    async apply(target, thisArg, argArray) {
-      const tracer = import_api6.trace.getTracer("autolemetry-edge");
-      const firstArg = argArray[0];
-      const url = firstArg instanceof Request ? firstArg.url : typeof firstArg === "string" ? firstArg : void 0;
-      const spanName = `Cache ${cacheName}.${operation}`;
+      const spanName = `${actorClassName} handler: ${request.method} ${url.pathname}`;
       return tracer.startActiveSpan(
         spanName,
         {
-          kind: import_api6.SpanKind.CLIENT,
-          attributes: {
-            "cache.name": cacheName,
-            "cache.operation": operation,
-            "cache.key": url ? sanitizeURL(url) : void 0
-          }
-        },
-        async (span2) => {
-          try {
-            const result = await Reflect.apply(target, thisArg, argArray);
-            if (operation === "match") {
-              span2.setAttribute("cache.hit", !!result);
-            }
-            span2.setStatus({ code: import_api6.SpanStatusCode.OK });
-            return result;
-          } catch (error3) {
-            span2.recordException(error3);
-            span2.setStatus({
-              code: import_api6.SpanStatusCode.ERROR,
-              message: error3 instanceof Error ? error3.message : String(error3)
-            });
-            throw error3;
-          } finally {
-            span2.end();
-          }
-        }
-      );
-    }
-  };
-  return wrap(fn, handler2);
-}
-__name(instrumentCacheMethod, "instrumentCacheMethod");
-function instrumentCache(cache, cacheName) {
-  const handler2 = {
-    get(target, prop) {
-      const value = Reflect.get(target, prop);
-      if ((prop === "match" || prop === "put" || prop === "delete") && typeof value === "function") {
-        return instrumentCacheMethod(
-          value.bind(target),
-          cacheName,
-          prop
-        );
-      }
-      if (typeof value === "function") {
-        return value.bind(target);
-      }
-      return value;
-    }
-  };
-  return wrap(cache, handler2);
-}
-__name(instrumentCache, "instrumentCache");
-function instrumentCachesOpen(openFn) {
-  const handler2 = {
-    async apply(target, thisArg, argArray) {
-      const cacheName = argArray[0];
-      const cache = await Reflect.apply(target, thisArg, argArray);
-      return instrumentCache(cache, cacheName);
-    }
-  };
-  return wrap(openFn, handler2);
-}
-__name(instrumentCachesOpen, "instrumentCachesOpen");
-function instrumentGlobalCache() {
-  const handler2 = {
-    get(target, prop) {
-      if (prop === "default") {
-        return instrumentCache(target.default, "default");
-      } else if (prop === "open") {
-        const openFn = Reflect.get(target, prop);
-        if (typeof openFn === "function") {
-          return instrumentCachesOpen(openFn.bind(target));
-        }
-      }
-      return Reflect.get(target, prop);
-    }
-  };
-  globalThis.caches = wrap(caches, handler2);
-}
-__name(instrumentGlobalCache, "instrumentGlobalCache");
-function createFetchInstrumentation(config2) {
-  return {
-    getInitialSpanInfo: /* @__PURE__ */ __name((request) => {
-      const url = new URL(request.url);
-      return {
-        name: `${request.method} ${url.pathname}`,
-        options: {
-          kind: import_api6.SpanKind.SERVER,
+          kind: import_api3.SpanKind.SERVER,
           attributes: {
             "http.request.method": request.method,
-            "url.full": request.url
+            "url.full": request.url,
+            "url.path": url.pathname,
+            "url.query": url.search,
+            "actor.class": actorClassName,
+            ...actorName && { "actor.name": actorName },
+            "faas.trigger": "http"
           }
         },
-        context: import_api6.propagation.extract(import_api6.context.active(), request.headers)
-      };
-    }, "getInitialSpanInfo"),
-    getAttributesFromResult: /* @__PURE__ */ __name((response) => ({
-      "http.response.status_code": response.status
-    }), "getAttributesFromResult"),
-    executionSucces: /* @__PURE__ */ __name((span2, trigger, result) => {
-      if (config2.handlers.fetch.postProcess) {
-        const readableSpan = span2;
-        config2.handlers.fetch.postProcess(span2, {
-          request: trigger,
-          response: result,
-          readable: readableSpan
-        });
-      }
-    }, "executionSucces")
-  };
-}
-__name(createFetchInstrumentation, "createFetchInstrumentation");
-var scheduledInstrumentation = {
-  getInitialSpanInfo: /* @__PURE__ */ __name((event) => {
-    return {
-      name: `scheduledHandler ${event.cron || "unknown"}`,
-      options: {
-        kind: import_api6.SpanKind.INTERNAL,
-        attributes: {
-          "faas.trigger": "timer",
-          "faas.cron": event.cron || "unknown",
-          "faas.scheduled_time": new Date(event.scheduledTime).toISOString()
-        }
-      }
-    };
-  }, "getInitialSpanInfo")
-};
-var MessageStatusCount = class {
-  static {
-    __name(this, "MessageStatusCount");
-  }
-  succeeded = 0;
-  failed = 0;
-  implicitly_acked = 0;
-  implicitly_retried = 0;
-  total;
-  constructor(total) {
-    this.total = total;
-  }
-  ack() {
-    this.succeeded = this.succeeded + 1;
-  }
-  ackRemaining() {
-    this.implicitly_acked = this.total - this.succeeded - this.failed;
-    this.succeeded = this.total - this.failed;
-  }
-  retry() {
-    this.failed = this.failed + 1;
-  }
-  retryRemaining() {
-    this.implicitly_retried = this.total - this.succeeded - this.failed;
-    this.failed = this.total - this.succeeded;
-  }
-  toAttributes() {
-    return {
-      "queue.messages_count": this.total,
-      "queue.messages_success": this.succeeded,
-      "queue.messages_failed": this.failed,
-      "queue.batch_success": this.succeeded === this.total,
-      "queue.implicitly_acked": this.implicitly_acked,
-      "queue.implicitly_retried": this.implicitly_retried
-    };
-  }
-};
-function addQueueEvent(name, msg, delaySeconds) {
-  const attrs = {};
-  if (msg) {
-    attrs["queue.message_id"] = msg.id;
-    attrs["queue.message_timestamp"] = msg.timestamp.toISOString();
-    if ("attempts" in msg && typeof msg.attempts === "number") {
-      attrs["queue.message_attempts"] = msg.attempts;
-    }
-  }
-  if (delaySeconds !== void 0) {
-    attrs["queue.retry_delay_seconds"] = delaySeconds;
-  }
-  import_api6.trace.getActiveSpan()?.addEvent(name, attrs);
-}
-__name(addQueueEvent, "addQueueEvent");
-function proxyQueueMessage(msg, count3) {
-  const msgHandler = {
-    get: /* @__PURE__ */ __name((target, prop) => {
-      if (prop === "ack") {
-        const ackFn = Reflect.get(target, prop);
-        return new Proxy(ackFn, {
-          apply: /* @__PURE__ */ __name((fnTarget) => {
-            addQueueEvent("messageAck", msg);
-            count3.ack();
-            Reflect.apply(fnTarget, msg, []);
-          }, "apply")
-        });
-      } else if (prop === "retry") {
-        const retryFn = Reflect.get(target, prop);
-        return new Proxy(retryFn, {
-          apply: /* @__PURE__ */ __name((fnTarget, _thisArg, args) => {
-            const retryOptions = args[0];
-            const delaySeconds = retryOptions?.delaySeconds;
-            addQueueEvent("messageRetry", msg, delaySeconds);
-            if (retryOptions?.contentType) {
-              const span2 = import_api6.trace.getActiveSpan();
-              if (span2) {
-                span2.setAttribute("queue.message.content_type", retryOptions.contentType);
-              }
+        parentContext,
+        async (span) => {
+          try {
+            const envObj = env3;
+            const bindingName = Object.keys(envObj).find((key) => {
+              const binding2 = env3.__DURABLE_OBJECT_BINDINGS;
+              return key === actorClassName || binding2?.[key]?.class_name === actorClassName;
+            });
+            if (!bindingName) {
+              span.setStatus({
+                code: import_api3.SpanStatusCode.ERROR,
+                message: `No Durable Object binding found for ${actorClassName}`
+              });
+              return Response.json(
+                {
+                  error: "Configuration Error",
+                  message: `No Durable Object binding found for actor class ${actorClassName}`
+                },
+                { status: 500, headers: { "Content-Type": "application/json" } }
+              );
             }
-            count3.retry();
-            const result = Reflect.apply(fnTarget, msg, args);
-            return result;
-          }, "apply")
-        });
-      } else {
-        return Reflect.get(target, prop, msg);
-      }
-    }, "get")
-  };
-  return wrap(msg, msgHandler);
-}
-__name(proxyQueueMessage, "proxyQueueMessage");
-function proxyMessageBatch(batch, count3) {
-  const batchHandler = {
-    get: /* @__PURE__ */ __name((target, prop) => {
-      if (prop === "messages") {
-        const messages = Reflect.get(target, prop);
-        const messagesHandler = {
-          get: /* @__PURE__ */ __name((target2, prop2) => {
-            if (typeof prop2 === "string" && !isNaN(parseInt(prop2))) {
-              const message = Reflect.get(target2, prop2);
-              return proxyQueueMessage(message, count3);
+            const namespace = envObj[bindingName];
+            const idString = actorName || "default";
+            const locationHint = actorClass.configuration?.(request)?.locationHint;
+            const stub = namespace.getByName(idString, { locationHint });
+            if ("setName" in stub && typeof stub.setName === "function") {
+              stub.setName(idString);
+            }
+            const headers = new Headers(request.headers);
+            import_api3.propagation.inject(import_api3.context.active(), headers);
+            const tracedRequest = new Request(request.url, {
+              method: request.method,
+              headers,
+              body: request.body,
+              redirect: request.redirect
+            });
+            const response = await stub.fetch(tracedRequest);
+            span.setAttributes({
+              "http.response.status_code": response.status,
+              "actor.name": idString
+            });
+            if (response.ok) {
+              span.setStatus({ code: import_api3.SpanStatusCode.OK });
             } else {
-              return Reflect.get(target2, prop2);
+              span.setStatus({ code: import_api3.SpanStatusCode.ERROR });
             }
-          }, "get")
-        };
-        return wrap(messages, messagesHandler);
-      } else if (prop === "ackAll") {
-        const ackFn = Reflect.get(target, prop);
-        return new Proxy(ackFn, {
-          apply: /* @__PURE__ */ __name((fnTarget) => {
-            addQueueEvent("ackAll");
-            count3.ackRemaining();
-            Reflect.apply(fnTarget, batch, []);
-          }, "apply")
-        });
-      } else if (prop === "retryAll") {
-        const retryFn = Reflect.get(target, prop);
-        return new Proxy(retryFn, {
-          apply: /* @__PURE__ */ __name((fnTarget, _thisArg, args) => {
-            const retryOptions = args[0];
-            const delaySeconds = retryOptions?.delaySeconds;
-            addQueueEvent("retryAll", void 0, delaySeconds);
-            count3.retryRemaining();
-            Reflect.apply(fnTarget, batch, args);
-          }, "apply")
-        });
-      }
-      return Reflect.get(target, prop);
-    }, "get")
-  };
-  return wrap(batch, batchHandler);
-}
-__name(proxyMessageBatch, "proxyMessageBatch");
-var QueueInstrumentation = class {
-  static {
-    __name(this, "QueueInstrumentation");
-  }
-  count;
-  getInitialSpanInfo(batch) {
-    return {
-      name: `queueHandler ${batch.queue || "unknown"}`,
-      options: {
-        kind: import_api6.SpanKind.CONSUMER,
-        attributes: {
-          "faas.trigger": "pubsub",
-          "queue.name": batch.queue || "unknown"
+            return response;
+          } catch (error3) {
+            span.recordException(error3);
+            span.setStatus({
+              code: import_api3.SpanStatusCode.ERROR,
+              message: error3 instanceof Error ? error3.message : String(error3)
+            });
+            return Response.json(
+              {
+                error: "Internal Server Error",
+                message: error3 instanceof Error ? error3.message : "Unknown error"
+              },
+              { status: 500, headers: { "Content-Type": "application/json" } }
+            );
+          } finally {
+            span.end();
+          }
         }
-      }
-    };
-  }
-  instrumentTrigger(batch) {
-    this.count = new MessageStatusCount(batch.messages.length);
-    return proxyMessageBatch(batch, this.count);
-  }
-  executionSucces(span2, _trigger, _result) {
-    if (this.count) {
-      this.count.ackRemaining();
-      span2.setAttributes(this.count.toAttributes());
-    }
-  }
-  executionFailed(span2, _trigger, _error) {
-    if (this.count) {
-      this.count.retryRemaining();
-      span2.setAttributes(this.count.toAttributes());
-    }
-  }
-};
-function headerAttributes(message) {
-  const attrs = {};
-  if (message.headers instanceof Headers) {
-    for (const [key, value] of message.headers.entries()) {
-      attrs[`email.header.${key}`] = value;
-    }
-  }
-  return attrs;
-}
-__name(headerAttributes, "headerAttributes");
-var emailInstrumentation = {
-  getInitialSpanInfo: /* @__PURE__ */ __name((message) => {
-    const attributes = {
-      "faas.trigger": "other",
-      "messaging.destination.name": message.to || "unknown"
-    };
-    if ("headers" in message && message.headers instanceof Headers) {
-      const messageId = message.headers.get("Message-Id");
-      if (messageId) {
-        attributes["rpc.message.id"] = messageId;
-      }
-      Object.assign(attributes, headerAttributes(message));
-    }
-    return {
-      name: `emailHandler ${message.to || "unknown"}`,
-      options: {
-        kind: import_api6.SpanKind.CONSUMER,
-        attributes
-      }
-    };
-  }, "getInitialSpanInfo")
-};
-async function exportSpans(traceId, tracker) {
-  const tracer = import_api6.trace.getTracer("autolemetry-edge");
-  if (tracer instanceof WorkerTracer) {
-    try {
-      await scheduler.wait(1);
-      await tracker?.wait();
-      await tracer.forceFlush(traceId);
-    } catch (error3) {
-      console.error("[autolemetry-edge] Failed to export spans:", error3);
-    }
-  }
-}
-__name(exportSpans, "exportSpans");
-function createHandlerFlow(instrumentation) {
-  return (handlerFn, [trigger, env2, context$1]) => {
-    const { ctx: proxiedCtx, tracker } = proxyExecutionContext(context$1);
-    const tracer = import_api6.trace.getTracer("autolemetry-edge");
-    const { name, options, context: spanContext } = instrumentation.getInitialSpanInfo(trigger);
-    if (options.attributes) {
-      options.attributes["faas.coldstart"] = coldStart;
-    } else {
-      options.attributes = { "faas.coldstart": coldStart };
-    }
-    coldStart = false;
-    const parentContext = spanContext || import_api6.context.active();
-    const instrumentedTrigger = instrumentation.instrumentTrigger ? instrumentation.instrumentTrigger(trigger) : trigger;
-    return tracer.startActiveSpan(name, options, parentContext, async (span2) => {
-      try {
-        const result = await handlerFn(instrumentedTrigger, env2, proxiedCtx);
-        if (instrumentation.getAttributesFromResult) {
-          const attributes = instrumentation.getAttributesFromResult(result);
-          span2.setAttributes(attributes);
-        }
-        if (instrumentation.executionSucces) {
-          instrumentation.executionSucces(span2, trigger, result);
-        }
-        span2.setStatus({ code: import_api6.SpanStatusCode.OK });
-        return result;
-      } catch (error3) {
-        span2.recordException(error3);
-        span2.setStatus({
-          code: import_api6.SpanStatusCode.ERROR,
-          message: error3 instanceof Error ? error3.message : String(error3)
-        });
-        if (instrumentation.executionFailed) {
-          instrumentation.executionFailed(span2, trigger, error3);
-        }
-        throw error3;
-      } finally {
-        span2.end();
-        context$1.waitUntil(exportSpans(span2.spanContext().traceId, tracker));
-      }
-    });
-  };
-}
-__name(createHandlerFlow, "createHandlerFlow");
-function createHandlerProxy(_handler, handlerFn, initialiser, instrumentation) {
-  return (trigger, env2, ctx) => {
-    const config2 = initialiser(env2, trigger);
-    if (config2.instrumentation.disabled) {
-      return handlerFn(trigger, env2, ctx);
-    }
-    const instrumentedEnv = instrumentBindings(env2);
-    const configContext = setConfig(config2);
-    initProvider(config2);
-    const flowFn = createHandlerFlow(instrumentation);
-    return import_api6.context.with(configContext, () => {
-      return flowFn(handlerFn, [trigger, instrumentedEnv, ctx]);
-    });
-  };
-}
-__name(createHandlerProxy, "createHandlerProxy");
-function createHandlerProxyWithConfig(_handler, handlerFn, initialiser, createInstrumentation) {
-  return (trigger, env2, ctx) => {
-    const config2 = initialiser(env2, trigger);
-    if (config2.instrumentation.disabled) {
-      return handlerFn(trigger, env2, ctx);
-    }
-    const instrumentedEnv = instrumentBindings(env2);
-    const configContext = setConfig(config2);
-    initProvider(config2);
-    const instrumentation = createInstrumentation(config2);
-    const flowFn = createHandlerFlow(instrumentation);
-    return import_api6.context.with(configContext, () => {
-      return flowFn(handlerFn, [trigger, instrumentedEnv, ctx]);
-    });
-  };
-}
-__name(createHandlerProxyWithConfig, "createHandlerProxyWithConfig");
-var providerInitialized = false;
-var coldStart = true;
-function initProvider(config2) {
-  if (providerInitialized) return;
-  if (config2.instrumentation.instrumentGlobalFetch) {
-    instrumentGlobalFetch();
-  }
-  if (config2.instrumentation.instrumentGlobalCache) {
-    instrumentGlobalCache();
-  }
-  import_api6.propagation.setGlobalPropagator(config2.propagator);
-  const resource = resourceFromAttributes({
-    "service.name": config2.service.name,
-    "service.version": config2.service.version,
-    "service.namespace": config2.service.namespace,
-    "cloud.provider": "cloudflare",
-    "cloud.platform": "cloudflare.workers",
-    "telemetry.sdk.name": "autolemetry-edge",
-    "telemetry.sdk.language": "js"
-  });
-  const provider = new WorkerTracerProvider(config2.spanProcessors, resource);
-  provider.register();
-  const tracer = import_api6.trace.getTracer("autolemetry-edge");
-  tracer.setHeadSampler(config2.sampling.headSampler);
-  providerInitialized = true;
-}
-__name(initProvider, "initProvider");
-function instrument(handler2, config2) {
-  const initialiser = createInitialiser(config2);
-  if (handler2.fetch) {
-    const fetcher = unwrap(handler2.fetch);
-    handler2.fetch = createHandlerProxyWithConfig(
-      handler2,
-      fetcher,
-      initialiser,
-      createFetchInstrumentation
-    );
-  }
-  if (handler2.scheduled) {
-    const scheduled = unwrap(handler2.scheduled);
-    handler2.scheduled = createHandlerProxy(
-      handler2,
-      scheduled,
-      initialiser,
-      scheduledInstrumentation
-    );
-  }
-  if (handler2.queue) {
-    const queue = unwrap(handler2.queue);
-    handler2.queue = createHandlerProxy(
-      handler2,
-      queue,
-      initialiser,
-      new QueueInstrumentation()
-    );
-  }
-  if (handler2.email) {
-    const email = unwrap(handler2.email);
-    handler2.email = createHandlerProxy(
-      handler2,
-      email,
-      initialiser,
-      emailInstrumentation
-    );
-  }
-  return handler2;
-}
-__name(instrument, "instrument");
-
-// ../../packages/autolemetry-edge/dist/logger.js
-init_virtual_unenv_global_polyfill_cloudflare_unenv_preset_node_process();
-init_virtual_unenv_global_polyfill_cloudflare_unenv_preset_node_console();
-init_performance2();
-var import_api7 = __toESM(require_src(), 1);
-var LOG_LEVEL_KEY = (0, import_api7.createContextKey)("autolemetry-edge-log-level");
-function getActiveLogLevel() {
-  return import_api7.context.active().getValue(LOG_LEVEL_KEY);
-}
-__name(getActiveLogLevel, "getActiveLogLevel");
-function getTraceContext() {
-  const span2 = import_api7.trace.getActiveSpan();
-  if (!span2) return null;
-  const ctx = span2.spanContext();
-  return {
-    traceId: ctx.traceId,
-    spanId: ctx.spanId,
-    correlationId: ctx.traceId.slice(0, 16)
-    // First 16 chars for grouping
-  };
-}
-__name(getTraceContext, "getTraceContext");
-function createEdgeLogger(service, options) {
-  const defaultLevel = options?.level || "info";
-  const pretty = options?.pretty || false;
-  const levelPriority = {
-    none: -1,
-    debug: 0,
-    info: 1,
-    warn: 2,
-    error: 3
-  };
-  const shouldLog = /* @__PURE__ */ __name((level) => {
-    const activeLevel = getActiveLogLevel() ?? defaultLevel;
-    if (activeLevel === "none") return false;
-    return levelPriority[level] >= levelPriority[activeLevel];
-  }, "shouldLog");
-  const log4 = /* @__PURE__ */ __name((level, msg, attrs) => {
-    if (!shouldLog(level)) return;
-    const ctx = getTraceContext();
-    const logEntry = {
-      level,
-      service,
-      msg,
-      ...attrs,
-      ...ctx,
-      // Auto-inject traceId, spanId, correlationId
-      timestamp: (/* @__PURE__ */ new Date()).toISOString()
-    };
-    if (pretty) {
-      const traceInfo = ctx ? ` [${ctx.traceId.slice(0, 8)}.../${ctx.spanId.slice(0, 8)}...]` : "";
-      console.log(
-        `[${level.toUpperCase()}]${traceInfo} ${service}: ${msg}`,
-        attrs || ""
       );
-    } else {
-      console.log(JSON.stringify(logEntry));
     }
-  }, "log");
-  return {
-    info: /* @__PURE__ */ __name((msg, attrs) => log4("info", msg, attrs), "info"),
-    error: /* @__PURE__ */ __name((msg, error3, attrs) => {
-      const errorAttrs = error3 instanceof Error ? {
-        error: error3.message,
-        stack: error3.stack,
-        name: error3.name,
-        ...attrs
-      } : { error: String(error3), ...attrs };
-      log4("error", msg, errorAttrs);
-    }, "error"),
-    warn: /* @__PURE__ */ __name((msg, attrs) => log4("warn", msg, attrs), "warn"),
-    debug: /* @__PURE__ */ __name((msg, attrs) => log4("debug", msg, attrs), "debug")
   };
 }
-__name(createEdgeLogger, "createEdgeLogger");
-
-// ../../packages/autolemetry-edge/dist/events.js
-init_virtual_unenv_global_polyfill_cloudflare_unenv_preset_node_process();
-init_virtual_unenv_global_polyfill_cloudflare_unenv_preset_node_console();
-init_performance2();
-var import_api8 = __toESM(require_src(), 1);
-var DEFAULT_SERVICE_NAME = "edge-service";
-function isPromiseLike2(value) {
-  return typeof value === "object" && value !== null && "then" in value;
-}
-__name(isPromiseLike2, "isPromiseLike");
-function createBaseEvent(attributes, options) {
-  const config2 = getActiveConfig();
-  const serviceName = options.service ?? config2?.service.name ?? DEFAULT_SERVICE_NAME;
-  const baseAttributes = attributes ? { ...attributes } : {};
-  const baseEvent = {
-    service: serviceName,
-    timestamp: Date.now(),
-    attributes: baseAttributes
-  };
-  if (options.includeTraceContext ?? true) {
-    const span2 = import_api8.trace.getActiveSpan();
-    const spanContext = span2?.spanContext();
-    if (spanContext) {
-      baseEvent.traceId = spanContext.traceId;
-      baseEvent.spanId = spanContext.spanId;
-      baseEvent.correlationId = spanContext.traceId.slice(0, 16);
-    }
-  }
-  return baseEvent;
-}
-__name(createBaseEvent, "createBaseEvent");
-function handleError(error3, event, options) {
-  if (options.onError) {
-    try {
-      options.onError(error3, event);
-      return;
-    } catch (handlerError) {
-      console.error("[autolemetry-edge] Subscribers onError handler failed", handlerError);
-    }
-  }
-  console.error("[autolemetry-edge] Subscribers transport failed", error3, { event });
-}
-__name(handleError, "handleError");
-function deliverResult(result, event, delivery, waitUntil, createOptions) {
-  if (!isPromiseLike2(result)) {
-    return delivery === "await" ? Promise.resolve() : void 0;
-  }
-  if (delivery === "await") {
-    return Promise.resolve(result).catch((error3) => {
-      handleError(error3, event, createOptions);
-      throw error3;
-    });
-  }
-  const background = Promise.resolve(result).catch((error3) => {
-    handleError(error3, event, createOptions);
-  });
-  if (waitUntil) {
-    waitUntil(background);
-  }
-  return void 0;
-}
-__name(deliverResult, "deliverResult");
-function createSubscribersInstance(options, bindings = {}) {
-  const dispatch = /* @__PURE__ */ __name((event, callOptions) => {
-    const delivery = callOptions?.delivery ?? bindings.delivery ?? options.delivery ?? "fire-and-forget";
-    const waitUntil = callOptions?.waitUntil ?? bindings.waitUntil ?? options.waitUntil;
-    const result = options.transport(event);
-    return deliverResult(result, event, delivery, waitUntil, options);
-  }, "dispatch");
-  const trackEvent = /* @__PURE__ */ __name((eventName, attributes, callOptions) => {
-    const baseEvent = createBaseEvent(attributes, options);
-    const event = {
-      ...baseEvent,
-      type: "event",
-      event: eventName,
-      name: eventName
-    };
-    return dispatch(event, callOptions);
-  }, "trackEvent");
-  const trackFunnelStep = /* @__PURE__ */ __name((funnel, status, attributes, callOptions) => {
-    const baseEvent = createBaseEvent(attributes, options);
-    const event = {
-      ...baseEvent,
-      type: "funnel-step",
-      funnel,
-      status,
-      name: `funnel-step.${status}`
-    };
-    return dispatch(event, callOptions);
-  }, "trackFunnelStep");
-  const trackOutcome = /* @__PURE__ */ __name((operation, outcome, attributes, callOptions) => {
-    const baseEvent = createBaseEvent(attributes, options);
-    const event = {
-      ...baseEvent,
-      type: "outcome",
-      operation,
-      outcome,
-      name: `outcome.${outcome}`
-    };
-    return dispatch(event, callOptions);
-  }, "trackOutcome");
-  const trackValue = /* @__PURE__ */ __name((metric, value, attributes, callOptions) => {
-    const baseEvent = createBaseEvent(attributes, options);
-    const event = {
-      ...baseEvent,
-      type: "value",
-      metric,
-      value,
-      name: `value.${metric}`
-    };
-    return dispatch(event, callOptions);
-  }, "trackValue");
-  return {
-    trackEvent,
-    trackFunnelStep,
-    trackOutcome,
-    trackValue,
-    dispatch,
-    bind: /* @__PURE__ */ __name((nextBindings) => createSubscribersInstance(options, { ...bindings, ...nextBindings }), "bind")
-  };
-}
-__name(createSubscribersInstance, "createSubscribersInstance");
-function createEdgeSubscribers(options) {
-  if (typeof options.transport !== "function") {
-    throw new TypeError("createEdgeSubscribers: options.transport is required");
-  }
-  return createSubscribersInstance(options);
-}
-__name(createEdgeSubscribers, "createEdgeSubscribers");
-function getEdgeSubscribers(ctx) {
-  const config2 = getActiveConfig();
-  if (!config2) {
-    return null;
-  }
-  const subscribers = config2.subscribers ?? [];
-  if (subscribers.length === 0) {
-    return null;
-  }
-  const combinedTransport = /* @__PURE__ */ __name(async (event) => {
-    await Promise.all(
-      subscribers.map(async (subscriber, index) => {
-        try {
-          await subscriber(event);
-        } catch (error3) {
-          console.error("[autolemetry-edge] Subscribers subscriber failed", error3, {
-            subscriberIndex: index,
-            eventType: event.type
-          });
-        }
-      })
-    );
-  }, "combinedTransport");
-  return createEdgeSubscribers({
-    transport: combinedTransport,
-    service: config2.service.name,
-    waitUntil: ctx ? (promise) => ctx.waitUntil(promise) : void 0
-  });
-}
-__name(getEdgeSubscribers, "getEdgeSubscribers");
+__name(tracedHandler, "tracedHandler");
 
 // ../../packages/autolemetry-edge/dist/sampling.js
 init_virtual_unenv_global_polyfill_cloudflare_unenv_preset_node_process();
@@ -9786,9 +9072,9 @@ function createErrorOnlyTailSampler() {
   };
 }
 __name(createErrorOnlyTailSampler, "createErrorOnlyTailSampler");
-function getDurationMs(span2) {
-  const start = span2.startTime[0] * 1e3 + span2.startTime[1] / 1e6;
-  const end = span2.endTime[0] * 1e3 + span2.endTime[1] / 1e6;
+function getDurationMs(span) {
+  const start = span.startTime[0] * 1e3 + span.startTime[1] / 1e6;
+  const end = span.endTime[0] * 1e3 + span.endTime[1] / 1e6;
   return end - start;
 }
 __name(getDurationMs, "getDurationMs");
@@ -9829,273 +9115,169 @@ var SamplingPresets = {
   errorsOnly: /* @__PURE__ */ __name(() => createErrorOnlyTailSampler(), "errorsOnly")
 };
 
-// src/worker.ts
-var import_api9 = __toESM(require_src(), 1);
-var log3 = createEdgeLogger("cloudflare-example");
-var processRequest = trace32({
-  name: "request.process",
-  attributesFromArgs: /* @__PURE__ */ __name(([request]) => {
-    const url = new URL(request.url);
-    return {
-      "http.route": url.pathname,
-      "http.method": request.method
-    };
-  }, "attributesFromArgs"),
-  attributesFromResult: /* @__PURE__ */ __name((result) => ({
-    "response.has_data": !!result
-  }), "attributesFromResult")
-}, /* @__PURE__ */ __name(async function processRequest2(request) {
-  const url = new URL(request.url);
-  log3.info("Processing request", { path: url.pathname });
-  return {
-    message: "Hello from Alchemy!",
-    timestamp: (/* @__PURE__ */ new Date()).toISOString(),
-    path: url.pathname
-  };
-}, "processRequest"));
-var getCachedValue = trace32({
-  name: "kv.get",
-  attributesFromArgs: /* @__PURE__ */ __name(([key]) => ({ "kv.key": key }), "attributesFromArgs"),
-  attributesFromResult: /* @__PURE__ */ __name((value) => ({ "kv.cache_hit": !!value }), "attributesFromResult")
-}, /* @__PURE__ */ __name(async function getCachedValue2(key, kv) {
-  const value = await kv.get(key);
-  return value;
-}, "getCachedValue"));
-var getObject = trace32({
-  name: "r2.get",
-  attributesFromArgs: /* @__PURE__ */ __name(([key]) => ({ "r2.key": key }), "attributesFromArgs")
-}, /* @__PURE__ */ __name(async function getObject2(key, r2) {
-  const object = await r2.get(key);
-  return object;
-}, "getObject"));
-var queryUsers = trace32({
-  name: "d1.query",
-  attributesFromResult: /* @__PURE__ */ __name((result) => ({
-    "db.rows_count": result.results?.length || 0
-  }), "attributesFromResult")
-}, /* @__PURE__ */ __name(async function queryUsers2(db) {
-  const result = await db.prepare("SELECT * FROM users LIMIT 10").all();
-  return result;
-}, "queryUsers"));
-var processPayment = trace32({
-  name: "payment.process",
-  attributesFromArgs: /* @__PURE__ */ __name(([amount, userId]) => ({
-    "payment.amount": amount,
-    "payment.user_id": userId
-  }), "attributesFromArgs")
-}, (ctx) => /* @__PURE__ */ __name(async function processPayment2(amount, userId) {
-  try {
-    if (amount < 0) {
-      throw new Error("Invalid amount: amount must be positive");
-    }
-    if (amount > 1e4) {
-      throw new Error("Amount exceeds limit");
-    }
-    const transactionId = crypto.randomUUID();
-    ctx.setAttribute("payment.transaction_id", transactionId);
-    log3.info("Payment processed", { amount, userId, transactionId });
-    return { success: true, transactionId };
-  } catch (error3) {
-    ctx.setStatus({
-      code: import_api9.SpanStatusCode.ERROR,
-      message: error3 instanceof Error ? error3.message : "Unknown error"
-    });
-    ctx.recordException(error3 instanceof Error ? error3 : new Error(String(error3)));
-    log3.error("Payment failed", { error: error3, amount, userId });
-    throw error3;
+// src/actor.ts
+var CounterActor = class extends Actor {
+  static {
+    __name(this, "CounterActor");
   }
-}, "processPayment"));
-var validateInput = trace32({
-  name: "user.validate",
-  attributesFromArgs: /* @__PURE__ */ __name(([data]) => ({ "user.email": data.email }), "attributesFromArgs")
-}, /* @__PURE__ */ __name(async function validateInput2(data) {
-  if (!data.email) throw new Error("Email required");
-  if (!data.name) throw new Error("Name required");
-  if (!data.email.includes("@")) throw new Error("Invalid email format");
-  return data;
-}, "validateInput"));
-var checkDuplicate = trace32({
-  name: "db.checkDuplicate",
-  attributesFromArgs: /* @__PURE__ */ __name(([email]) => ({ "user.email": email }), "attributesFromArgs"),
-  attributesFromResult: /* @__PURE__ */ __name((exists) => ({ "user.exists": exists }), "attributesFromResult")
-}, /* @__PURE__ */ __name(async function checkDuplicate2(email, db) {
-  const result = await db.prepare("SELECT id FROM users WHERE email = ?").bind(email).first();
-  return !!result;
-}, "checkDuplicate"));
-var insertUser = trace32({
-  name: "db.insertUser",
-  attributesFromArgs: /* @__PURE__ */ __name(([user]) => ({ "user.email": user.email }), "attributesFromArgs"),
-  attributesFromResult: /* @__PURE__ */ __name((user) => ({ "user.id": user.id }), "attributesFromResult")
-}, /* @__PURE__ */ __name(async function insertUser2(user, db) {
-  const id = crypto.randomUUID();
-  await db.prepare("INSERT INTO users (id, email, name) VALUES (?, ?, ?)").bind(id, user.email, user.name).run();
-  return { id, ...user };
-}, "insertUser"));
-var validateAndCreate = trace32({
-  name: "user.create",
-  attributesFromArgs: /* @__PURE__ */ __name(([data]) => ({ "user.email": data.email }), "attributesFromArgs"),
-  attributesFromResult: /* @__PURE__ */ __name((user) => ({ "user.id": user.id }), "attributesFromResult")
-}, /* @__PURE__ */ __name(async function validateAndCreate2(data, db) {
-  const valid = await validateInput(data);
-  const exists = await checkDuplicate(valid.email, db);
-  if (exists) {
-    throw new Error("User already exists");
-  }
-  return await insertUser(valid, db);
-}, "validateAndCreate"));
-var handler = {
-  async fetch(request, env2, ctx) {
-    const url = new URL(request.url);
-    if (url.pathname === "/kv" && env2.MY_KV) {
-      const value = await getCachedValue("test-key", env2.MY_KV);
-      return Response.json({ value });
-    }
-    if (url.pathname === "/r2" && env2.MY_R2) {
-      const object = await getObject("test-object", env2.MY_R2);
-      return Response.json({ exists: !!object });
-    }
-    if (url.pathname === "/d1" && env2.MY_D1) {
-      const users = await queryUsers(env2.MY_D1);
-      return Response.json({ users });
-    }
-    if (url.pathname === "/service" && env2.MY_SERVICE) {
-      const response = await env2.MY_SERVICE.fetch(request);
-      return response;
-    }
-    if (url.pathname === "/cache") {
-      const cached = await span(
-        { name: "cache.check", attributes: { "cache.key": url.pathname } },
-        async (childSpan) => {
-          const cached2 = await caches.default.match(request);
-          childSpan.setAttribute("cache.hit", !!cached2);
-          return cached2;
-        }
-      );
-      if (cached) {
-        return cached;
+  // Persistent property - automatically persisted between requests
+  // Note: The exact API may vary - this is a simplified example
+  countValue = 0;
+  /**
+   * onInit is automatically traced with 'actor.lifecycle': 'init'
+   */
+  async onInit() {
+    console.log("CounterActor initialized");
+    try {
+      if (this.alarms && typeof this.alarms.set === "function") {
+        await this.alarms.set({
+          scheduledTime: Date.now() + 6e4
+          // 1 minute from now
+        });
       }
-      const response = await span(
-        { name: "cache.fetch_and_store" },
-        async () => {
-          const response2 = await fetch("https://api.example.com/data");
-          await caches.default.put(request, response2.clone());
-          return response2;
-        }
-      );
-      return response;
+    } catch (error3) {
+      console.warn("Could not set alarm:", error3);
     }
-    if (url.pathname === "/external") {
-      const response = await fetch("https://api.example.com/data", {
-        headers: request.headers
-        // Trace context in headers
+  }
+  /**
+   * onRequest is automatically traced with full HTTP semantics
+   * All storage operations within are also automatically traced
+   */
+  async onRequest(request) {
+    const url = new URL(request.url);
+    const method = request.method;
+    if (method === "GET" && url.pathname === "/") {
+      return Response.json({
+        count: this.countValue,
+        message: "Hello from CounterActor!"
       });
-      return response;
     }
-    if (url.pathname === "/payment" && request.method === "POST") {
-      try {
-        const body = await request.json();
-        const { amount, userId } = body;
-        const result2 = await processPayment(amount, userId);
-        return Response.json(result2);
-      } catch (error3) {
-        return Response.json(
-          { error: error3 instanceof Error ? error3.message : "Unknown error" },
-          { status: 400 }
-        );
-      }
+    if (method === "POST" && url.pathname === "/increment") {
+      const body = await request.json().catch(() => ({}));
+      const amount = body.amount ?? 1;
+      this.countValue += amount;
+      return Response.json({
+        count: this.countValue,
+        incremented: amount
+      });
     }
-    if (url.pathname === "/users" && request.method === "POST") {
+    if (method === "POST" && url.pathname === "/reset") {
+      this.countValue = 0;
+      return Response.json({
+        count: 0,
+        message: "Counter reset"
+      });
+    }
+    if (method === "GET" && url.pathname === "/storage") {
       try {
-        const data = await request.json();
-        if (!env2.MY_D1) {
-          return Response.json({ error: "D1 database not configured" }, { status: 500 });
+        if (this.storage && typeof this.storage.exec === "function") {
+          await this.storage.exec(`
+            CREATE TABLE IF NOT EXISTS visits (
+              id INTEGER PRIMARY KEY AUTOINCREMENT,
+              timestamp TEXT NOT NULL
+            )
+          `);
+          await this.storage.exec(
+            `INSERT INTO visits (timestamp) VALUES (?)`,
+            [(/* @__PURE__ */ new Date()).toISOString()]
+          );
+          const visits = await this.storage.prepare(
+            "SELECT * FROM visits ORDER BY timestamp DESC LIMIT 10"
+          ).all();
+          return Response.json({
+            visits: visits.results || [],
+            total: visits.results?.length || 0
+          });
         }
-        const user = await validateAndCreate(data, env2.MY_D1);
-        return Response.json(user, { status: 201 });
       } catch (error3) {
-        return Response.json(
-          { error: error3 instanceof Error ? error3.message : "Unknown error" },
-          { status: 400 }
-        );
+        return Response.json({
+          error: "Storage not available",
+          message: error3 instanceof Error ? error3.message : String(error3)
+        }, { status: 500 });
       }
     }
-    const subscribers = getEdgeSubscribers(ctx);
-    if (subscribers) {
-      subscribers.trackEvent("request.processed", { path: url.pathname });
-    }
-    const result = await processRequest(request);
-    return Response.json(result);
-  },
-  // Scheduled handler example (works in dev mode)
-  async scheduled(event, env2, ctx) {
-    log3.info("Scheduled task executed", { cron: event.cron });
-  },
-  // Queue handler example (requires paid account, but code compiles)
-  async queue(batch, env2, ctx) {
-    for (const message of batch.messages) {
+    if (method === "GET" && url.pathname === "/alarms") {
       try {
-        await processMessage(message);
-        message.ack();
+        if (this.alarms && typeof this.alarms.set === "function") {
+          await this.alarms.set({
+            scheduledTime: Date.now() + 5e3,
+            data: { message: "Custom alarm triggered!" }
+          });
+          return Response.json({
+            message: "Alarm scheduled for 5 seconds from now",
+            scheduledTime: new Date(Date.now() + 5e3).toISOString()
+          });
+        }
       } catch (error3) {
-        message.retry({ delaySeconds: 60 });
+        return Response.json({
+          error: "Alarms not available",
+          message: error3 instanceof Error ? error3.message : String(error3)
+        }, { status: 500 });
       }
     }
-  },
-  // Email handler example (requires Email Routing setup, but code compiles)
-  async email(message, env2, ctx) {
-    log3.info("Email received", {
-      from: message.from,
-      to: message.to
-    });
+    return new Response("Not Found", { status: 404 });
+  }
+  /**
+   * onAlarm is automatically traced with 'actor.lifecycle': 'alarm'
+   * This is called when an alarm is triggered
+   */
+  async onAlarm(alarmInfo) {
+    console.log("Alarm triggered", { alarmInfo, count: this.countValue });
+    this.countValue += 1;
+    try {
+      if (this.alarms && typeof this.alarms.set === "function") {
+        await this.alarms.set({
+          scheduledTime: Date.now() + 6e4
+          // 1 minute from now
+        });
+      }
+    } catch (error3) {
+      console.warn("Could not set alarm:", error3);
+    }
+  }
+  /**
+   * Static method to extract actor name from request
+   * This is used by tracedHandler to identify the actor instance
+   */
+  static async nameFromRequest(request) {
+    const url = new URL(request.url);
+    const name = url.searchParams.get("name") || url.pathname.split("/").pop();
+    return name || "default";
   }
 };
-async function processMessage(message) {
-  log3.info("Processing message", { id: message.id });
-}
-__name(processMessage, "processMessage");
-var worker_default = instrument(handler, (env2) => ({
+var actor_default = tracedHandler(CounterActor, (env3) => ({
   exporter: {
-    url: env2.OTLP_ENDPOINT || "http://localhost:4318/v1/traces",
-    headers: env2.OTLP_HEADERS ? JSON.parse(env2.OTLP_HEADERS) : {}
+    url: env3.OTLP_ENDPOINT || "http://localhost:4318/v1/traces",
+    headers: env3.OTLP_HEADERS ? JSON.parse(env3.OTLP_HEADERS) : {}
   },
   service: {
-    name: "cloudflare-example",
-    version: "1.0.1"
+    name: "counter-actor-service",
+    version: "1.0.0"
   },
   // Adaptive sampling: 10% baseline, all errors, all slow requests (>1s)
-  // Use SamplingPresets.highTraffic() for high-volume services
-  // Use SamplingPresets.debugging() for active debugging
-  // Use SamplingPresets.development() for 100% sampling in dev
   sampling: {
-    tailSampler: env2.ENVIRONMENT === "production" ? SamplingPresets.production() : SamplingPresets.development()
+    tailSampler: env3.ENVIRONMENT === "production" ? SamplingPresets.production() : SamplingPresets.development()
     // 100% in dev
   },
-  instrumentation: {
-    instrumentGlobalFetch: true,
-    instrumentGlobalCache: true,
-    // Set to true to disable all instrumentation for local dev
-    disabled: env2.DISABLE_INSTRUMENTATION === "true"
-  },
-  handlers: {
-    fetch: {
-      // Customize fetch spans with postProcess callback
-      postProcess: /* @__PURE__ */ __name((span2, { request, response, readable }) => {
-        const url = new URL(request.url);
-        if (url.pathname.startsWith("/api/")) {
-          span2.setAttribute("api.endpoint", url.pathname);
-        }
-        if (response.status >= 500) {
-          span2.setAttribute("error.severity", "high");
-        }
-        const duration = (readable.endTime[0] - readable.startTime[0]) / 1e6;
-        if (duration > 1e3) {
-          span2.setAttribute("performance.slow", true);
-        }
-      }, "postProcess")
-    }
+  // Actor-specific instrumentation options
+  actors: {
+    instrumentStorage: true,
+    // Trace SQL queries
+    instrumentAlarms: true,
+    // Trace alarm operations
+    instrumentSockets: true,
+    // Trace WebSocket operations
+    capturePersistEvents: true
+    // Trace property persistence
   }
 }));
+
+// src/actor-worker.ts
+var actor_worker_default = actor_default;
+var handler = actor_default;
 export {
-  worker_default as default
+  CounterActor,
+  actor_worker_default as default,
+  handler
 };
-//# sourceMappingURL=worker.js.map
+//# sourceMappingURL=actor-worker.js.map

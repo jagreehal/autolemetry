@@ -14,6 +14,8 @@ export default defineConfig({
     events: 'src/events.ts',
     logger: 'src/logger.ts',
     testing: 'src/testing.ts',
+    actors: 'src/actors.ts',
+    agents: 'src/agents.ts',
   },
   format: ['esm'], // ESM-only for edge runtimes
   dts: true,
